@@ -1,0 +1,17 @@
+/*
+Roadmap Lanes — estilos del plugin.
+
+Base mínima del scaffold. La migración trae aquí los estilos del tablero
+(cards, carriles, solape, estados) desde la web standalone (tablero.css, v0.2.0),
+pero reemplazando los colores propios por las variables de tema de Obsidian
+(--background-primary, --text-normal, --text-muted, --interactive-accent, etc.)
+para integrarse con el tema activo (claro/oscuro) en vez de definir los suyos.
+*/
+
+.roadmap-lanes-view {
+	padding: 12px 16px;
+}
+
+.roadmap-lanes-view .rl-placeholder {
+	color: var(--text-muted);
+}

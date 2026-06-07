@@ -1,0 +1,13 @@
+# dependencias
+node_modules/
+
+# salida de build (generada por esbuild desde main.ts)
+main.js
+*.js.map
+
+# datos locales del plugin en el vault
+data.json
+
+# os / editor
+.DS_Store
+.vscode/

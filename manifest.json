@@ -1,0 +1,9 @@
+{
+	"id": "roadmap-lanes",
+	"name": "Roadmap Lanes",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Tablero de carriles de trabajo en paralelo: usa el tiempo estimado como altura y muestra el solape entre tareas, leyendo el frontmatter de tus notas.",
+	"author": "Martincho",
+	"isDesktopOnly": false
+}
