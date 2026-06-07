@@ -1,13 +1,37 @@
-# dependencias
-node_modules/
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# salida de build (generada por esbuild desde main.ts)
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node
+node_modules/
+dist/
+.cache/
+*.log
+
+# Entorno local
+.env
+.env.local
+
+# Salida de build del plugin (main.js lo genera esbuild desde main.ts)
 main.js
 *.js.map
 
-# datos locales del plugin en el vault
+# Datos locales del plugin en el vault
 data.json
 
-# os / editor
-.DS_Store
-.vscode/
+# Capturas y transcritos con prefijo de fecha ISO (YYYY-MM-DD...)
+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]*
+
+# Configuración y reglas locales de agentes IA (know-how propio, no se versiona)
+.claude/
+AGENTS.md
+
+# Mockups y prototipos
+mocks/
