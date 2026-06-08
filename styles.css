@@ -7,6 +7,9 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 .roadmap-lanes-view {
 	--rl-day-height: 96px;
 	--rl-card-gap: 10px;
+	--rl-board-min-column-width: 240px;
+	--rl-board-gap: 12px;
+	--rl-board-horizontal-padding: 32px;
 	--rl-state-done: var(--color-green);
 	--rl-state-progress: var(--color-blue);
 	--rl-state-next: var(--color-yellow);
@@ -170,8 +173,21 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	background: var(--background-secondary);
 }
 
+.roadmap-lanes-view .rl-check-item.is-disabled {
+	color: var(--text-faint);
+	cursor: not-allowed;
+}
+
+.roadmap-lanes-view .rl-check-item.is-disabled:hover {
+	background: transparent;
+}
+
 .roadmap-lanes-view .rl-check-item input {
 	margin: 0;
+}
+
+.roadmap-lanes-view .rl-check-item input:disabled {
+	cursor: not-allowed;
 }
 
 .roadmap-lanes-view .rl-errors {
@@ -259,8 +275,8 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-board {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-	gap: 12px;
+	grid-template-columns: repeat(var(--rl-visible-column-count, 1), minmax(0, 1fr));
+	gap: var(--rl-board-gap);
 	align-items: start;
 	padding: 0 16px 24px;
 }

@@ -21,6 +21,9 @@ interface Filtros {
 	tipos: Set<string>;
 	madurez: Set<string>;
 	columnas: Set<string>;
+	columnasOrden: string[];
+	capacidadColumnas: number;
+	columnControl?: CheckboxDropdownController;
 }
 
 interface CheckboxDropdownItem {
@@ -28,8 +31,21 @@ interface CheckboxDropdownItem {
 	label: string;
 }
 
+interface CheckboxDropdownController {
+	update(checked: Set<string>, disabled?: Set<string>): void;
+}
+
+interface CheckboxDropdownOptions {
+	checked?: () => Set<string>;
+	disabled?: () => Set<string>;
+}
+
 const TIPOS = ["FT", "DT", "INFRA"];
 const MADUREZ = ["nota", "esqueleto", "ejecutable"];
+const BOARD_MIN_COLUMN_WIDTH_PX = 240;
+const BOARD_COLUMN_GAP_PX = 12;
+const BOARD_HORIZONTAL_PADDING_PX = 32;
+const columnResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
 function formatHours(hours: number): string {
 	return Number.isInteger(hours) ? `${hours}` : `${hours.toFixed(1)}`;
@@ -132,6 +148,74 @@ function isVisibleTask(task: Tarea, filtros: Filtros): boolean {
 		filtros.madurez.size === MADUREZ.length ||
 		(task.madurez !== undefined && filtros.madurez.has(task.madurez));
 	return matchesText && matchesTipo && matchesMadurez;
+}
+
+function columnOrder(modelo: Modelo): string[] {
+	return ["backlog", ...Object.keys(modelo.carriles), "hecho"];
+}
+
+function columnLabel(id: string, ctx: RenderContext): string {
+	if (id === "backlog") return ctx.t("backlog");
+	if (id === "hecho") return ctx.t("done");
+	return id;
+}
+
+function columnVisibilityState(filtros: Filtros): { visible: Set<string>; disabled: Set<string> } {
+	const visible = new Set<string>();
+	const capacity = Math.max(0, filtros.capacidadColumnas);
+	for (const id of filtros.columnasOrden) {
+		if (!filtros.columnas.has(id)) continue;
+		if (visible.size >= capacity) break;
+		visible.add(id);
+	}
+
+	const disabled = new Set<string>();
+	const atCapacity = capacity > 0 && visible.size >= capacity;
+	for (const id of filtros.columnasOrden) {
+		if (visible.has(id)) continue;
+		if (filtros.columnas.has(id) || atCapacity) disabled.add(id);
+	}
+
+	return { visible, disabled };
+}
+
+function readRootPixelVar(root: HTMLElement, name: string, fallback: number): number {
+	const value = getComputedStyle(root).getPropertyValue(name).trim();
+	const parsed = Number.parseFloat(value);
+	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function calculateColumnCapacity(root: HTMLElement): number {
+	const minWidth = readRootPixelVar(root, "--rl-board-min-column-width", BOARD_MIN_COLUMN_WIDTH_PX);
+	const gap = readRootPixelVar(root, "--rl-board-gap", BOARD_COLUMN_GAP_PX);
+	const horizontalPadding = readRootPixelVar(
+		root,
+		"--rl-board-horizontal-padding",
+		BOARD_HORIZONTAL_PADDING_PX
+	);
+	const availableWidth = Math.max(0, root.clientWidth - horizontalPadding);
+	return Math.max(1, Math.floor((availableWidth + gap) / (minWidth + gap)));
+}
+
+function updateColumnCapacity(root: HTMLElement, filtros: Filtros): boolean {
+	const next = Math.min(filtros.columnasOrden.length, calculateColumnCapacity(root));
+	if (filtros.capacidadColumnas === next) return false;
+	filtros.capacidadColumnas = next;
+	return true;
+}
+
+function setupResponsiveColumns(ctx: RenderContext, filtros: Filtros): void {
+	columnResizeObservers.get(ctx.root)?.disconnect();
+	updateColumnCapacity(ctx.root, filtros);
+
+	if (typeof ResizeObserver === "undefined") return;
+
+	const observer = new ResizeObserver(() => {
+		if (updateColumnCapacity(ctx.root, filtros)) applyFilters(ctx.root, filtros);
+	});
+	observer.observe(ctx.root);
+	columnResizeObservers.set(ctx.root, observer);
+	ctx.component.register(() => observer.disconnect());
 }
 
 function hojasPorPadre(a: Tarea, b: Tarea): number {
@@ -298,6 +382,10 @@ function renderCoordination(ctx: RenderContext, parent: HTMLElement): void {
 
 function applyFilters(root: HTMLElement, filtros: Filtros): void {
 	let visibleCards = 0;
+	const columnState = columnVisibilityState(filtros);
+	const board = root.querySelector(".rl-board") as HTMLElement | null;
+	board?.style.setProperty("--rl-visible-column-count", `${Math.max(1, columnState.visible.size)}`);
+
 	const cards = Array.from(root.querySelectorAll(".rl-card")) as HTMLElement[];
 	for (const card of cards) {
 		const search = card.dataset.search || "";
@@ -308,7 +396,6 @@ function applyFilters(root: HTMLElement, filtros: Filtros): void {
 			(filtros.tipos.size === 0 || filtros.tipos.has(tipo)) &&
 			(filtros.madurez.size === MADUREZ.length || filtros.madurez.has(madurez));
 		card.dataset.visible = visible ? "true" : "false";
-		if (visible) visibleCards++;
 	}
 	const blocks = Array.from(root.querySelectorAll(".rl-container-block")) as HTMLElement[];
 	for (const block of blocks) {
@@ -319,8 +406,14 @@ function applyFilters(root: HTMLElement, filtros: Filtros): void {
 	const columns = Array.from(root.querySelectorAll(".rl-column")) as HTMLElement[];
 	for (const column of columns) {
 		const id = column.dataset.columnId;
-		column.dataset.visible = id && filtros.columnas.has(id) ? "true" : "false";
+		column.dataset.visible = id && columnState.visible.has(id) ? "true" : "false";
 	}
+	for (const card of cards) {
+		const column = card.closest(".rl-column") as HTMLElement | null;
+		if (card.dataset.visible === "true" && column?.dataset.visible === "true") visibleCards++;
+	}
+	filtros.columnControl?.update(columnState.visible, columnState.disabled);
+
 	const count = root.querySelector(".rl-filter-count") as HTMLElement | null;
 	if (count) count.textContent = `${visibleCards} ${root.dataset.visibleLabel || "visible"}`;
 }
@@ -350,8 +443,9 @@ function renderCheckboxDropdown(
 	label: string,
 	items: CheckboxDropdownItem[],
 	selected: Set<string>,
-	onChange: () => void
-): void {
+	onChange: () => void,
+	options: CheckboxDropdownOptions = {}
+): CheckboxDropdownController {
 	const wrap = parent.createEl("div", {
 		cls: "rl-check-dd",
 		attr: { "data-rl-check-dd": dropdownId, "data-label": label },
@@ -362,9 +456,26 @@ function renderCheckboxDropdown(
 	});
 	const panel = wrap.createEl("div", { cls: "rl-check-panel" });
 	panel.hidden = true;
+	const checkboxes = new Map<string, HTMLInputElement>();
+	const labels = new Map<string, HTMLElement>();
 
-	const updateButton = () => {
-		button.textContent = `${label} (${selected.size})`;
+	const currentChecked = () => options.checked?.() ?? selected;
+	const currentDisabled = () => options.disabled?.() ?? new Set<string>();
+	const updateState = (checked: Set<string>, disabled: Set<string> = new Set()) => {
+		let checkedCount = 0;
+		for (const item of items) {
+			const checkbox = checkboxes.get(item.id);
+			const option = labels.get(item.id);
+			if (!checkbox || !option) continue;
+			const isChecked = checked.has(item.id);
+			const isDisabled = disabled.has(item.id);
+			checkbox.checked = isChecked;
+			checkbox.disabled = isDisabled;
+			option.classList.toggle("is-disabled", isDisabled);
+			option.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+			if (isChecked) checkedCount++;
+		}
+		button.textContent = `${label} (${checkedCount})`;
 	};
 
 	button.addEventListener("click", () => {
@@ -379,17 +490,19 @@ function renderCheckboxDropdown(
 		const checkbox = option.createEl("input", {
 			attr: { type: "checkbox", value: item.id },
 		}) as HTMLInputElement;
-		checkbox.checked = selected.has(item.id);
+		checkboxes.set(item.id, checkbox);
+		labels.set(item.id, option);
 		option.createEl("span", { text: item.label });
 		checkbox.addEventListener("change", () => {
 			if (checkbox.checked) selected.add(item.id);
 			else selected.delete(item.id);
-			updateButton();
 			onChange();
+			updateState(currentChecked(), currentDisabled());
 		});
 	}
 
-	updateButton();
+	updateState(currentChecked(), currentDisabled());
+	return { update: updateState };
 }
 
 function renderFilters(ctx: RenderContext, parent: HTMLElement, filtros: Filtros): void {
@@ -435,18 +548,21 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filtros: Filtros
 		() => applyFilters(ctx.root, filtros)
 	);
 
-	const columnIds = ["backlog", ...Object.keys(ctx.modelo.carriles), "hecho"];
-	renderCheckboxDropdown(
+	filtros.columnControl = renderCheckboxDropdown(
 		ctx,
 		filters,
 		"columns",
 		ctx.t("columns"),
-		columnIds.map((column) => ({
+		filtros.columnasOrden.map((column) => ({
 			id: column,
-			label: column === "hecho" ? ctx.t("done") : column === "backlog" ? ctx.t("backlog") : column,
+			label: columnLabel(column, ctx),
 		})),
 		filtros.columnas,
-		() => applyFilters(ctx.root, filtros)
+		() => applyFilters(ctx.root, filtros),
+		{
+			checked: () => columnVisibilityState(filtros).visible,
+			disabled: () => columnVisibilityState(filtros).disabled,
+		}
 	);
 
 	filters.createEl("span", { cls: "rl-filter-count" });
@@ -586,11 +702,14 @@ export function renderModel(
 	root.dataset.modelReady = "true";
 
 	const ctx: RenderContext = { app, component, root, modelo, t };
+	const columnasOrden = columnOrder(modelo);
 	const filtros: Filtros = {
 		texto: "",
 		tipos: new Set(),
 		madurez: new Set(MADUREZ),
-		columnas: new Set(["backlog", ...Object.keys(modelo.carriles), "hecho"]),
+		columnas: new Set(columnasOrden),
+		columnasOrden,
+		capacidadColumnas: columnasOrden.length,
 	};
 
 	const header = root.createEl("header", { cls: "rl-topbar" });
@@ -605,6 +724,7 @@ export function renderModel(
 	renderErrors(ctx, root);
 	renderCoordination(ctx, root);
 	renderBoard(ctx, root, filtros);
+	setupResponsiveColumns(ctx, filtros);
 	applyFilters(root, filtros);
 }
 
