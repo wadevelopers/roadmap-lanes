@@ -1,6 +1,6 @@
 # Visión — Roadmap Lanes (RL), plugin de Obsidian
 
-> Producto: **Roadmap Lanes** (abreviado **RL**). Un **plugin de Obsidian** que muestra una carpeta de tareas `.md` como un **tablero de carriles de trabajo en paralelo**, con el tiempo estimado como **altura** de cada tarjeta y el **solape** entre tareas resaltado.
+> Producto: **Roadmap Lanes** (abreviado **RL**). Un **plugin de Obsidian** que muestra una carpeta de roadmap como un **tablero de carriles de trabajo en paralelo**, con el tiempo estimado como **altura** de cada tarjeta y el **solape** entre tareas resaltado.
 >
 > Viene de una web standalone (repo `roadmap-lanes`, congelada en `v0.2.0`) que probó el modelo y el render. Esta versión lo reescribe como plugin para leer del índice nativo de Obsidian y aprovechar su ecosistema.
 
@@ -29,7 +29,7 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 1. **Markdown-first.** La verdad son archivos `.md` con *frontmatter*. Sin base de datos, sin nube.
 2. **Fuente única.** Cada dato vive en **un solo lugar**. El estado es un campo (`estado: hecho`), no la ubicación. Nada se duplica para "sincronizar".
 3. **Una tarea = un archivo.** Cada DT, FT, etapa o épica es su propio `.md`.
-4. **El vault *es* la base.** RL no impone estructura propia: lee el *vault* del usuario. La carpeta de tareas es configurable.
+4. **El vault *es* la base.** RL usa una carpeta de roadmap configurable dentro del *vault*; por defecto `roadmap/`.
 5. **Dos vistas sobre la misma fuente.** El tablero de RL y las vistas nativas de Obsidian (grafo, Dataview, Breadcrumbs) miran los **mismos** `.md`.
 6. **El sistema asiste, no impone.** Ni el orden ni el solape se deciden solos: RL **muestra y alerta**; las decisiones las toma el usuario.
 7. **Previsión aproximada, no estimación exacta.** El tiempo sirve para **coordinar carriles** y **minimizar solape/bloqueos**, no para *tracking* de horas (§7.9).
@@ -39,9 +39,9 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 ```
   Vault de Obsidian                         Plugin Roadmap Lanes
   ┌───────────────────────────┐             ┌────────────────────────────────────┐
-  │ tareas/*.md (frontmatter)  │  índice     │ lee app.metadataCache               │
-  │ carriles.yaml              │ ──nativo──► │   + carriles.yaml / taxonomia.yaml  │
-  │ taxonomia.yaml             │             │       (vault.adapter.read)          │
+  │ roadmap/**/*.md            │  índice     │ lee app.metadataCache               │
+  │ roadmap/lanes.yaml         │ ──nativo──► │   + lanes.yaml / taxonomy.yaml      │
+  │ roadmap/taxonomy.yaml      │             │       (vault.adapter.read)          │
   └───────────────────────────┘             │            │                         │
             ▲                                │            ▼                         │
             │ editar un .md                  │   core: derivación de estados,       │
@@ -54,15 +54,15 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
                                              └────────────────────────────────────┘
 ```
 
-- **Fuente de datos:** el *frontmatter* de las tareas sale de `app.metadataCache` (sin parsear archivos a mano). `carriles.yaml` y `taxonomia.yaml` no son notas: se leen con `vault.adapter.read` y se cachean.
+- **Fuente de datos:** el *frontmatter* de las tareas sale de `app.metadataCache` (sin parsear archivos a mano). `lanes.yaml` y `taxonomy.yaml` no son notas: se leen con `vault.adapter.read` y se cachean.
 - **Reactividad:** el plugin se suscribe a `metadataCache.on("changed", …)` y `vault.on("modify", …)`; al cambiar un `.md` o un `.yaml`, re-renderiza. No hay paso de build.
 - **Core reutilizado:** la lógica del modelo (estados derivados, cálculo de solape, gates) se porta tal cual desde la web `v0.2.0`; lo que se reescribe es **de dónde salen los datos** y **dónde se pinta**.
 
 ## 6. Qué lee RL
 
-1. Las **tareas** — `.md` con *frontmatter* (§7.2).
-2. El **archivo de carriles** — `carriles.yaml`: qué carril y en qué orden (§7.7).
-3. El **doc de taxonomía** — `taxonomia.yaml`: áreas y zonas válidas (§7.6).
+1. Las **tareas** — cualquier `.md` dentro de la carpeta de roadmap, con *frontmatter* (§7.2).
+2. El **archivo de carriles** — `lanes.yaml`: qué carril y en qué orden (§7.7).
+3. El **doc de taxonomía** — `taxonomy.yaml`: áreas y zonas válidas (§7.6).
 
 ---
 
@@ -134,20 +134,20 @@ Es **MECE**: cada tarea cae en exactamente una. Los **contenedores** (tareas con
 
 ### 7.6 Áreas y zonas — taxonomía cerrada, no rutas
 
-- **`areas`** — clasificación **gruesa**, lista cerrada definida en `taxonomia.yaml`. Filtro y agrupación.
+- **`areas`** — clasificación **gruesa**, lista cerrada definida en `taxonomy.yaml`. Filtro y agrupación.
 - **`zonas`** — segundo nivel (subdivisión de las áreas). **No son rutas de archivos.** Son **las que "chocan"**: el **solape** entre dos tareas = intersección de sus `zonas`.
-- **Cerrada pero extensible:** una tarea sólo usa valores que **ya existen** en `taxonomia.yaml`; el doc se amplía editándolo a propósito.
+- **Cerrada pero extensible:** una tarea sólo usa valores que **ya existen** en `taxonomy.yaml`; el doc se amplía editándolo a propósito.
 - `areas`/`zonas` se dejan como **arrays planos** en el frontmatter (no wikilinks): Dataview los consulta igual, y no aportan al grafo de dependencias.
 
 ### 7.7 El archivo de carriles — orden y pertenencia
 
-El orden y el carril **no viven en la tarea**: viven en `carriles.yaml`, fuente única de "qué tarea, en qué carril, en qué orden". Reordenar = mover líneas acá.
+El orden y el carril **no viven en la tarea**: viven en `lanes.yaml`, fuente única de "qué tarea, en qué carril, en qué orden". Reordenar = mover líneas acá.
 
 ```yaml
-carriles:
-  A: { foco: Checkout y pagos,       worktree: main-app, cola: [FT-001, FT-002] }
-  B: { foco: Mejoras independientes, worktree: wt-side,  cola: [DT-011, INFRA-003, DT-020] }
-# Toda tarea que NO esté en ninguna cola = backlog. N carriles; la UI arranca con 2.
+lanes:
+  A: { focus: Checkout y pagos,       worktree: main-app, queue: [FT-001, FT-002] }
+  B: { focus: Mejoras independientes, worktree: wt-side,  queue: [DT-011, INFRA-003, DT-020] }
+# Toda tarea que NO esté en ninguna lista `queue` = backlog. N carriles; la UI arranca con 2.
 ```
 
 **Regla de orden (la lista manda; las dependencias sólo alertan):** RL **nunca reordena solo**. Si la lista pone una tarea antes que algo de lo que depende (sin cerrar), la marca **"fuera de turno"** y explica por qué. *"Lo próximo agarrable"* = la primera de la cola que esté **libre**.

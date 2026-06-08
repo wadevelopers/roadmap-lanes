@@ -1,0 +1,17 @@
+# Lanes for DemoApp.
+# Queue defines execution order; dependencies only mark "out of turn".
+# Any task not listed in a queue stays in backlog.
+
+lanes:
+  A:
+    focus: Checkout y pagos
+    worktree: main-app
+    queue: [FT-001, FT-002, ETAPA-B]
+  B:
+    focus: Mejoras independientes
+    worktree: wt-side
+    queue: [DT-011, INFRA-003, DT-020]
+  C:
+    focus: Registro y limpieza
+    worktree: wt-registro
+    queue: [DT-030, FT-003, INFRA-005]

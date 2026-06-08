@@ -56,6 +56,7 @@ export interface Tarea extends RawTarea {
 
 export interface TaxonomiaArea {
 	zonas?: string[];
+	zones?: string[];
 }
 
 export interface Taxonomia {
@@ -64,8 +65,10 @@ export interface Taxonomia {
 
 export interface CarrilInput {
 	foco?: string;
+	focus?: string;
 	worktree?: string;
 	cola?: string[];
+	queue?: string[];
 }
 
 export type CarrilesInput = Record<string, CarrilInput>;

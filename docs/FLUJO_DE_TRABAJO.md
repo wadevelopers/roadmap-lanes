@@ -32,26 +32,39 @@ El nombre del proyecto se toma del **nombre del vault** de Obsidian. Por ejemplo
 llama `demo-app`, el tablero muestra `Proyecto demo-app`. No hay selector de proyecto ni soporte
 para múltiples roadmaps dentro del mismo vault.
 
-La estructura esperada en la raíz del vault es:
+RL crea y usa una carpeta de roadmap dentro del vault. Por defecto se llama `roadmap`, y se puede
+cambiar en las settings nativas del plugin:
+
+`Settings → Community plugins → Roadmap Lanes → Roadmap folder`
+
+La estructura esperada por defecto es:
 
 ```text
 demo-app/
-├── tareas/
-│   ├── DT-001.md
-│   ├── FT-001.md
-│   └── INFRA-001.md
-├── carriles.yaml
-└── taxonomia.yaml
+└── roadmap/
+    ├── lanes.yaml
+    ├── taxonomy.yaml
+    ├── DT-001.md
+    ├── FT-001.md
+    └── notas/
+        └── INFRA-001.md
 ```
 
 RL lee:
 
-- `tareas/` para descubrir las unidades de trabajo.
-- `carriles.yaml` para ordenar tareas en carriles.
-- `taxonomia.yaml` para validar áreas y zonas.
+- todos los `.md` dentro de `roadmap/`, incluyendo subcarpetas, como unidades de trabajo;
+- `roadmap/lanes.yaml` para ordenar tareas en carriles;
+- `roadmap/taxonomy.yaml` para validar áreas y zonas.
+
+El plugin crea automáticamente la carpeta `roadmap/` y los archivos `lanes.yaml` /
+`taxonomy.yaml` si no existen. No crea una carpeta `tasks/`: si el usuario quiere organizar las
+tareas en subcarpetas, puede hacerlo dentro de `roadmap/`.
 
 Si se quiere trabajar con otro proyecto, se crea o abre otro vault de Obsidian. Usar varios
 proyectos dentro del mismo vault no forma parte del flujo soportado por ahora.
+
+La carpeta `roadmap/` debe reservarse para documentos de RL. Cualquier `.md` que esté dentro de esa
+carpeta se interpreta como una unidad de trabajo.
 
 ## Una unidad de trabajo = un archivo que madura
 
@@ -109,7 +122,7 @@ para agarrar. No se crea un documento aparte.
 
 ### 5. Ejecución (asignar a un carril)
 
-Cuando se decide ejecutarla, se agrega a la cola de un carril en `carriles.yaml`, en la posición
+Cuando se decide ejecutarla, se agrega a la cola de un carril en `roadmap/lanes.yaml`, en la posición
 elegida. Recién ahí RL muestra, para esa tarea: el **solape** con lo que hay en otros carriles, los
 **gates** (si depende de algo en otro carril), si está **fuera de turno**, y cuál es el **próximo
 agarrable**. *(VISION §7.7, §7.8)*
@@ -124,7 +137,7 @@ pendiente**, hay que **priorizar** contra otras tareas, o hay que **madurar**.
 
 | Índice maestro (a mano) | Roadmap Lanes (derivado / visual) |
 |---|---|
-| Lista de trabajo "en orden de ejecución" | `carriles.yaml` + el tablero |
+| Lista de trabajo "en orden de ejecución" | `roadmap/lanes.yaml` + el tablero |
 | Columna "Prerequisitos" | `depende_de` |
 | Semáforos cruzados (A→B entre carriles) | gates (derivados de `depende_de` entre carriles) |
 | "Absorbe X, Y…" | `absorbe` |

@@ -17,14 +17,18 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   - El plugin **normaliza** wikilink→id en un único punto (al leer del `metadataCache`).
   - `areas`/`zonas` quedan como **arrays planos** (no wikilinks): Dataview los consulta igual y no
     aportan al grafo de dependencias.
+- **Carpeta raíz configurable — ADOPTADO** (jun 2026). RL usa una carpeta dentro del vault para
+  todos sus archivos. Por defecto es `roadmap/`, configurable desde las settings nativas del plugin.
+  Dentro viven `lanes.yaml`, `taxonomy.yaml` y cualquier `.md` de tareas, incluyendo subcarpetas.
+  El plugin crea `roadmap/`, `lanes.yaml` y `taxonomy.yaml` si faltan, pero no crea una carpeta
+  `tasks/`.
 
 ## Pendientes
 
 ### Roadmap operativo post-port del core/tablero
 
-- **Settings del plugin.** Agregar `PluginSettingTab` y persistencia con `loadData`/`saveData` para:
-  carpeta de tareas, path de `carriles.yaml`, path de `taxonomia.yaml`, horas por día y modo
-  tiempo/orden. Esto elimina los defaults hardcodeados del demo.
+- **Settings adicionales del plugin.** Ya existe `PluginSettingTab` y persistencia con
+  `loadData`/`saveData` para `roadmapFolder`. Falta agregar horas por día y modo tiempo/orden.
 - **Modo expandir/contraer tiempo.** Implementar el switch Gantt/orden y la jornada configurable
   según `PLAN_expandir_contraer_tiempo.md`.
 - **Panel de detalle.** Mejorar acciones y navegación: abrir la nota original, resolver/abrir links

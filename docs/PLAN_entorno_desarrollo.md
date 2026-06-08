@@ -32,8 +32,8 @@ razonables; elegir una antes de ejecutar:
 
 ### 1. Portar el `demo-app`
 
-Copiar `examples/demo-app/` del repo `roadmap-lanes` a `examples/demo-app/` de este repo: las
-tareas (`tareas/*.md`), `carriles.yaml`, `taxonomia.yaml` y el `README.md`.
+Copiar/adaptar `examples/demo-app/` como vault de ejemplo: `roadmap/*.md`,
+`roadmap/lanes.yaml`, `roadmap/taxonomy.yaml` y el `README.md`.
 
 > Se porta **tal cual** (ids planos en las relaciones). La adaptación a **wikilinks**
 > (`padre: "[[EPIC-100]]"`) es parte del **plan del port del core**, donde se define la lectura de

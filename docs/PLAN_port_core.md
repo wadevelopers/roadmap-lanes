@@ -70,11 +70,11 @@ Copiar la lógica tal cual, tipando. Mantener las constantes `TIPOS`/`MADUREZ`/`
 derivaciones. **Sin cambios de comportamiento** — es un port, no un rediseño.
 
 ### 3. Capa de datos (`dataSource.ts`)
-- **Tareas:** recorrer los `.md` de la carpeta de tareas (configurable); por cada uno,
+- **Tareas:** recorrer los `.md` dentro de la carpeta de roadmap configurable; por cada uno,
   `metadataCache.getFileCache(file)` → `frontmatter` (campos planos) + `frontmatterLinks`
   (relaciones). Normalizar wikilink→id (decisión 1). Producir el array `tareas` con la misma forma
   que consumía `buildModel`.
-- **`taxonomia.yaml` / `carriles.yaml`:** no son notas → `vault.adapter.read()` + `js-yaml`.
+- **`taxonomy.yaml` / `lanes.yaml`:** no son notas → `vault.adapter.read()` + `js-yaml`.
 - Devolver `{ tareas, taxonomia, carriles }`.
 
 ### 4. Adaptar el `demo-app` a wikilinks (decisión 3)

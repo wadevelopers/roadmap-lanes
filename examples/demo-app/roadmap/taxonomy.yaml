@@ -1,0 +1,20 @@
+# Taxonomy for DemoApp: areas (level 1) and zones (level 2).
+# Closed: a task only uses values declared here.
+# Extensible: add a new category here before assigning it to tasks.
+
+areas:
+  backend:
+    description: Lógica de servidor y modelos de dominio
+    zones: [CheckoutService, ProductModel, ApiLayer, SearchService]
+  frontend:
+    description: Interfaz de usuario
+    zones: [CartUI, CheckoutUI, SearchUI]
+  pagos:
+    description: Integración con la pasarela de pago
+    zones: [PaymentGateway]
+  datos:
+    description: Esquema de base de datos y migraciones
+    zones: [ProductSchema, Migrations]
+  infra:
+    description: Tooling, build e integración continua
+    zones: [CI, Build]

@@ -83,9 +83,9 @@ function normalizeCarriles(carriles: CarrilesInput): CarrilesInput {
 	const result: CarrilesInput = {};
 	for (const [id, carril] of Object.entries(carriles)) {
 		result[id] = {
-			foco: carril.foco ?? "",
+			foco: carril.foco ?? carril.focus ?? "",
 			worktree: carril.worktree ?? "",
-			cola: normalizeStringList(carril.cola),
+			cola: normalizeStringList(carril.cola ?? carril.queue),
 		};
 	}
 	return result;
@@ -110,7 +110,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 	const areasValidas = new Set(Object.keys(input.taxonomia.areas || {}));
 	const zonasValidas = new Set<string>();
 	for (const area of Object.values(input.taxonomia.areas || {})) {
-		for (const zona of area.zonas || []) zonasValidas.add(zona);
+		for (const zona of area.zonas || area.zones || []) zonasValidas.add(zona);
 	}
 
 	const existe = (id: string): boolean => porId.has(id);

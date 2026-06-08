@@ -53,14 +53,22 @@ function normalizeRelation(value: unknown): string[] {
 		.map(normalizeWikilink);
 }
 
+function listMarkdownFiles(dir: string, prefix = ""): string[] {
+	return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+		const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+		const absolute = join(dir, entry.name);
+		if (entry.isDirectory()) return listMarkdownFiles(absolute, relative);
+		return entry.isFile() && entry.name.endsWith(".md") ? [relative] : [];
+	});
+}
+
 function loadDemo(): BuildModelInput {
 	const dir = join(process.cwd(), "examples", "demo-app");
-	const tareasDir = join(dir, "tareas");
-	const tareas = readdirSync(tareasDir)
-		.filter((file) => file.endsWith(".md"))
+	const roadmapDir = join(dir, "roadmap");
+	const tareas = listMarkdownFiles(roadmapDir)
 		.sort()
 		.map((file): RawTarea => {
-			const { fm, body } = splitFrontmatter(readFileSync(join(tareasDir, file), "utf8"), file);
+			const { fm, body } = splitFrontmatter(readFileSync(join(roadmapDir, file), "utf8"), file);
 			const data = (yaml.load(fm) as Record<string, unknown> | undefined) || {};
 			return {
 				...data,
@@ -68,19 +76,20 @@ function loadDemo(): BuildModelInput {
 				absorbe: normalizeRelation(data.absorbe),
 				depende_de: normalizeRelation(data.depende_de),
 				cuerpo: body,
-				_archivo: `tareas/${file}`,
+				_archivo: `roadmap/${file}`,
 			};
 		});
 
-	const taxonomia = yaml.load(readFileSync(join(dir, "taxonomia.yaml"), "utf8"));
-	const carrilesYaml = yaml.load(readFileSync(join(dir, "carriles.yaml"), "utf8")) as {
+	const taxonomia = yaml.load(readFileSync(join(roadmapDir, "taxonomy.yaml"), "utf8"));
+	const lanesYaml = yaml.load(readFileSync(join(roadmapDir, "lanes.yaml"), "utf8")) as {
+		lanes?: BuildModelInput["carriles"];
 		carriles?: BuildModelInput["carriles"];
 	};
 
 	return {
 		tareas,
 		taxonomia: (taxonomia as BuildModelInput["taxonomia"]) || { areas: {} },
-		carriles: carrilesYaml.carriles || {},
+		carriles: lanesYaml.lanes || lanesYaml.carriles || {},
 		horasPorDia: 8,
 	};
 }
@@ -155,7 +164,7 @@ describe("buildModel", () => {
 	test("fixture demo-app: válido y con derivaciones esperadas", () => {
 		const m = buildModel(loadDemo());
 		expect(m.errores).toEqual([]);
-		expect(m.tareas.get("DT-020")?.bloqueado).toBe(true);
+		expect(m.tareas.get("DT-020")?.bloqueado).toBe(false);
 		expect(m.tareas.get("FT-002")?.bloqueado).toBe(false);
 		expect(m.carriles.A.proximo).toBe("FT-002");
 		expect(m.carriles.B.proximo).toBe("DT-011");
@@ -169,16 +178,16 @@ describe("buildModel", () => {
 		const m = buildModel(loadDemo());
 		expect(m.gatesCruzados).toHaveLength(1);
 		expect(m.gatesCruzados[0]).toEqual({
-			de: "DT-020",
-			aQue: "FT-002",
+			de: "DT-011",
+			aQue: "FT-001",
 			carrilDe: "B",
 			carrilA: "A",
-			abierto: true,
+			abierto: false,
 		});
 
 		const s = m.solapeCarriles.find((item) => item.a === "A" && item.b === "B");
 		expect(s).toBeDefined();
 		expect(s?.comunes).toEqual(["CheckoutService"]);
-		expect(s?.pct).toBe(50);
+		expect(s?.pct).toBe(33);
 	});
 });

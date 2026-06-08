@@ -5,6 +5,10 @@ const STRINGS = {
 		openCommand: "Open roadmap lanes board",
 		openRibbon: "Open Roadmap Lanes",
 		loading: "Loading Roadmap Lanes...",
+		settingsTitle: "Roadmap Lanes",
+		roadmapFolderSetting: "Roadmap folder",
+		roadmapFolderDesc:
+			"Folder inside the vault where Roadmap Lanes stores lanes.yaml, taxonomy.yaml and task notes.",
 		errorTitle: "Model errors",
 		summary: "Summary",
 		project: "Project",
@@ -56,6 +60,10 @@ const STRINGS = {
 		openCommand: "Abrir tablero de carriles",
 		openRibbon: "Abrir Roadmap Lanes",
 		loading: "Cargando Roadmap Lanes...",
+		settingsTitle: "Roadmap Lanes",
+		roadmapFolderSetting: "Carpeta del roadmap",
+		roadmapFolderDesc:
+			"Carpeta dentro del vault donde Roadmap Lanes guarda lanes.yaml, taxonomy.yaml y las notas de tareas.",
 		errorTitle: "Errores del modelo",
 		summary: "Resumen",
 		project: "Proyecto",

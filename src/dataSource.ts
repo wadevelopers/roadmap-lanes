@@ -1,21 +1,74 @@
-import type { App, CachedMetadata, FrontmatterLinkCache, TFile } from "obsidian";
+import { normalizePath, type App, type CachedMetadata, type FrontmatterLinkCache, type TFile } from "obsidian";
 import * as yaml from "js-yaml";
 
 import type { BuildModelInput, CarrilesInput, RawTarea, Taxonomia } from "./types";
+import { DEFAULT_SETTINGS, normalizeRoadmapFolder } from "./settings";
 
 export interface RoadmapDataSourceOptions {
-	tareasFolder?: string;
-	carrilesPath?: string;
-	taxonomiaPath?: string;
+	roadmapFolder?: string;
 	horasPorDia?: number;
 }
 
 const DEFAULT_OPTIONS: Required<RoadmapDataSourceOptions> = {
-	tareasFolder: "tareas",
-	carrilesPath: "carriles.yaml",
-	taxonomiaPath: "taxonomia.yaml",
+	roadmapFolder: DEFAULT_SETTINGS.roadmapFolder,
 	horasPorDia: 8,
 };
+
+const LANES_FILENAME = "lanes.yaml";
+const TAXONOMY_FILENAME = "taxonomy.yaml";
+
+const DEFAULT_LANES = `# Roadmap Lanes lane order.
+# Tasks not listed in any queue stay in backlog.
+
+lanes:
+  A:
+    focus: Main work
+    worktree: main
+    queue: []
+  B:
+    focus: Parallel work
+    worktree: side
+    queue: []
+`;
+
+const DEFAULT_TAXONOMY = `# Roadmap Lanes taxonomy.
+# Add areas and zones before assigning them to tasks.
+
+areas: {}
+`;
+
+function resolveOptions(options: RoadmapDataSourceOptions = {}): Required<RoadmapDataSourceOptions> {
+	return {
+		roadmapFolder: normalizeRoadmapFolder(options.roadmapFolder ?? DEFAULT_OPTIONS.roadmapFolder),
+		horasPorDia: options.horasPorDia ?? DEFAULT_OPTIONS.horasPorDia,
+	};
+}
+
+function roadmapPath(options: Required<RoadmapDataSourceOptions>, file: string): string {
+	return normalizePath(`${options.roadmapFolder}/${file}`);
+}
+
+async function ensureFolder(app: App, folder: string): Promise<void> {
+	let current = "";
+	for (const part of folder.split("/")) {
+		current = current ? `${current}/${part}` : part;
+		if (!(await app.vault.adapter.exists(current))) await app.vault.createFolder(current);
+	}
+}
+
+async function ensureFile(app: App, path: string, contents: string): Promise<void> {
+	if (!(await app.vault.adapter.exists(path))) await app.vault.create(path, contents);
+}
+
+export async function ensureRoadmapStructure(
+	app: App,
+	options: RoadmapDataSourceOptions = {}
+): Promise<void> {
+	const resolved = resolveOptions(options);
+	await ensureFolder(app, resolved.roadmapFolder);
+	await ensureFile(app, roadmapPath(resolved, LANES_FILENAME), DEFAULT_LANES);
+	await ensureFile(app, roadmapPath(resolved, TAXONOMY_FILENAME), DEFAULT_TAXONOMY);
+}
 
 function basenameFromLink(link: string): string {
 	const clean = link.split("#")[0].replace(/\.md$/i, "");
@@ -97,8 +150,9 @@ export async function loadRoadmapData(
 	app: App,
 	options: RoadmapDataSourceOptions = {}
 ): Promise<BuildModelInput> {
-	const resolved = { ...DEFAULT_OPTIONS, ...options };
-	const folderPrefix = `${resolved.tareasFolder.replace(/\/$/, "")}/`;
+	const resolved = resolveOptions(options);
+	await ensureRoadmapStructure(app, resolved);
+	const folderPrefix = `${resolved.roadmapFolder}/`;
 	const files = app.vault
 		.getMarkdownFiles()
 		.filter((file) => file.path.startsWith(folderPrefix))
@@ -107,26 +161,28 @@ export async function loadRoadmapData(
 	const tareas = await Promise.all(
 		files.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
 	);
-	const taxonomia = await loadYaml<Taxonomia>(app, resolved.taxonomiaPath, { areas: {} });
-	const carrilesYaml = await loadYaml<{ carriles?: CarrilesInput }>(app, resolved.carrilesPath, {
-		carriles: {},
+	const taxonomia = await loadYaml<Taxonomia>(app, roadmapPath(resolved, TAXONOMY_FILENAME), {
+		areas: {},
 	});
+	const lanesYaml = await loadYaml<{ lanes?: CarrilesInput; carriles?: CarrilesInput }>(
+		app,
+		roadmapPath(resolved, LANES_FILENAME),
+		{
+			lanes: {},
+		}
+	);
 
 	return {
 		projectName: app.vault.getName(),
 		tareas,
 		taxonomia,
-		carriles: carrilesYaml.carriles || {},
+		carriles: lanesYaml.lanes || lanesYaml.carriles || {},
 		horasPorDia: resolved.horasPorDia,
 	};
 }
 
 export function isRoadmapSourcePath(path: string, options: RoadmapDataSourceOptions = {}): boolean {
-	const resolved = { ...DEFAULT_OPTIONS, ...options };
-	const folderPrefix = `${resolved.tareasFolder.replace(/\/$/, "")}/`;
-	return (
-		path.startsWith(folderPrefix) ||
-		path === resolved.carrilesPath ||
-		path === resolved.taxonomiaPath
-	);
+	const resolved = resolveOptions(options);
+	const folderPrefix = `${resolved.roadmapFolder}/`;
+	return path === resolved.roadmapFolder || path.startsWith(folderPrefix);
 }
