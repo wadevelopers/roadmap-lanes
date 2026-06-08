@@ -6,7 +6,7 @@ madurez: ejecutable
 estado: pendiente
 duracion: 2d
 areas: [infra]
-zonas: [CI, Build]
+zonas: [CI]
 padre:
 absorbe: []
 depende_de: []

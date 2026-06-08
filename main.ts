@@ -29,10 +29,12 @@ class RoadmapLanesView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
+		this.containerEl.addClass("roadmap-lanes-leaf");
 		await this.renderRoadmap();
 	}
 
 	async onClose(): Promise<void> {
+		this.containerEl.removeClass("roadmap-lanes-leaf");
 		if (this.renderRequest !== null) {
 			window.clearTimeout(this.renderRequest);
 			this.renderRequest = null;

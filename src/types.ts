@@ -97,9 +97,11 @@ export interface BuildModelInput {
 	taxonomia: Taxonomia;
 	carriles: CarrilesInput;
 	horasPorDia?: number;
+	projectName?: string;
 }
 
 export interface Modelo {
+	projectName?: string;
 	tareas: Map<string, Tarea>;
 	carriles: Record<string, CarrilModel>;
 	taxonomia: Taxonomia;

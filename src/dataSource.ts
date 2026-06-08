@@ -113,6 +113,7 @@ export async function loadRoadmapData(
 	});
 
 	return {
+		projectName: app.vault.getName(),
 		tareas,
 		taxonomia,
 		carriles: carrilesYaml.carriles || {},

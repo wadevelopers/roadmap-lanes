@@ -22,6 +22,37 @@ Ese índice **es el síntoma del problema**, no la solución. Concentra a mano t
 Con RL no hay índice maestro: hay **un archivo por unidad de trabajo** + un **archivo de carriles**,
 y el "índice" lo arma el tablero (vivo) y, si se quiere una tabla, Dataview.
 
+## Cómo configurar Obsidian para RL
+
+En esta versión, RL asume una regla simple:
+
+**1 vault de Obsidian = 1 proyecto Roadmap Lanes.**
+
+El nombre del proyecto se toma del **nombre del vault** de Obsidian. Por ejemplo, si el vault se
+llama `demo-app`, el tablero muestra `Proyecto demo-app`. No hay selector de proyecto ni soporte
+para múltiples roadmaps dentro del mismo vault.
+
+La estructura esperada en la raíz del vault es:
+
+```text
+demo-app/
+├── tareas/
+│   ├── DT-001.md
+│   ├── FT-001.md
+│   └── INFRA-001.md
+├── carriles.yaml
+└── taxonomia.yaml
+```
+
+RL lee:
+
+- `tareas/` para descubrir las unidades de trabajo.
+- `carriles.yaml` para ordenar tareas en carriles.
+- `taxonomia.yaml` para validar áreas y zonas.
+
+Si se quiere trabajar con otro proyecto, se crea o abre otro vault de Obsidian. Usar varios
+proyectos dentro del mismo vault no forma parte del flujo soportado por ahora.
+
 ## Una unidad de trabajo = un archivo que madura
 
 Cada tarea (DT, FT, INFRA, épica…) es **su propio `.md`**, y **el mismo archivo evoluciona** a lo

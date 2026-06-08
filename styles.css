@@ -31,6 +31,14 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	box-sizing: border-box;
 }
 
+.roadmap-lanes-leaf .view-header {
+	display: none;
+}
+
+.roadmap-lanes-leaf .view-content {
+	padding-top: 0;
+}
+
 .roadmap-lanes-view .rl-muted {
 	color: var(--text-muted);
 }
@@ -43,9 +51,6 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
-	position: sticky;
-	top: 0;
-	z-index: 6;
 }
 
 .roadmap-lanes-view .rl-topbar h2 {
@@ -68,8 +73,8 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	position: sticky;
-	top: 54px;
-	z-index: 5;
+	top: 0;
+	z-index: 6;
 }
 
 .roadmap-lanes-view .rl-search {
@@ -190,35 +195,18 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	cursor: not-allowed;
 }
 
-.roadmap-lanes-view .rl-errors {
-	margin: 12px 16px;
-	padding: 8px 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-left: 3px solid var(--rl-state-done);
-	border-radius: 6px;
-	background: var(--background-secondary);
-}
-
-.roadmap-lanes-view .rl-errors.has-errors {
-	border-left-color: var(--rl-state-blocked);
-	color: var(--text-error);
-}
-
-.roadmap-lanes-view .rl-errors h3 {
-	margin: 0 0 6px;
-	font-size: 13px;
-}
-
-.roadmap-lanes-view .rl-errors p,
-.roadmap-lanes-view .rl-errors ul {
-	margin: 0;
-}
-
 .roadmap-lanes-view .rl-coordination {
+	container: rl-coordination / inline-size;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	gap: 12px;
 	padding: 0 16px 12px;
+}
+
+@container rl-coordination (max-width: 863px) {
+	.roadmap-lanes-view .rl-errors {
+		grid-column: 1 / -1;
+	}
 }
 
 .roadmap-lanes-view .rl-coord-block {
@@ -250,6 +238,10 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-coord-item strong {
 	font-variant-numeric: tabular-nums;
+}
+
+.roadmap-lanes-view .rl-error-item {
+	border-left-color: var(--rl-state-blocked);
 }
 
 .roadmap-lanes-view .rl-solape-border-0 {
@@ -436,18 +428,27 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	white-space: nowrap;
 }
 
-.roadmap-lanes-view .rl-card-meta span {
+.roadmap-lanes-view .rl-meta-icon {
+	display: inline-flex;
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-meta-icon svg {
+	display: block;
+	width: 16px;
+	height: 16px;
+}
+
+.roadmap-lanes-view .rl-meta-ids {
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
-}
-
-.roadmap-lanes-view .rl-maturity {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	padding: 1px 4px;
-}
-
-.roadmap-lanes-view .rl-overlap-pill {
+	white-space: nowrap;
 	font-family: var(--font-monospace);
 }
 
@@ -528,8 +529,13 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-container-bar {
+	position: relative;
+	display: block;
+	align-self: stretch;
 	flex: 0 0 30px;
 	width: 30px;
+	height: auto;
+	min-height: 0;
 	border: 1px solid var(--background-modifier-border);
 	border-left: 4px solid var(--rl-state-waiting);
 	border-radius: 6px;
@@ -537,10 +543,23 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	color: var(--text-muted);
 	cursor: pointer;
 	overflow: hidden;
-	padding: 8px 0;
+	padding: 0;
+}
+
+.roadmap-lanes-view .rl-container-bar-text {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 11px 0;
 	writing-mode: vertical-rl;
-	text-overflow: ellipsis;
+	overflow: hidden;
 	white-space: nowrap;
+	text-overflow: ellipsis;
+	text-align: start;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .roadmap-lanes-view .rl-container-bar:hover {

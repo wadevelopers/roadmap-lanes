@@ -6,7 +6,7 @@ madurez: esqueleto
 estado: pendiente
 duracion: 3d
 areas: [backend]
-zonas: [ProductModel, ApiLayer]
+zonas: [ProductModel]
 padre: "[[DT-010]]"
 absorbe: []
 depende_de: ["[[ETAPA-A]]"]

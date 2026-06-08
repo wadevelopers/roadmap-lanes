@@ -6,7 +6,7 @@ carriles:
   A:
     foco: Checkout y pagos
     worktree: main-app
-    cola: [FT-001, FT-002]
+    cola: [FT-001, FT-002, ETAPA-B]
   B:
     foco: Mejoras independientes
     worktree: wt-side

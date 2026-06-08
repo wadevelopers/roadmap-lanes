@@ -298,6 +298,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 	}
 
 	return {
+		projectName: input.projectName,
 		tareas: porId,
 		carriles: carrilesModel,
 		taxonomia: input.taxonomia,
