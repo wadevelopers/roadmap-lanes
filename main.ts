@@ -1,22 +1,19 @@
-import { Plugin, ItemView, WorkspaceLeaf } from "obsidian";
+import { Plugin, ItemView, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+
+import { buildModel } from "./src/buildModel";
+import { isRoadmapSourcePath, loadRoadmapData } from "./src/dataSource";
+import { createTranslator, type Translator } from "./src/i18n";
+import { renderLoading, renderModel } from "./src/render";
 
 export const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
 
-/**
- * Vista del tablero de carriles.
- *
- * Por ahora es un placeholder. La migración porta aquí:
- *  - el core (derivación de estados, solape, gates) desde `src/buildModel.js`
- *    de la web standalone (repo `roadmap-lanes`, congelado en v0.2.0), y
- *  - el render del tablero (desde `web/tablero.js` + `web/tablero.css`).
- *
- * A diferencia de la web, los datos NO salen de un `datos.js` precompilado:
- * salen del índice nativo de Obsidian (`app.metadataCache`), que se mantiene
- * solo y se actualiza al guardar un `.md` — sin paso de build.
- */
 class RoadmapLanesView extends ItemView {
-	constructor(leaf: WorkspaceLeaf) {
+	private readonly translate: Translator;
+	private renderRequest: number | null = null;
+
+	constructor(leaf: WorkspaceLeaf, translate: Translator) {
 		super(leaf);
+		this.translate = translate;
 	}
 
 	getViewType(): string {
@@ -32,42 +29,57 @@ class RoadmapLanesView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		const root = this.contentEl;
-		root.empty();
-		root.addClass("roadmap-lanes-view");
-		root.createEl("h2", { text: "Roadmap Lanes" });
-		root.createEl("p", {
-			cls: "rl-placeholder",
-			text: "Scaffold del plugin listo. Aquí se renderiza el tablero de carriles.",
-		});
+		await this.renderRoadmap();
 	}
 
 	async onClose(): Promise<void> {
-		// Sin recursos que liberar todavía.
+		if (this.renderRequest !== null) {
+			window.clearTimeout(this.renderRequest);
+			this.renderRequest = null;
+		}
+	}
+
+	queueRender(): void {
+		if (this.renderRequest !== null) window.clearTimeout(this.renderRequest);
+		this.renderRequest = window.setTimeout(() => {
+			this.renderRequest = null;
+			void this.renderRoadmap();
+		}, 100);
+	}
+
+	private async renderRoadmap(): Promise<void> {
+		const root = this.contentEl;
+		renderLoading(root, this.translate);
+		const data = await loadRoadmapData(this.app);
+		const model = buildModel(data);
+		renderModel(root, model, this.translate);
 	}
 }
 
 export default class RoadmapLanesPlugin extends Plugin {
+	private translate: Translator = createTranslator();
+
 	async onload(): Promise<void> {
+		this.translate = createTranslator();
 		this.registerView(
 			VIEW_TYPE_ROADMAP,
-			(leaf) => new RoadmapLanesView(leaf)
+			(leaf) => new RoadmapLanesView(leaf, this.translate)
 		);
 
-		this.addRibbonIcon("columns-3", "Abrir Roadmap Lanes", () => {
+		this.addRibbonIcon("columns-3", this.translate("openRibbon"), () => {
 			void this.activateView();
 		});
 
 		this.addCommand({
 			id: "open-roadmap-lanes",
-			name: "Abrir tablero de carriles",
+			name: this.translate("openCommand"),
 			callback: () => void this.activateView(),
 		});
+
+		this.registerRoadmapEvents();
 	}
 
-	onunload(): void {
-		// Obsidian cierra las hojas de la vista registrada al desactivar el plugin.
-	}
+	onunload(): void {}
 
 	async activateView(): Promise<void> {
 		const { workspace } = this.app;
@@ -77,5 +89,27 @@ export default class RoadmapLanesPlugin extends Plugin {
 			await leaf.setViewState({ type: VIEW_TYPE_ROADMAP, active: true });
 		}
 		await workspace.revealLeaf(leaf);
+	}
+
+	private registerRoadmapEvents(): void {
+		const onFileChange = (file: TAbstractFile) => {
+			if (isRoadmapSourcePath(file.path)) this.refreshOpenViews();
+		};
+
+		this.registerEvent(this.app.vault.on("modify", onFileChange));
+		this.registerEvent(this.app.vault.on("create", onFileChange));
+		this.registerEvent(this.app.vault.on("delete", onFileChange));
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file) => {
+				if (isRoadmapSourcePath(file.path)) this.refreshOpenViews();
+			})
+		);
+	}
+
+	private refreshOpenViews(): void {
+		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_ROADMAP)) {
+			const view = leaf.view;
+			if (view instanceof RoadmapLanesView) view.queueRender();
+		}
 	}
 }

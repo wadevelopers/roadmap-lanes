@@ -25,6 +25,7 @@ main.js
 
 # Datos locales del plugin en el vault
 data.json
+examples/demo-app/.obsidian/
 
 # Capturas y transcritos con prefijo de fecha ISO (YYYY-MM-DD...)
 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]*

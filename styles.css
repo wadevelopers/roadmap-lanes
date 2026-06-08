@@ -12,6 +12,67 @@ para integrarse con el tema activo (claro/oscuro) en vez de definir los suyos.
 	padding: 12px 16px;
 }
 
-.roadmap-lanes-view .rl-placeholder {
+.roadmap-lanes-view .rl-muted {
 	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-section {
+	margin-block: 18px;
+}
+
+.roadmap-lanes-view .rl-errors {
+	border-left: 3px solid var(--text-error);
+	padding-left: 12px;
+	color: var(--text-error);
+}
+
+.roadmap-lanes-view .rl-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 8px;
+}
+
+.roadmap-lanes-view .rl-stat-grid > div,
+.roadmap-lanes-view .rl-lane {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 8px 10px;
+	background: var(--background-secondary);
+}
+
+.roadmap-lanes-view .rl-lane-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 10px;
+}
+
+.roadmap-lanes-view .rl-lane h4 {
+	margin: 0 0 6px;
+}
+
+.roadmap-lanes-view .rl-lane p {
+	margin: 4px 0;
+	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-compact-list {
+	margin-block: 0;
+}
+
+.roadmap-lanes-view .rl-task-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.roadmap-lanes-view .rl-task-table th,
+.roadmap-lanes-view .rl-task-table td {
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 6px 8px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.roadmap-lanes-view .rl-task-table th {
+	color: var(--text-muted);
+	font-weight: 600;
 }

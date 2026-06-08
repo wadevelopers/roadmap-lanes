@@ -8,7 +8,7 @@
 > Depende de: el entorno de desarrollo ([`PLAN_entorno_desarrollo.md`](PLAN_entorno_desarrollo.md))
 > para poder verlo en Obsidian.
 
-## Estado: esqueleto (a revisar antes de ejecutar)
+## Estado: implementado como salida mínima
 
 ## Qué se mantiene y qué cambia
 
@@ -22,11 +22,11 @@ El core de la web `v0.2.0` se parte en dos responsabilidades que ya estaban sepa
 | `build.js` (genera `datos.js`) | **Desaparece.** No hay build de datos: el `metadataCache` es la fuente viva. |
 
 La lógica de `buildModel` (indexar por id, validar enums/áreas/zonas/relaciones, derivar `hijos`,
-`desbloquea`, `absorbidaPor`, `esContenedor`, `diasEfectivos`, estados visuales, `solapeCarriles`,
-`gatesCruzados`) **no cambia** — opera sobre `{ tareas, taxonomia, carriles }` planos. Lo único que
-cambia es **de dónde sale ese input**.
+`desbloquea`, `absorbidaPor`, `esContenedor`, `horasEfectivas`, estados visuales,
+`solapeCarriles`, `gatesCruzados`) se porta a TypeScript y se adapta al contrato del plugin:
+`duracion` con unidad (`5d`, `4h`) reemplaza al `dias` de la web.
 
-## Decisiones técnicas (a confirmar)
+## Decisiones técnicas aplicadas
 
 1. **Normalización wikilink → id.** Las relaciones (`padre`, `depende_de`, `absorbe`) son wikilinks
    (`"[[EPIC-100]]"`). Dos formas de obtener el id destino:
@@ -36,12 +36,11 @@ cambia es **de dónde sale ese input**.
    - **Convención asumida:** el `id` de una tarea = nombre de su archivo (`FT-001.md` → `id: FT-001`),
      así `link` ya **es** el id. Si en el futuro divergen, se resuelve el link al `TFile` con
      `metadataCache.getFirstLinkpathDest()` y se lee su `frontmatter.id`. El plan asume la convención.
-2. **Test runner para TS.** El core es lógica pura sin Obsidian → testeable aislado. Opciones:
-   **vitest** (recomendado, rápido, TS nativo) o `node --test` + `tsx`. Se elige y se agrega como
-   devDependency.
+2. **Test runner para TS.** El core es lógica pura sin Obsidian → testeable aislado. Se usa
+   **Vitest**, con `.obsidian/` excluido para no duplicar tests por el symlink del vault de prueba.
 3. **Adaptar el `demo-app` a wikilinks.** Para probar el core con relaciones reales, los `.md` del
-   demo pasan de `padre: EPIC-100` a `padre: "[[EPIC-100]]"` (y `depende_de`, `absorbe`). Se hace
-   en este plan (es donde se ejerce la lectura de relaciones).
+   demo pasan de `padre: EPIC-100` a `padre: "[[EPIC-100]]"` (y `depende_de`, `absorbe`). En el
+   mismo cambio, `dias` pasa a `duracion`.
 
 ## Estructura de archivos (nueva)
 
@@ -50,6 +49,7 @@ src/
 ├── types.ts        # interfaces: RawTarea, Tarea, Modelo, Carriles, Taxonomia
 ├── buildModel.ts   # la lógica pura portada de buildModel.js (tipada)
 ├── dataSource.ts   # metadataCache + vault.read(yaml) + normalización wikilink→id → input de buildModel
+├── i18n.ts         # traducciones mínimas en inglés/español
 └── render.ts       # (mínimo por ahora) volcado del modelo en el ItemView para verificar
 test/
 └── buildModel.test.ts   # port de los tests, fixtures en memoria (sin Obsidian)
@@ -62,7 +62,7 @@ test/
 ### 1. Tipos (`types.ts`)
 Definir las interfaces del modelo a partir de los campos reales (id, titulo, tipo, madurez, estado,
 duracion, areas, zonas, padre, absorbe, depende_de + derivados: hijos, desbloquea, absorbidaPor,
-esContenedor, diasEfectivos, estadoVisual, esperaIds, carril, posicion). Más `Modelo`,
+esContenedor, horasEfectivas, estadoVisual, esperaIds, carril, posicion). Más `Modelo`,
 `Carriles`, `Taxonomia`.
 
 ### 2. Portar `buildModel.js` → `buildModel.ts`
@@ -78,8 +78,8 @@ derivaciones. **Sin cambios de comportamiento** — es un port, no un rediseño.
 - Devolver `{ tareas, taxonomia, carriles }`.
 
 ### 4. Adaptar el `demo-app` a wikilinks (decisión 3)
-Editar los `.md` del demo: relaciones a `"[[id]]"`. Verificar en Obsidian que el grafo/backlinks
-los reconocen (cierra de paso la verificación de formato).
+Editar los `.md` del demo: relaciones a `"[[id]]"` y `duracion` con unidad. Verificar en Obsidian
+que el grafo/backlinks reconocen los wikilinks (cierra de paso la verificación de formato).
 
 ### 5. Tests (`buildModel.test.ts`)
 Portar `test/buildModel.test.js` de la web (10 tests) a TS, con fixtures en memoria (no tocan
