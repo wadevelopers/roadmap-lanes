@@ -262,7 +262,7 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Tarea, filtro
 			"data-visible": isVisibleTask(task, filtros) ? "true" : "false",
 		},
 	});
-	card.style.minHeight = `${alturaCard(task, ctx.modelo)}px`;
+	card.style.height = `${alturaCard(task, ctx.modelo)}px`;
 
 	const head = card.createEl("div", { cls: "rl-card-head" });
 	head.createEl("span", { cls: "rl-task-id", text: task.id });
