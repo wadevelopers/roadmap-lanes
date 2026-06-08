@@ -15,6 +15,7 @@ interface RenderContext {
 	modelo: Modelo;
 	t: Translator;
 	detailPanelWidth: number;
+	detailHistory: string[];
 	setDetailPanelWidth?: (width: number) => void;
 }
 
@@ -61,6 +62,7 @@ const DETAIL_PANEL_VIEWPORT_MARGIN_PX = 32;
 const columnResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
 type CardIcon = "nota" | "esqueleto" | "ejecutable" | "absorbe" | "solape";
+type DetailIcon = "arrow-left" | "x";
 
 const CARD_ICONS: Record<CardIcon, string> = {
 	nota: '<svg viewBox="0 0 220 220" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="m65.21 130.22c-1.1 3.45-3.39 12.69-5.1 20.53-1.71 7.84-3.11 15.15-3.11 16.25 0 1.78 0.47 1.93 4.25 1.4 2.34-0.33 12.13-2.58 21.75-5 9.63-2.43 17.73-4.64 18-4.92 0.28-0.29-1.29-2.42-3.48-4.75-2.2-2.33-8.72-9.1-14.5-15.05-5.79-5.95-11.71-11.7-13.17-12.78l-2.64-1.96zm-33.71-92.13c-2.88 0.49-6.7 2.1-9 3.78-2.2 1.62-5.8 5.49-8 8.6l-4 5.67v130.36c4.11 6.97 7.04 10.54 9.15 12.42 2.12 1.89 5.76 4.25 8.1 5.25 3.98 1.71 8.19 1.81 68 1.58l63.75-0.25c6.97-4.13 10.16-6.6 11.58-8.16 1.42-1.56 3.67-4.64 5-6.84 2.41-3.99 2.42-4.12 2.68-36.5 0.23-29.88 0.11-32.65-1.5-34.28-0.97-0.99-2.44-1.79-3.26-1.79-0.83 0-2.4 0.96-3.5 2.14-1.88 2.01-2.03 3.89-2.5 31.78-0.46 27.12-0.67 29.98-2.5 33.52-1.1 2.13-3.58 5.05-5.5 6.5l-3.5 2.63c-100.46 0.44-122.89 0.18-124.5-0.47-1.38-0.56-4.08-2.62-6-4.58-3.2-3.26-3.56-4.24-4.18-11.26-0.38-4.23-0.71-31.32-0.75-60.19-0.04-35.53 0.3-53.8 1.05-56.5 0.61-2.2 2.06-5.18 3.23-6.63 1.17-1.44 3.7-3.41 5.63-4.38 3.08-1.53 8.02-1.83 39.73-2.37 30.18-0.52 36.48-0.87 37.85-2.12 1.11-1.02 1.44-2.38 1.04-4.25-0.37-1.67-1.59-3.15-3.1-3.75-1.52-0.61-15.79-0.96-36.25-0.88-18.57 0.06-36 0.5-38.75 0.97zm81.49 37.4l-39.49 39.5c24.8 24.91 33.23 33.01 34.75 34.08l2.75 1.93c54.43-53.86 71.98-71.64 74.11-74.25l3.89-4.75c-27.52-27.94-35.73-36.04-36.01-36.03-0.28 0.02-18.28 17.8-40 39.52zm60.51-58.98c-1.65 0.8-5.25 3.72-8 6.49l-5 5.02c24.8 24.89 33.26 33.1 34.81 34.3l2.82 2.18c7.41-7.83 10.27-12.18 11.32-15 1.62-4.37 1.69-5.51 0.57-9-0.9-2.79-4.05-6.77-10.4-13.16-5.02-5.04-10.81-9.87-12.87-10.75-2.07-0.88-5.22-1.58-7-1.57-1.79 0.01-4.6 0.68-6.25 1.49z"/></svg>',
@@ -69,6 +71,39 @@ const CARD_ICONS: Record<CardIcon, string> = {
 	absorbe: '<svg viewBox="0 0 220 220" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="m120.75 9.08c8.39-0.05 15.91 0.48 20.5 1.45 3.99 0.84 9.95 2.47 13.25 3.62 3.3 1.15 9.15 3.66 13 5.57 3.85 1.91 9.7 5.39 13 7.74 3.3 2.34 9.05 7.36 12.78 11.15 5.39 5.48 6.77 7.51 6.74 9.89-0.03 2.58-4.04 7.01-28.51 31.5-15.67 15.68-28.48 29.17-28.47 30 0.01 0.83 0.9 2.85 1.97 4.5 1.07 1.65 13.88 14.93 28.47 29.5 22.94 22.91 26.52 26.91 26.52 29.5 0 2.43-1.47 4.41-7.75 10.45-4.26 4.09-10.68 9.32-14.25 11.62-3.57 2.29-8.75 5.3-11.5 6.69-2.75 1.38-9.05 3.86-14 5.51-5.12 1.71-13.74 3.57-20 4.31-8.78 1.05-13.17 1.07-21.75 0.12-5.91-0.66-14.46-2.38-19-3.82-4.54-1.44-11.4-4.2-15.25-6.13-3.85-1.94-9.7-5.33-13-7.54-3.3-2.2-9.83-7.88-14.52-12.61-4.93-4.98-10.73-12.18-13.77-17.1-2.88-4.68-6.64-11.88-8.34-16-1.71-4.12-3.94-11.32-4.96-16-1.31-5.96-1.87-12.54-1.87-22 0-9.46 0.56-16.04 1.87-22 1.02-4.67 3.34-12.1 5.15-16.5 1.8-4.4 5.12-11.02 7.36-14.72 2.24-3.69 6.61-9.9 9.7-13.8 3.09-3.9 8.49-9.27 12-11.93 3.51-2.67 9.3-6.62 12.88-8.78 3.58-2.16 10.1-5.41 14.5-7.22 4.4-1.81 11.6-4.1 16-5.08q8-1.8 21.25-1.89zm-2.63 26.89c-1.31 0.46-3.74 2.34-5.39 4.18-1.66 1.84-3.4 4.36-3.87 5.6-0.47 1.24-0.85 4.39-0.84 7q0.02 4.75 2.39 8.75c1.31 2.2 4.11 5 6.23 6.22 2.56 1.47 5.54 2.22 8.86 2.22 3.53 0.01 6.25-0.71 9.25-2.46 2.87-1.68 4.89-3.86 6.24-6.73 1.09-2.34 1.99-5.94 2-8 0-2.06-0.47-4.99-1.05-6.5-0.59-1.51-2.28-4.04-3.75-5.62-1.48-1.58-4.15-3.5-5.94-4.25-1.79-0.76-5.16-1.35-7.5-1.32-2.34 0.04-5.32 0.44-6.63 0.91z"/></svg>',
 	solape: '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="nonzero" aria-hidden="true"><path d="M9.5,2 C12.8843427,2 15.7451256,4.24162622 16.678598,7.32112804 C19.7583738,8.25487439 22,11.1156573 22,14.5 C22,18.6421356 18.6421356,22 14.5,22 C11.1156573,22 8.25487439,19.7583738 7.32140198,16.678872 C4.24162622,15.7451256 2,12.8843427 2,9.5 C2,5.35786438 5.35786438,2 9.5,2 Z M16.9857715,9.0375344 L16.9961464,9.25726895 L17,9.5 C17,13.6421356 13.6421356,17 9.5,17 C9.34497743,17 9.19105338,16.9952967 9.03836276,16.986025 C9.98247617,19.0589393 12.0729492,20.5 14.5,20.5 C17.8137085,20.5 20.5,17.8137085 20.5,14.5 C20.5,12.0729492 19.0589393,9.98247617 16.9857715,9.0375344 Z M9.5,3.5 C6.1862915,3.5 3.5,6.1862915 3.5,9.5 C3.5,11.9270508 4.94106067,14.0175238 7.01422848,14.9624656 L7.00385357,14.7427311 L7,14.5 C7,10.3578644 10.3578644,7 14.5,7 C14.6550226,7 14.8089466,7.00470332 14.9616372,7.01397504 C14.0175238,4.94106067 11.9270508,3.5 9.5,3.5 Z"/></svg>',
 };
+
+function appendDetailIcon(parent: HTMLElement, icon: DetailIcon): void {
+	const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.setAttribute("class", "rl-detail-icon");
+	svg.setAttribute("viewBox", "0 0 24 24");
+	svg.setAttribute("fill", "none");
+	svg.setAttribute("stroke", "currentColor");
+	svg.setAttribute("stroke-width", "2");
+	svg.setAttribute("stroke-linecap", "round");
+	svg.setAttribute("stroke-linejoin", "round");
+	svg.setAttribute("aria-hidden", "true");
+
+	const appendLine = (x1: string, y1: string, x2: string, y2: string) => {
+		const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		line.setAttribute("x1", x1);
+		line.setAttribute("y1", y1);
+		line.setAttribute("x2", x2);
+		line.setAttribute("y2", y2);
+		svg.appendChild(line);
+	};
+
+	if (icon === "arrow-left") {
+		appendLine("19", "12", "5", "12");
+		const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+		polyline.setAttribute("points", "12 19 5 12 12 5");
+		svg.appendChild(polyline);
+	} else {
+		appendLine("18", "6", "6", "18");
+		appendLine("6", "6", "18", "18");
+	}
+
+	parent.appendChild(svg);
+}
 
 function formatHours(hours: number): string {
 	return Number.isInteger(hours) ? `${hours}` : `${hours.toFixed(1)}`;
@@ -662,12 +697,46 @@ function renderBoard(ctx: RenderContext, parent: HTMLElement, filtros: Filtros):
 	renderColumn(ctx, board, "hecho", ctx.t("done"), `${done.length}`, done, filtros);
 }
 
-function renderRelation(parent: HTMLElement, label: string, ids: string[]): void {
+function openLinkedDetail(ctx: RenderContext, current: Tarea, id: string): void {
+	const target = ctx.modelo.tareas.get(id);
+	if (!target || target.id === current.id) return;
+	ctx.detailHistory.push(current.id);
+	void openDetail(ctx, target, { keepHistory: true });
+}
+
+function openPreviousDetail(ctx: RenderContext): void {
+	while (ctx.detailHistory.length > 0) {
+		const previousId = ctx.detailHistory.pop();
+		const previous = previousId ? ctx.modelo.tareas.get(previousId) : null;
+		if (previous) {
+			void openDetail(ctx, previous, { keepHistory: true });
+			return;
+		}
+	}
+}
+
+function renderTaskIdLink(ctx: RenderContext, parent: HTMLElement, current: Tarea, id: string): void {
+	if (!ctx.modelo.tareas.has(id) || id === current.id) {
+		parent.createEl("code", { text: id });
+		return;
+	}
+	const link = parent.createEl("a", {
+		cls: "rl-detail-task-link",
+		text: id,
+		attr: { href: "#" },
+	});
+	link.addEventListener("click", (event) => {
+		event.preventDefault();
+		openLinkedDetail(ctx, current, id);
+	});
+}
+
+function renderRelation(ctx: RenderContext, parent: HTMLElement, current: Tarea, label: string, ids: string[]): void {
 	if (ids.length === 0) return;
 	const row = parent.createEl("div", { cls: "rl-detail-rel" });
 	row.createEl("span", { text: label });
 	const values = row.createEl("div");
-	for (const id of ids) values.createEl("code", { text: id });
+	for (const id of ids) renderTaskIdLink(ctx, values, current, id);
 }
 
 function clampDetailPanelWidth(width: number): number {
@@ -725,7 +794,12 @@ function setupDetailPanelResize(ctx: RenderContext, panel: HTMLElement): void {
 	});
 }
 
-async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
+async function openDetail(
+	ctx: RenderContext,
+	task: Tarea,
+	options: { keepHistory?: boolean } = {}
+): Promise<void> {
+	if (!options.keepHistory) ctx.detailHistory = [];
 	const existing = ctx.root.querySelector<HTMLElement>(".rl-detail-layer");
 	existing?.remove();
 
@@ -737,14 +811,26 @@ async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 	const panel = layer.createEl("aside", { cls: "rl-detail-panel" });
 	setupDetailPanelResize(ctx, panel);
 	const head = panel.createEl("header", { cls: "rl-detail-head" });
-	const titleWrap = head.createEl("div");
+	const titleGroup = head.createEl("div", { cls: "rl-detail-title-group" });
+	const back = titleGroup.createEl("button", {
+		cls: "rl-detail-nav-button",
+		attr: {
+			type: "button",
+			"aria-label": ctx.t("detailBack"),
+			title: ctx.t("detailBack"),
+		},
+	});
+	appendDetailIcon(back, "arrow-left");
+	back.disabled = ctx.detailHistory.length === 0;
+	back.addEventListener("click", () => openPreviousDetail(ctx));
+	const titleWrap = titleGroup.createEl("div", { cls: "rl-detail-title-id" });
 	titleWrap.createEl("span", { cls: "rl-task-id", text: task.id });
 	if (task.tipo) titleWrap.createEl("span", { cls: `rl-type rl-type-${task.tipo}`, text: task.tipo });
 	const close = head.createEl("button", {
 		cls: "rl-detail-close",
-		text: "x",
 		attr: { type: "button", "aria-label": ctx.t("close") },
 	});
+	appendDetailIcon(close, "x");
 
 	panel.createEl("h2", { text: task.titulo });
 	renderEstadoLine(panel, task, ctx.t);
@@ -773,7 +859,7 @@ async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 	].filter((relation) => relation.ids.length > 0);
 	if (relations.length > 0) {
 		const rels = panel.createEl("section", { cls: "rl-detail-relations" });
-		for (const relation of relations) renderRelation(rels, relation.label, relation.ids);
+		for (const relation of relations) renderRelation(ctx, rels, task, relation.label, relation.ids);
 	}
 
 	const collisions = colisionesDe(ctx.modelo, task);
@@ -782,10 +868,11 @@ async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 		box.createEl("h3", { text: ctx.t("overlapWith") });
 		for (const item of collisions) {
 			const comunes = item.zonas.filter((zona) => task.zonas.includes(zona));
-			box.createEl("p", {
+			const row = box.createEl("p", {
 				cls: `rl-solape-${nivelSolape(pctCarriles(ctx.modelo, task.carril, item.carril))}`,
-				text: `${item.id} (${item.carril}) · ${comunes.join(", ")}`,
 			});
+			renderTaskIdLink(ctx, row, task, item.id);
+			row.appendText(` (${item.carril}) · ${comunes.join(", ")}`);
 		}
 	}
 
@@ -821,6 +908,7 @@ export function renderModel(
 		modelo,
 		t,
 		detailPanelWidth: normalizeDetailPanelWidth(options.detailPanelWidth),
+		detailHistory: [],
 		setDetailPanelWidth: options.setDetailPanelWidth,
 	};
 	const columnasOrden = columnOrder(modelo);

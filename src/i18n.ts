@@ -10,6 +10,7 @@ const STRINGS = {
 		roadmapFolderDesc:
 			"Folder inside the vault where Roadmap Lanes stores lanes.yaml, taxonomy.yaml and task notes.",
 		resizeDetailPanel: "Resize detail panel",
+		detailBack: "Back",
 		errorTitle: "Model errors",
 		summary: "Summary",
 		project: "Project",
@@ -66,6 +67,7 @@ const STRINGS = {
 		roadmapFolderDesc:
 			"Carpeta dentro del vault donde Roadmap Lanes guarda lanes.yaml, taxonomy.yaml y las notas de tareas.",
 		resizeDetailPanel: "Redimensionar panel de detalle",
+		detailBack: "Volver",
 		errorTitle: "Errores del modelo",
 		summary: "Resumen",
 		project: "Proyecto",

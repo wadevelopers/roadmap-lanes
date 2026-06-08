@@ -644,20 +644,48 @@ body.rl-detail-resizing * {
 	gap: 12px;
 }
 
-.roadmap-lanes-view .rl-detail-head > div {
+.roadmap-lanes-view .rl-detail-title-group,
+.roadmap-lanes-view .rl-detail-title-id {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
+.roadmap-lanes-view .rl-detail-title-id {
+	min-width: 0;
+}
+
+.roadmap-lanes-view .rl-detail-nav-button,
 .roadmap-lanes-view .rl-detail-close {
-	width: 30px;
-	height: 30px;
-	border: 1px solid var(--background-modifier-border);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid transparent;
 	border-radius: 6px;
-	background: var(--background-secondary);
+	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-detail-icon {
+	display: block;
+	width: 16px;
+	height: 16px;
+	color: currentColor;
+}
+
+.roadmap-lanes-view .rl-detail-nav-button:hover:not(:disabled),
+.roadmap-lanes-view .rl-detail-close:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.roadmap-lanes-view .rl-detail-nav-button:disabled {
+	opacity: 0.45;
+	cursor: default;
 }
 
 .roadmap-lanes-view .rl-detail-panel h2 {
@@ -706,6 +734,21 @@ body.rl-detail-resizing * {
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
+}
+
+.roadmap-lanes-view .rl-detail-task-link {
+	display: inline;
+	color: var(--text-accent);
+	font-family: var(--font-monospace);
+	font-size: inherit;
+	line-height: inherit;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.roadmap-lanes-view .rl-detail-task-link:hover {
+	color: var(--text-accent-hover);
+	text-decoration: underline;
 }
 
 .roadmap-lanes-view .rl-detail-overlap {
