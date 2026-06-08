@@ -103,6 +103,7 @@ export interface Modelo {
 	tareas: Map<string, Tarea>;
 	carriles: Record<string, CarrilModel>;
 	taxonomia: Taxonomia;
+	horasPorDia: number;
 	zonasDeCarril: Record<string, string[]>;
 	solapeCarriles: SolapeCarriles[];
 	gatesCruzados: GateCruzado[];

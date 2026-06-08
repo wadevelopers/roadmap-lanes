@@ -301,6 +301,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 		tareas: porId,
 		carriles: carrilesModel,
 		taxonomia: input.taxonomia,
+		horasPorDia,
 		zonasDeCarril,
 		solapeCarriles,
 		gatesCruzados,

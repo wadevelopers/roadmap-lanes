@@ -20,4 +20,21 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 
 ## Pendientes
 
-- (sin pendientes/deuda registrados por ahora)
+### Roadmap operativo post-port del core/tablero
+
+- **Settings del plugin.** Agregar `PluginSettingTab` y persistencia con `loadData`/`saveData` para:
+  carpeta de tareas, path de `carriles.yaml`, path de `taxonomia.yaml`, horas por día y modo
+  tiempo/orden. Esto elimina los defaults hardcodeados del demo.
+- **Modo expandir/contraer tiempo.** Implementar el switch Gantt/orden y la jornada configurable
+  según `PLAN_expandir_contraer_tiempo.md`.
+- **Panel de detalle.** Mejorar acciones y navegación: abrir la nota original, resolver/abrir links
+  internos, y pulir el layout de relaciones.
+- **Render/UX fino.** Revisar iconos de madurez/absorción/solape, tratamiento visual de gates,
+  estados, filtros y comportamiento en ventanas angostas.
+- **Preparación para publicación.** Revisar `manifest.json`, versionado, README público, instrucciones
+  de uso, archivos de release y checklist para comunidad de Obsidian.
+- **Cobertura adicional.** Agregar tests para duración en horas/fracciones, datasource con wikilinks
+  y casos de regresión del modelo.
+- **Aplicación a documentación real.** Planificar cómo adaptar/crear tareas para
+  `/mnt/minis_forum/wadev/doc/roadmap-pending`. Ese repo se usa como fuente de lectura salvo
+  autorización explícita para escribir ahí.

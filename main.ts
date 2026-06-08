@@ -52,7 +52,7 @@ class RoadmapLanesView extends ItemView {
 		renderLoading(root, this.translate);
 		const data = await loadRoadmapData(this.app);
 		const model = buildModel(data);
-		renderModel(root, model, this.translate);
+		renderModel(root, model, this.translate, this.app, this);
 	}
 }
 

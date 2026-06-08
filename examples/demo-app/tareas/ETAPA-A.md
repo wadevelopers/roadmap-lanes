@@ -13,3 +13,9 @@ depende_de: []
 ---
 
 Primera etapa de `DT-010`: migración que normaliza las columnas del producto.
+
+
+| uyi   | yuiy   |
+| ----- | ------ |
+| hjkhk | hjkhjk |
+

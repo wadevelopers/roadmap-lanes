@@ -1,78 +1,591 @@
 /*
 Roadmap Lanes — estilos del plugin.
 
-Base mínima del scaffold. La migración trae aquí los estilos del tablero
-(cards, carriles, solape, estados) desde la web standalone (tablero.css, v0.2.0),
-pero reemplazando los colores propios por las variables de tema de Obsidian
-(--background-primary, --text-normal, --text-muted, --interactive-accent, etc.)
-para integrarse con el tema activo (claro/oscuro) en vez de definir los suyos.
+El tablero usa variables del tema activo de Obsidian para integrarse con claro/oscuro.
 */
 
 .roadmap-lanes-view {
-	padding: 12px 16px;
+	--rl-day-height: 96px;
+	--rl-card-gap: 10px;
+	--rl-state-done: var(--color-green);
+	--rl-state-progress: var(--color-blue);
+	--rl-state-next: var(--color-yellow);
+	--rl-state-blocked: var(--color-red);
+	--rl-state-waiting: var(--text-muted);
+	--rl-type-ft: var(--color-blue);
+	--rl-type-dt: var(--color-orange);
+	--rl-type-infra: var(--color-purple);
+	--rl-solape-0: var(--color-green);
+	--rl-solape-1: var(--color-yellow);
+	--rl-solape-2: var(--color-orange);
+	--rl-solape-3: var(--color-red);
+	color: var(--text-normal);
+	height: 100%;
+	overflow: auto;
+}
+
+.roadmap-lanes-view * {
+	box-sizing: border-box;
 }
 
 .roadmap-lanes-view .rl-muted {
 	color: var(--text-muted);
 }
 
-.roadmap-lanes-view .rl-section {
-	margin-block: 18px;
+.roadmap-lanes-view .rl-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	position: sticky;
+	top: 0;
+	z-index: 6;
+}
+
+.roadmap-lanes-view .rl-topbar h2 {
+	margin: 0;
+	font-size: 18px;
+	line-height: 1.2;
+}
+
+.roadmap-lanes-view .rl-topbar p {
+	margin: 2px 0 0;
+	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-filters {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	position: sticky;
+	top: 54px;
+	z-index: 5;
+}
+
+.roadmap-lanes-view .rl-search {
+	min-width: min(280px, 100%);
+	flex: 1 1 240px;
+	height: 32px;
+}
+
+.roadmap-lanes-view .rl-filter-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.roadmap-lanes-view .rl-filter-chip {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1;
+	padding: 7px 9px;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-filter-chip:hover,
+.roadmap-lanes-view .rl-filter-chip.is-active {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+.roadmap-lanes-view .rl-filter-chip.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.roadmap-lanes-view .rl-select {
+	height: 32px;
+	max-width: 180px;
+}
+
+.roadmap-lanes-view .rl-filter-count {
+	margin-left: auto;
+	color: var(--text-muted);
+	font-size: 12px;
+	white-space: nowrap;
 }
 
 .roadmap-lanes-view .rl-errors {
-	border-left: 3px solid var(--text-error);
-	padding-left: 12px;
-	color: var(--text-error);
-}
-
-.roadmap-lanes-view .rl-stat-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-	gap: 8px;
-}
-
-.roadmap-lanes-view .rl-stat-grid > div,
-.roadmap-lanes-view .rl-lane {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
+	margin: 12px 16px;
 	padding: 8px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-left: 3px solid var(--rl-state-done);
+	border-radius: 6px;
 	background: var(--background-secondary);
 }
 
-.roadmap-lanes-view .rl-lane-list {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-	gap: 10px;
+.roadmap-lanes-view .rl-errors.has-errors {
+	border-left-color: var(--rl-state-blocked);
+	color: var(--text-error);
 }
 
-.roadmap-lanes-view .rl-lane h4 {
+.roadmap-lanes-view .rl-errors h3 {
 	margin: 0 0 6px;
+	font-size: 13px;
 }
 
-.roadmap-lanes-view .rl-lane p {
-	margin: 4px 0;
+.roadmap-lanes-view .rl-errors p,
+.roadmap-lanes-view .rl-errors ul {
+	margin: 0;
+}
+
+.roadmap-lanes-view .rl-coordination {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 12px;
+	padding: 0 16px 12px;
+}
+
+.roadmap-lanes-view .rl-coord-block {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	padding: 10px;
+}
+
+.roadmap-lanes-view .rl-coord-block h3 {
+	margin: 0 0 8px;
+	font-size: 12px;
+	text-transform: uppercase;
 	color: var(--text-muted);
 }
 
-.roadmap-lanes-view .rl-compact-list {
-	margin-block: 0;
-}
-
-.roadmap-lanes-view .rl-task-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.roadmap-lanes-view .rl-task-table th,
-.roadmap-lanes-view .rl-task-table td {
-	border-bottom: 1px solid var(--background-modifier-border);
+.roadmap-lanes-view .rl-coord-item {
+	display: grid;
+	grid-template-columns: auto auto 1fr;
+	align-items: center;
+	gap: 8px;
+	margin-top: 6px;
 	padding: 6px 8px;
-	text-align: left;
-	vertical-align: top;
+	border-radius: 5px;
+	border-left: 3px solid var(--background-modifier-border-hover);
+	background: var(--background-primary);
+	font-size: 12px;
 }
 
-.roadmap-lanes-view .rl-task-table th {
+.roadmap-lanes-view .rl-coord-item strong {
+	font-variant-numeric: tabular-nums;
+}
+
+.roadmap-lanes-view .rl-solape-border-0 {
+	border-left-color: var(--rl-solape-0);
+}
+
+.roadmap-lanes-view .rl-solape-border-1 {
+	border-left-color: var(--rl-solape-1);
+}
+
+.roadmap-lanes-view .rl-solape-border-2 {
+	border-left-color: var(--rl-solape-2);
+}
+
+.roadmap-lanes-view .rl-solape-border-3,
+.roadmap-lanes-view .rl-gate-open {
+	border-left-color: var(--rl-state-blocked);
+}
+
+.roadmap-lanes-view .rl-gate-closed {
+	border-left-color: var(--rl-state-done);
+}
+
+.roadmap-lanes-view .rl-board {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 12px;
+	align-items: start;
+	padding: 0 16px 24px;
+}
+
+.roadmap-lanes-view .rl-column {
+	min-width: 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	padding: 10px;
+}
+
+.roadmap-lanes-view .rl-column[data-visible="false"] {
+	display: none;
+}
+
+.roadmap-lanes-view .rl-column-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 24px;
+	margin-bottom: 10px;
+}
+
+.roadmap-lanes-view .rl-column-head h3 {
+	margin: 0;
+	font-size: 12px;
+	text-transform: uppercase;
 	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-column-head span {
+	color: var(--text-faint);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-column-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--rl-card-gap);
+}
+
+.roadmap-lanes-view .rl-empty-column {
+	margin: 0;
+	color: var(--text-faint);
+	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-card {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-left: 4px solid var(--rl-state-waiting);
+	border-radius: 6px;
+	background-color: var(--background-primary);
+	background-image: repeating-linear-gradient(
+		to bottom,
+		transparent 0,
+		transparent calc(var(--rl-day-height) - 1px),
+		var(--background-modifier-border) calc(var(--rl-day-height) - 1px),
+		var(--background-modifier-border) var(--rl-day-height),
+		transparent var(--rl-day-height),
+		transparent calc(var(--rl-day-height) + var(--rl-card-gap))
+	);
+	padding: 8px 9px;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-card:hover {
+	border-color: var(--interactive-accent);
+}
+
+.roadmap-lanes-view .rl-card[data-visible="false"],
+.roadmap-lanes-view .rl-container-block[data-visible="false"] {
+	display: none;
+}
+
+.roadmap-lanes-view .rl-card-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 18px;
+}
+
+.roadmap-lanes-view .rl-task-id {
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.roadmap-lanes-view .rl-duration {
+	margin-left: auto;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.roadmap-lanes-view .rl-type {
+	border-radius: 999px;
+	color: white;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	padding: 3px 6px;
+}
+
+.roadmap-lanes-view .rl-type-FT {
+	background: var(--rl-type-ft);
+}
+
+.roadmap-lanes-view .rl-type-DT {
+	background: var(--rl-type-dt);
+}
+
+.roadmap-lanes-view .rl-type-INFRA {
+	background: var(--rl-type-infra);
+}
+
+.roadmap-lanes-view .rl-card-title {
+	font-size: 13px;
+	line-height: 1.25;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-card-meta {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	min-height: 18px;
+	overflow: hidden;
+	color: var(--text-muted);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-card-meta span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.roadmap-lanes-view .rl-maturity {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	padding: 1px 4px;
+}
+
+.roadmap-lanes-view .rl-overlap-pill {
+	font-family: var(--font-monospace);
+}
+
+.roadmap-lanes-view .rl-solape-0 {
+	color: var(--rl-solape-0);
+}
+
+.roadmap-lanes-view .rl-solape-1 {
+	color: var(--rl-solape-1);
+}
+
+.roadmap-lanes-view .rl-solape-2 {
+	color: var(--rl-solape-2);
+}
+
+.roadmap-lanes-view .rl-solape-3 {
+	color: var(--rl-solape-3);
+}
+
+.roadmap-lanes-view .rl-card-state {
+	margin-top: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 11px;
 	font-weight: 600;
+}
+
+.roadmap-lanes-view .rl-card.rl-state-hecho,
+.roadmap-lanes-view .rl-container-bar.rl-state-hecho {
+	border-left-color: var(--rl-state-done);
+}
+
+.roadmap-lanes-view .rl-card.rl-state-en-curso,
+.roadmap-lanes-view .rl-container-bar.rl-state-en-curso {
+	border-left-color: var(--rl-state-progress);
+}
+
+.roadmap-lanes-view .rl-card.rl-state-proximo,
+.roadmap-lanes-view .rl-container-bar.rl-state-proximo {
+	border-left-color: var(--rl-state-next);
+}
+
+.roadmap-lanes-view .rl-card.rl-state-bloqueado,
+.roadmap-lanes-view .rl-container-bar.rl-state-bloqueado {
+	border-left-color: var(--rl-state-blocked);
+}
+
+.roadmap-lanes-view .rl-card.rl-state-libre,
+.roadmap-lanes-view .rl-container-bar.rl-state-libre {
+	border-left-color: var(--rl-state-waiting);
+}
+
+.roadmap-lanes-view .rl-card-state.rl-state-hecho {
+	color: var(--rl-state-done);
+}
+
+.roadmap-lanes-view .rl-card-state.rl-state-en-curso {
+	color: var(--rl-state-progress);
+}
+
+.roadmap-lanes-view .rl-card-state.rl-state-proximo {
+	color: var(--rl-state-next);
+}
+
+.roadmap-lanes-view .rl-card-state.rl-state-bloqueado {
+	color: var(--rl-state-blocked);
+}
+
+.roadmap-lanes-view .rl-card-state.rl-state-libre {
+	color: var(--rl-state-waiting);
+}
+
+.roadmap-lanes-view .rl-container-block {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.roadmap-lanes-view .rl-container-bar {
+	flex: 0 0 30px;
+	width: 30px;
+	border: 1px solid var(--background-modifier-border);
+	border-left: 4px solid var(--rl-state-waiting);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-muted);
+	cursor: pointer;
+	overflow: hidden;
+	padding: 8px 0;
+	writing-mode: vertical-rl;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-container-bar:hover {
+	border-color: var(--interactive-accent);
+}
+
+.roadmap-lanes-view .rl-container-children {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-direction: column;
+	gap: var(--rl-card-gap);
+}
+
+.roadmap-lanes-view .rl-detail-layer {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+}
+
+.roadmap-lanes-view .rl-detail-backdrop {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	background: rgba(0, 0, 0, 0.38);
+	cursor: default;
+}
+
+.roadmap-lanes-view .rl-detail-panel {
+	position: absolute;
+	inset: 0 0 0 auto;
+	width: min(460px, 92vw);
+	overflow: auto;
+	border-left: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+	padding: 16px;
+}
+
+.roadmap-lanes-view .rl-detail-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.roadmap-lanes-view .rl-detail-head > div {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.roadmap-lanes-view .rl-detail-close {
+	width: 30px;
+	height: 30px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-detail-panel h2 {
+	margin: 12px 0 8px;
+	font-size: 18px;
+}
+
+.roadmap-lanes-view .rl-detail-meta {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 5px 12px;
+	margin: 14px 0;
+	font-size: 13px;
+}
+
+.roadmap-lanes-view .rl-detail-meta dt {
+	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-detail-meta dd {
+	margin: 0;
+}
+
+.roadmap-lanes-view .rl-detail-relations {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin: 12px 0;
+	padding: 10px 0;
+	border-top: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.roadmap-lanes-view .rl-detail-rel {
+	display: grid;
+	grid-template-columns: 110px 1fr;
+	gap: 8px;
+	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-detail-rel > span {
+	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-detail-rel div {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+
+.roadmap-lanes-view .rl-detail-overlap {
+	margin: 12px 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 10px;
+	background: var(--background-secondary);
+}
+
+.roadmap-lanes-view .rl-detail-overlap h3 {
+	margin: 0 0 8px;
+	font-size: 12px;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+.roadmap-lanes-view .rl-detail-overlap p {
+	margin: 4px 0;
+	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-detail-body {
+	margin-top: 12px;
+	font-size: 13px;
+	line-height: 1.5;
 }

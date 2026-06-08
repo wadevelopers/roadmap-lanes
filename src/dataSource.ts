@@ -55,8 +55,17 @@ function stringList(value: unknown): string[] {
 	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
 }
 
-function parseTask(file: TFile, cache: CachedMetadata | null): RawTarea {
+function markdownBody(raw: string): string {
+	const lines = raw.split(/\r?\n/);
+	if (lines[0]?.trim() !== "---") return raw.trim();
+	const end = lines.indexOf("---", 1);
+	if (end === -1) return "";
+	return lines.slice(end + 1).join("\n").trim();
+}
+
+async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): Promise<RawTarea> {
 	const frontmatter = cache?.frontmatter || {};
+	const raw = await app.vault.cachedRead(file);
 	return {
 		id: typeof frontmatter.id === "string" ? frontmatter.id : file.basename,
 		titulo: typeof frontmatter.titulo === "string" ? frontmatter.titulo : file.basename,
@@ -69,6 +78,7 @@ function parseTask(file: TFile, cache: CachedMetadata | null): RawTarea {
 		padre: relationSingle(cache, "padre", frontmatter.padre),
 		absorbe: relationList(cache, "absorbe", frontmatter.absorbe),
 		depende_de: relationList(cache, "depende_de", frontmatter.depende_de),
+		cuerpo: markdownBody(raw),
 		_archivo: file.path,
 	};
 }
@@ -94,7 +104,9 @@ export async function loadRoadmapData(
 		.filter((file) => file.path.startsWith(folderPrefix))
 		.sort((a, b) => a.path.localeCompare(b.path));
 
-	const tareas = files.map((file) => parseTask(file, app.metadataCache.getFileCache(file)));
+	const tareas = await Promise.all(
+		files.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
+	);
 	const taxonomia = await loadYaml<Taxonomia>(app, resolved.taxonomiaPath, { areas: {} });
 	const carrilesYaml = await loadYaml<{ carriles?: CarrilesInput }>(app, resolved.carrilesPath, {
 		carriles: {},
