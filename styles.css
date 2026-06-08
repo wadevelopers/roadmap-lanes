@@ -593,12 +593,48 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 .roadmap-lanes-view .rl-detail-panel {
 	position: absolute;
 	inset: 0 0 0 auto;
-	width: min(460px, 92vw);
+	box-sizing: border-box;
+	width: min(var(--rl-detail-panel-width, 460px), calc(100vw - 32px));
 	overflow: auto;
 	border-left: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
 	padding: 16px;
+}
+
+.roadmap-lanes-view .rl-detail-panel.is-resize-hover,
+.roadmap-lanes-view .rl-detail-panel.is-resizing {
+	border-left-color: var(--interactive-accent);
+}
+
+.roadmap-lanes-view .rl-detail-resizer {
+	position: absolute;
+	top: 0;
+	left: -5px;
+	z-index: 1;
+	width: 10px;
+	height: 100%;
+	cursor: ew-resize;
+}
+
+.roadmap-lanes-view .rl-detail-resizer:hover {
+	background: linear-gradient(
+		to right,
+		transparent 0,
+		transparent 4px,
+		var(--interactive-accent) 4px,
+		var(--interactive-accent) 6px,
+		transparent 6px
+	);
+}
+
+body.rl-detail-resizing {
+	cursor: ew-resize;
+}
+
+body.rl-detail-resizing * {
+	cursor: ew-resize !important;
+	user-select: none;
 }
 
 .roadmap-lanes-view .rl-detail-head {

@@ -14,6 +14,7 @@ import { createTranslator, type Translator } from "./src/i18n";
 import { renderLoading, renderModel } from "./src/render";
 import {
 	DEFAULT_SETTINGS,
+	normalizeDetailPanelWidth,
 	normalizeRoadmapFolder,
 	normalizeSettings,
 	type RoadmapLanesSettings,
@@ -68,7 +69,12 @@ class RoadmapLanesView extends ItemView {
 		renderLoading(root, this.plugin.translate);
 		const data = await loadRoadmapData(this.app, this.plugin.settings);
 		const model = buildModel(data);
-		renderModel(root, model, this.plugin.translate, this.app, this);
+		renderModel(root, model, this.plugin.translate, this.app, this, {
+			detailPanelWidth: this.plugin.settings.detailPanelWidth,
+			setDetailPanelWidth: (width) => {
+				void this.plugin.setDetailPanelWidth(width);
+			},
+		});
 	}
 }
 
@@ -158,6 +164,13 @@ export default class RoadmapLanesPlugin extends Plugin {
 		this.settings = normalizeSettings(this.settings);
 		await this.saveData(this.settings);
 		await ensureRoadmapStructure(this.app, this.settings);
+	}
+
+	async setDetailPanelWidth(width: number): Promise<void> {
+		const next = normalizeDetailPanelWidth(width);
+		if (next === this.settings.detailPanelWidth) return;
+		this.settings.detailPanelWidth = next;
+		await this.saveSettings();
 	}
 
 	private registerRoadmapEvents(): void {

@@ -2,6 +2,11 @@ import { MarkdownRenderer, type App, type Component } from "obsidian";
 
 import type { Modelo, Tarea } from "./types";
 import type { Translator } from "./i18n";
+import {
+	DETAIL_PANEL_MAX_WIDTH,
+	DETAIL_PANEL_MIN_WIDTH,
+	normalizeDetailPanelWidth,
+} from "./settings";
 
 interface RenderContext {
 	app: App;
@@ -9,6 +14,13 @@ interface RenderContext {
 	root: HTMLElement;
 	modelo: Modelo;
 	t: Translator;
+	detailPanelWidth: number;
+	setDetailPanelWidth?: (width: number) => void;
+}
+
+export interface RenderModelOptions {
+	detailPanelWidth?: number;
+	setDetailPanelWidth?: (width: number) => void;
 }
 
 interface EstadoPresentacion {
@@ -45,6 +57,7 @@ const MADUREZ = ["nota", "esqueleto", "ejecutable"];
 const BOARD_MIN_COLUMN_WIDTH_PX = 240;
 const BOARD_COLUMN_GAP_PX = 12;
 const BOARD_HORIZONTAL_PADDING_PX = 32;
+const DETAIL_PANEL_VIEWPORT_MARGIN_PX = 32;
 const columnResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
 type CardIcon = "nota" | "esqueleto" | "ejecutable" | "absorbe" | "solape";
@@ -657,6 +670,61 @@ function renderRelation(parent: HTMLElement, label: string, ids: string[]): void
 	for (const id of ids) values.createEl("code", { text: id });
 }
 
+function clampDetailPanelWidth(width: number): number {
+	const viewportMax = Math.max(
+		DETAIL_PANEL_MIN_WIDTH,
+		window.innerWidth - DETAIL_PANEL_VIEWPORT_MARGIN_PX
+	);
+	const max = Math.min(DETAIL_PANEL_MAX_WIDTH, viewportMax);
+	return normalizeDetailPanelWidth(Math.min(max, Math.max(DETAIL_PANEL_MIN_WIDTH, width)));
+}
+
+function setDetailPanelWidth(panel: HTMLElement, width: number): void {
+	panel.style.setProperty("--rl-detail-panel-width", `${clampDetailPanelWidth(width)}px`);
+}
+
+function setupDetailPanelResize(ctx: RenderContext, panel: HTMLElement): void {
+	const handle = panel.createEl("div", {
+		cls: "rl-detail-resizer",
+		attr: {
+			role: "separator",
+			"aria-label": ctx.t("resizeDetailPanel"),
+			title: ctx.t("resizeDetailPanel"),
+		},
+	});
+	let currentWidth = clampDetailPanelWidth(ctx.detailPanelWidth);
+	setDetailPanelWidth(panel, currentWidth);
+
+	const onPointerMove = (event: PointerEvent) => {
+		currentWidth = clampDetailPanelWidth(window.innerWidth - event.clientX);
+		setDetailPanelWidth(panel, currentWidth);
+	};
+
+	const stopResize = () => {
+		panel.classList.remove("is-resizing", "is-resize-hover");
+		document.body.classList.remove("rl-detail-resizing");
+		window.removeEventListener("pointermove", onPointerMove);
+		window.removeEventListener("pointerup", stopResize);
+		window.removeEventListener("pointercancel", stopResize);
+		ctx.detailPanelWidth = currentWidth;
+		ctx.setDetailPanelWidth?.(currentWidth);
+	};
+
+	handle.addEventListener("pointerdown", (event) => {
+		event.preventDefault();
+		panel.classList.add("is-resizing", "is-resize-hover");
+		document.body.classList.add("rl-detail-resizing");
+		handle.setPointerCapture(event.pointerId);
+		window.addEventListener("pointermove", onPointerMove);
+		window.addEventListener("pointerup", stopResize);
+		window.addEventListener("pointercancel", stopResize);
+	});
+	handle.addEventListener("mouseenter", () => panel.classList.add("is-resize-hover"));
+	handle.addEventListener("mouseleave", () => {
+		if (!panel.classList.contains("is-resizing")) panel.classList.remove("is-resize-hover");
+	});
+}
+
 async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 	const existing = ctx.root.querySelector<HTMLElement>(".rl-detail-layer");
 	existing?.remove();
@@ -667,6 +735,7 @@ async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 		attr: { type: "button", "aria-label": ctx.t("close") },
 	});
 	const panel = layer.createEl("aside", { cls: "rl-detail-panel" });
+	setupDetailPanelResize(ctx, panel);
 	const head = panel.createEl("header", { cls: "rl-detail-head" });
 	const titleWrap = head.createEl("div");
 	titleWrap.createEl("span", { cls: "rl-task-id", text: task.id });
@@ -694,13 +763,18 @@ async function openDetail(ctx: RenderContext, task: Tarea): Promise<void> {
 	addMeta(ctx.t("areas"), task.areas.join(", ") || "-");
 	addMeta(ctx.t("zones"), task.zonas.join(", ") || "-");
 
-	const rels = panel.createEl("section", { cls: "rl-detail-relations" });
-	renderRelation(rels, ctx.t("parent"), task.padre ? [task.padre] : []);
-	renderRelation(rels, ctx.t("children"), task.hijos);
-	renderRelation(rels, ctx.t("dependsOn"), task.depende_de);
-	renderRelation(rels, ctx.t("unlocks"), task.desbloquea);
-	renderRelation(rels, ctx.t("absorbs"), task.absorbe);
-	renderRelation(rels, ctx.t("absorbedBy"), task.absorbidaPor ? [task.absorbidaPor] : []);
+	const relations = [
+		{ label: ctx.t("parent"), ids: task.padre ? [task.padre] : [] },
+		{ label: ctx.t("children"), ids: task.hijos },
+		{ label: ctx.t("dependsOn"), ids: task.depende_de },
+		{ label: ctx.t("unlocks"), ids: task.desbloquea },
+		{ label: ctx.t("absorbs"), ids: task.absorbe },
+		{ label: ctx.t("absorbedBy"), ids: task.absorbidaPor ? [task.absorbidaPor] : [] },
+	].filter((relation) => relation.ids.length > 0);
+	if (relations.length > 0) {
+		const rels = panel.createEl("section", { cls: "rl-detail-relations" });
+		for (const relation of relations) renderRelation(rels, relation.label, relation.ids);
+	}
 
 	const collisions = colisionesDe(ctx.modelo, task);
 	if (collisions.length > 0) {
@@ -732,14 +806,23 @@ export function renderModel(
 	modelo: Modelo,
 	t: Translator,
 	app: App,
-	component: Component
+	component: Component,
+	options: RenderModelOptions = {}
 ): void {
 	root.empty();
 	root.addClass("roadmap-lanes-view");
 	root.dataset.visibleLabel = t("visible");
 	root.dataset.modelReady = "true";
 
-	const ctx: RenderContext = { app, component, root, modelo, t };
+	const ctx: RenderContext = {
+		app,
+		component,
+		root,
+		modelo,
+		t,
+		detailPanelWidth: normalizeDetailPanelWidth(options.detailPanelWidth),
+		setDetailPanelWidth: options.setDetailPanelWidth,
+	};
 	const columnasOrden = columnOrder(modelo);
 	const filtros: Filtros = {
 		texto: "",
