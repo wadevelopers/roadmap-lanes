@@ -104,16 +104,74 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	color: var(--text-on-accent);
 }
 
-.roadmap-lanes-view .rl-select {
-	height: 32px;
-	max-width: 180px;
-}
-
 .roadmap-lanes-view .rl-filter-count {
 	margin-left: auto;
 	color: var(--text-muted);
 	font-size: 12px;
 	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-check-dd {
+	position: relative;
+	display: inline-flex;
+}
+
+.roadmap-lanes-view .rl-check-button {
+	height: 32px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 10px;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-check-button:hover,
+.roadmap-lanes-view .rl-check-button[aria-expanded="true"] {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+.roadmap-lanes-view .rl-check-panel {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	z-index: 20;
+	display: flex;
+	min-width: 180px;
+	flex-direction: column;
+	gap: 2px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	box-shadow: var(--shadow-s);
+	padding: 6px;
+}
+
+.roadmap-lanes-view .rl-check-panel[hidden] {
+	display: none;
+}
+
+.roadmap-lanes-view .rl-check-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	border-radius: 5px;
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: 13px;
+	padding: 6px 8px;
+	white-space: nowrap;
+}
+
+.roadmap-lanes-view .rl-check-item:hover {
+	background: var(--background-secondary);
+}
+
+.roadmap-lanes-view .rl-check-item input {
+	margin: 0;
 }
 
 .roadmap-lanes-view .rl-errors {

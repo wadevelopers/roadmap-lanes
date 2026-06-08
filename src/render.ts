@@ -23,6 +23,11 @@ interface Filtros {
 	columnas: Set<string>;
 }
 
+interface CheckboxDropdownItem {
+	id: string;
+	label: string;
+}
+
 const TIPOS = ["FT", "DT", "INFRA"];
 const MADUREZ = ["nota", "esqueleto", "ejecutable"];
 
@@ -124,7 +129,8 @@ function isVisibleTask(task: Tarea, filtros: Filtros): boolean {
 	const matchesText = filtros.texto.length === 0 || searchText(task).includes(filtros.texto);
 	const matchesTipo = filtros.tipos.size === 0 || (task.tipo !== undefined && filtros.tipos.has(task.tipo));
 	const matchesMadurez =
-		filtros.madurez.size === 0 || (task.madurez !== undefined && filtros.madurez.has(task.madurez));
+		filtros.madurez.size === MADUREZ.length ||
+		(task.madurez !== undefined && filtros.madurez.has(task.madurez));
 	return matchesText && matchesTipo && matchesMadurez;
 }
 
@@ -300,7 +306,7 @@ function applyFilters(root: HTMLElement, filtros: Filtros): void {
 		const visible =
 			(!filtros.texto || search.includes(filtros.texto)) &&
 			(filtros.tipos.size === 0 || filtros.tipos.has(tipo)) &&
-			(filtros.madurez.size === 0 || filtros.madurez.has(madurez));
+			(filtros.madurez.size === MADUREZ.length || filtros.madurez.has(madurez));
 		card.dataset.visible = visible ? "true" : "false";
 		if (visible) visibleCards++;
 	}
@@ -327,8 +333,75 @@ function renderFilterButton(parent: HTMLElement, label: string, value: string, a
 	});
 }
 
+function closeCheckboxDropdowns(root: HTMLElement, except?: HTMLElement): void {
+	const panels = Array.from(root.querySelectorAll(".rl-check-panel")) as HTMLElement[];
+	for (const panel of panels) {
+		if (except && panel === except) continue;
+		panel.hidden = true;
+		const button = panel.parentElement?.querySelector(".rl-check-button") as HTMLButtonElement | null;
+		button?.setAttribute("aria-expanded", "false");
+	}
+}
+
+function renderCheckboxDropdown(
+	ctx: RenderContext,
+	parent: HTMLElement,
+	dropdownId: string,
+	label: string,
+	items: CheckboxDropdownItem[],
+	selected: Set<string>,
+	onChange: () => void
+): void {
+	const wrap = parent.createEl("div", {
+		cls: "rl-check-dd",
+		attr: { "data-rl-check-dd": dropdownId, "data-label": label },
+	});
+	const button = wrap.createEl("button", {
+		cls: "rl-check-button",
+		attr: { type: "button", "aria-haspopup": "true", "aria-expanded": "false" },
+	});
+	const panel = wrap.createEl("div", { cls: "rl-check-panel" });
+	panel.hidden = true;
+
+	const updateButton = () => {
+		button.textContent = `${label} (${selected.size})`;
+	};
+
+	button.addEventListener("click", () => {
+		const willOpen = panel.hidden;
+		closeCheckboxDropdowns(ctx.root, panel);
+		panel.hidden = !willOpen;
+		button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+	});
+
+	for (const item of items) {
+		const option = panel.createEl("label", { cls: "rl-check-item" });
+		const checkbox = option.createEl("input", {
+			attr: { type: "checkbox", value: item.id },
+		}) as HTMLInputElement;
+		checkbox.checked = selected.has(item.id);
+		option.createEl("span", { text: item.label });
+		checkbox.addEventListener("change", () => {
+			if (checkbox.checked) selected.add(item.id);
+			else selected.delete(item.id);
+			updateButton();
+			onChange();
+		});
+	}
+
+	updateButton();
+}
+
 function renderFilters(ctx: RenderContext, parent: HTMLElement, filtros: Filtros): void {
 	const filters = parent.createEl("section", { cls: "rl-filters" });
+	if (ctx.root.dataset.checkDropdownListener !== "true") {
+		ctx.root.dataset.checkDropdownListener = "true";
+		ctx.root.addEventListener("click", (event) => {
+			const target = event.target as HTMLElement | null;
+			if (!target?.closest(".rl-check-dd")) closeCheckboxDropdowns(ctx.root);
+		});
+	}
+
 	const search = filters.createEl("input", {
 		cls: "rl-search",
 		attr: {
@@ -352,27 +425,29 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filtros: Filtros
 		});
 	}
 
-	const maturity = filters.createEl("select", { cls: "rl-select" });
-	maturity.createEl("option", { text: `${ctx.t("maturity")}: ${ctx.t("all")}`, value: "" });
-	for (const item of MADUREZ) maturity.createEl("option", { text: item, value: item });
-	maturity.addEventListener("change", () => {
-		filtros.madurez.clear();
-		if (maturity.value) filtros.madurez.add(maturity.value);
-		applyFilters(ctx.root, filtros);
-	});
+	renderCheckboxDropdown(
+		ctx,
+		filters,
+		"maturity",
+		ctx.t("maturity"),
+		MADUREZ.map((item) => ({ id: item, label: item })),
+		filtros.madurez,
+		() => applyFilters(ctx.root, filtros)
+	);
 
-	const columns = filters.createEl("div", { cls: "rl-filter-group" });
 	const columnIds = ["backlog", ...Object.keys(ctx.modelo.carriles), "hecho"];
-	for (const column of columnIds) {
-		const label = column === "hecho" ? ctx.t("done") : column === "backlog" ? ctx.t("backlog") : column;
-		const button = renderFilterButton(columns, label, column, true);
-		button.addEventListener("click", () => {
-			if (filtros.columnas.has(column)) filtros.columnas.delete(column);
-			else filtros.columnas.add(column);
-			button.classList.toggle("is-active", filtros.columnas.has(column));
-			applyFilters(ctx.root, filtros);
-		});
-	}
+	renderCheckboxDropdown(
+		ctx,
+		filters,
+		"columns",
+		ctx.t("columns"),
+		columnIds.map((column) => ({
+			id: column,
+			label: column === "hecho" ? ctx.t("done") : column === "backlog" ? ctx.t("backlog") : column,
+		})),
+		filtros.columnas,
+		() => applyFilters(ctx.root, filtros)
+	);
 
 	filters.createEl("span", { cls: "rl-filter-count" });
 }
@@ -514,7 +589,7 @@ export function renderModel(
 	const filtros: Filtros = {
 		texto: "",
 		tipos: new Set(),
-		madurez: new Set(),
+		madurez: new Set(MADUREZ),
 		columnas: new Set(["backlog", ...Object.keys(modelo.carriles), "hecho"]),
 	};
 
