@@ -53,6 +53,11 @@ interface CheckboxDropdownOptions {
 	disabled?: () => Set<string>;
 }
 
+interface TaskPath {
+	task: Tarea;
+	ancestors: Tarea[];
+}
+
 const TIPOS = ["FT", "DT", "INFRA"];
 const MADUREZ = ["nota", "esqueleto", "ejecutable"];
 const BOARD_MIN_COLUMN_WIDTH_PX = 240;
@@ -284,28 +289,56 @@ function setupResponsiveColumns(ctx: RenderContext, filtros: Filtros): void {
 	ctx.component.register(() => observer.disconnect());
 }
 
-function hojasPorPadre(a: Tarea, b: Tarea): number {
-	return (a.padre || a.id).localeCompare(b.padre || b.id) || a.id.localeCompare(b.id);
+function ancestorChain(modelo: Modelo, task: Tarea): Tarea[] {
+	const chain: Tarea[] = [];
+	const visited = new Set<string>([task.id]);
+	let current = task;
+	while (current.padre) {
+		if (visited.has(current.padre)) break;
+		visited.add(current.padre);
+		const parent = modelo.tareas.get(current.padre);
+		if (!parent?.esContenedor) break;
+		chain.unshift(parent);
+		current = parent;
+	}
+	return chain;
 }
 
-function bloques(modelo: Modelo, hojas: Tarea[]): Array<{ cont: Tarea | null; items: Tarea[] }> {
-	const out: Array<{ cont: Tarea | null; items: Tarea[] }> = [];
-	for (let i = 0; i < hojas.length; ) {
-		const current = hojas[i];
-		const padre = current.padre ? modelo.tareas.get(current.padre) ?? null : null;
-		if (padre?.esContenedor) {
-			const items: Tarea[] = [];
-			while (i < hojas.length && hojas[i].padre === current.padre) {
-				items.push(hojas[i]);
-				i++;
-			}
-			out.push({ cont: padre, items });
-		} else {
-			out.push({ cont: null, items: [current] });
-			i++;
+function hierarchyKey(modelo: Modelo, task: Tarea): string {
+	return [...ancestorChain(modelo, task).map((ancestor) => ancestor.id), task.id].join("\u0000");
+}
+
+function hojasPorJerarquia(modelo: Modelo, a: Tarea, b: Tarea): number {
+	return hierarchyKey(modelo, a).localeCompare(hierarchyKey(modelo, b));
+}
+
+function collectLeaves(modelo: Modelo, task: Tarea, visited = new Set<string>()): Tarea[] {
+	if (visited.has(task.id)) return [];
+	visited.add(task.id);
+	if (!task.esContenedor) return [task];
+	return task.hijos.flatMap((id) => {
+		const child = modelo.tareas.get(id);
+		return child ? collectLeaves(modelo, child, visited) : [];
+	});
+}
+
+function expandLaneItems(modelo: Modelo, queue: string[]): Tarea[] {
+	const out: Tarea[] = [];
+	const seen = new Set<string>();
+	for (const taskId of queue) {
+		const task = modelo.tareas.get(taskId);
+		if (!task) continue;
+		for (const leaf of collectLeaves(modelo, task)) {
+			if (leaf.absorbidaPor || leaf.estado === "hecho" || seen.has(leaf.id)) continue;
+			seen.add(leaf.id);
+			out.push(leaf);
 		}
 	}
 	return out;
+}
+
+function taskPaths(modelo: Modelo, tasks: Tarea[]): TaskPath[] {
+	return tasks.map((task) => ({ task, ancestors: ancestorChain(modelo, task) }));
 }
 
 function renderEstadoLine(parent: HTMLElement, task: Tarea, t: Translator): void {
@@ -371,15 +404,22 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Tarea, filtro
 	return card;
 }
 
-function renderContainerBlock(ctx: RenderContext, parent: HTMLElement, cont: Tarea, items: Tarea[], filtros: Filtros): void {
-	const visibleItems = items.filter((item) => isVisibleTask(item, filtros));
+function renderContainerBlock(
+	ctx: RenderContext,
+	parent: HTMLElement,
+	cont: Tarea,
+	paths: TaskPath[],
+	depth: number,
+	filtros: Filtros
+): void {
+	const visibleItems = paths.filter((path) => isVisibleTask(path.task, filtros));
 	const block = parent.createEl("div", {
 		cls: "rl-container-block",
 		attr: { "data-visible": visibleItems.length > 0 ? "true" : "false" },
 	});
 	const estado = estadoVisual(cont, ctx.t);
 	const label = `${cont.id} · ${cont.titulo} · ${formatDurationFromHours(
-		items.reduce((sum, item) => sum + item.horasEfectivas, 0),
+		paths.reduce((sum, path) => sum + path.task.horasEfectivas, 0),
 		ctx.modelo
 	)}`;
 	const bar = block.createEl("button", {
@@ -391,7 +431,31 @@ function renderContainerBlock(ctx: RenderContext, parent: HTMLElement, cont: Tar
 		void openDetail(ctx, cont);
 	});
 	const children = block.createEl("div", { cls: "rl-container-children" });
-	for (const item of items) renderCard(ctx, children, item, filtros);
+	renderTaskPaths(ctx, children, paths, depth + 1, filtros);
+}
+
+function renderTaskPaths(
+	ctx: RenderContext,
+	parent: HTMLElement,
+	paths: TaskPath[],
+	depth: number,
+	filtros: Filtros
+): void {
+	for (let i = 0; i < paths.length; ) {
+		const container = paths[i].ancestors[depth] ?? null;
+		if (!container) {
+			renderCard(ctx, parent, paths[i].task, filtros);
+			i++;
+			continue;
+		}
+
+		const group: TaskPath[] = [];
+		while (i < paths.length && paths[i].ancestors[depth]?.id === container.id) {
+			group.push(paths[i]);
+			i++;
+		}
+		renderContainerBlock(ctx, parent, container, group, depth, filtros);
+	}
 }
 
 function renderColumn(
@@ -417,12 +481,9 @@ function renderColumn(
 	head.createEl("span", { text: meta });
 
 	const body = column.createEl("div", { cls: "rl-column-body" });
-	const grouped = bloques(ctx.modelo, items);
-	for (const group of grouped) {
-		if (group.cont) renderContainerBlock(ctx, body, group.cont, group.items, filtros);
-		else renderCard(ctx, body, group.items[0], filtros);
-	}
-	if (grouped.length === 0) body.createEl("p", { cls: "rl-empty-column", text: ctx.t("noCards") });
+	const paths = taskPaths(ctx.modelo, items);
+	renderTaskPaths(ctx, body, paths, 0, filtros);
+	if (paths.length === 0) body.createEl("p", { cls: "rl-empty-column", text: ctx.t("noCards") });
 }
 
 function renderCoordination(ctx: RenderContext, parent: HTMLElement): void {
@@ -668,16 +729,11 @@ function renderBoard(ctx: RenderContext, parent: HTMLElement, filtros: Filtros):
 	const board = parent.createEl("section", { cls: "rl-board" });
 	const backlog = [...ctx.modelo.tareas.values()]
 		.filter((task) => !task.esContenedor && !task.carril && !task.absorbidaPor && task.estado !== "hecho")
-		.sort(hojasPorPadre);
+		.sort((a, b) => hojasPorJerarquia(ctx.modelo, a, b));
 	renderColumn(ctx, board, "backlog", ctx.t("backlog"), `${backlog.length}`, backlog, filtros);
 
 	for (const [id, lane] of Object.entries(ctx.modelo.carriles)) {
-		const items = lane.cola
-			.map((taskId) => ctx.modelo.tareas.get(taskId))
-			.filter(
-				(task): task is Tarea =>
-					task !== undefined && !task.absorbidaPor && task.estado !== "hecho"
-			);
+		const items = expandLaneItems(ctx.modelo, lane.cola);
 		const duration = items.reduce((sum, task) => sum + task.horasEfectivas, 0);
 		renderColumn(
 			ctx,
@@ -693,7 +749,7 @@ function renderBoard(ctx: RenderContext, parent: HTMLElement, filtros: Filtros):
 
 	const done = [...ctx.modelo.tareas.values()]
 		.filter((task) => !task.esContenedor && !task.absorbidaPor && task.estado === "hecho")
-		.sort(hojasPorPadre);
+		.sort((a, b) => hojasPorJerarquia(ctx.modelo, a, b));
 	renderColumn(ctx, board, "hecho", ctx.t("done"), `${done.length}`, done, filtros);
 }
 

@@ -5,11 +5,14 @@ tipo: DT
 madurez: esqueleto
 estado: pendiente
 duracion: 3d
-areas: [backend]
-zonas: [ProductModel]
+areas:
+  - backend
+zonas:
+  - ProductModel
 padre: "[[DT-010]]"
 absorbe: []
-depende_de: ["[[ETAPA-A]]"]
+depende_de:
+  - "[[ETAPA-A]]"
 ---
 
 Segunda etapa de `DT-010`. Aún en esqueleto: falta listar los callers afectados

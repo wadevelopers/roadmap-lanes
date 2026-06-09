@@ -120,6 +120,16 @@ describe("buildModel", () => {
 		expect(e?.horasEfectivas).toBe(16);
 	});
 
+	test("un contenedor en la cola se expande a sus hojas ejecutables", () => {
+		const datos = datosBase();
+		datos.carriles.A.cola = ["E"];
+		const m = buildModel(datos);
+		expect(m.carriles.A.cola).toEqual(["H1"]);
+		expect(m.carriles.A.proximo).toBe("H1");
+		expect(m.tareas.get("E")?.carril).toBe("A");
+		expect(m.tareas.get("H1")?.carril).toBe("A");
+	});
+
 	test("detecta tipo inválido y referencia inexistente", () => {
 		const datos = datosBase();
 		datos.tareas.push({ id: "X", tipo: "NOPE", depende_de: ["FANTASMA"] });
@@ -145,6 +155,28 @@ describe("buildModel", () => {
 		datos.tareas.push({ id: "H2", tipo: "FT", estado: "pendiente", duracion: "1d", padre: "E" });
 		const m = buildModel(datos);
 		expect(m.tareas.get("E")?.estadoVisual).toBe("en-curso");
+	});
+
+	test("una dependencia contra contenedor espera a que todos sus hijos estén hechos", () => {
+		const datos = datosBase();
+		datos.carriles.A.cola = ["T4"];
+		datos.tareas.push({ id: "T4", tipo: "FT", estado: "pendiente", duracion: "1d", depende_de: ["E"] });
+		datos.tareas.push({ id: "C2", depende_de: ["E"] });
+		datos.tareas.push({ id: "C2-H1", tipo: "DT", estado: "pendiente", duracion: "1d", padre: "C2" });
+		let m = buildModel(datos);
+		expect(m.tareas.get("T4")?.bloqueado).toBe(true);
+		expect(m.tareas.get("T4")?.esperaIds).toEqual(["E"]);
+		expect(m.tareas.get("C2")?.estadoVisual).toBe("fuera-de-turno");
+		expect(m.tareas.get("C2-H1")?.bloqueado).toBe(true);
+		expect(m.tareas.get("C2-H1")?.esperaIds).toEqual(["E"]);
+
+		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
+		if (h1) h1.estado = "hecho";
+		m = buildModel(datos);
+		expect(m.tareas.get("T4")?.bloqueado).toBe(false);
+		expect(m.tareas.get("T4")?.esperaIds).toEqual([]);
+		expect(m.tareas.get("C2")?.estadoVisual).toBe("en-espera");
+		expect(m.tareas.get("C2-H1")?.bloqueado).toBe(false);
 	});
 
 	test("rechaza estado en-curso escrito en una hoja", () => {

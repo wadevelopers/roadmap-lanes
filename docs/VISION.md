@@ -178,6 +178,9 @@ Como las relaciones son **wikilinks en frontmatter** (`padre: "[[EPIC-100]]"`, `
 
 Esto reescribe la antigua nota "wikilinks diferidos" de la web: en el plugin, **adoptarlos es la decisión correcta**, no deuda.
 
+El uso práctico del grafo nativo, backlinks y Breadcrumbs está documentado en
+[`VISUALIZACION_OBSIDIAN.md`](VISUALIZACION_OBSIDIAN.md).
+
 ## 9. Las vistas
 
 **a) Tablero de carriles (la principal, el `ItemView` de RL).**

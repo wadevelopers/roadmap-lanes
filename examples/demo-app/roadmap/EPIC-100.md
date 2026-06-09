@@ -5,7 +5,7 @@ titulo: Checkout completo
 # estado: se deriva de las tareas hijas
 areas: [backend, frontend, pagos]
 zonas: [CheckoutService, CheckoutUI, PaymentGateway]
-padre:
+padre: "[[CC-2]]"
 absorbe: []
 depende_de: []
 # duracion: se deriva de las tareas hijas

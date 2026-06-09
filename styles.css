@@ -526,6 +526,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	display: flex;
 	align-items: stretch;
 	gap: 8px;
+	min-width: 0;
 }
 
 .roadmap-lanes-view .rl-container-bar {

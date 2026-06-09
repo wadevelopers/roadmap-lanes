@@ -22,6 +22,9 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   Dentro viven `lanes.yaml`, `taxonomy.yaml` y cualquier `.md` de tareas, incluyendo subcarpetas.
   El plugin crea `roadmap/`, `lanes.yaml` y `taxonomy.yaml` si faltan, pero no crea una carpeta
   `tasks/`.
+- **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
+  backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
+  no reemplazan el tablero de RL. Ver `VISUALIZACION_OBSIDIAN.md`.
 
 ## Pendientes
 

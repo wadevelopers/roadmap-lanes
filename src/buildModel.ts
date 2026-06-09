@@ -175,11 +175,58 @@ export function buildModel(input: BuildModelInput): Modelo {
 	};
 	for (const t of porId.values()) t.horasEfectivas = horasEfectivas(t.id);
 
-	for (const t of porId.values()) {
-		t.bloqueado = t.depende_de.some((d) => {
-			const dep = porId.get(d);
-			return !dep || dep.estado !== "hecho";
+	const estaHecho = (t: Tarea): boolean =>
+		t.esContenedor
+			? t.hijos.length > 0 &&
+			  t.hijos.every((h) => {
+				  const hijo = porId.get(h);
+				  return hijo ? estaHecho(hijo) : false;
+			  })
+			: t.estado === "hecho";
+
+	const collectLeaves = (t: Tarea, visto = new Set<string>()): Tarea[] => {
+		if (visto.has(t.id)) return [];
+		visto.add(t.id);
+		if (!t.esContenedor) return [t];
+		return t.hijos.flatMap((h) => {
+			const hijo = porId.get(h);
+			return hijo ? collectLeaves(hijo, visto) : [];
 		});
+	};
+
+	const expandQueue = (queue: string[]): string[] => {
+		const out: string[] = [];
+		const seen = new Set<string>();
+		for (const id of queue) {
+			const t = porId.get(id);
+			if (!t) continue;
+			for (const leaf of collectLeaves(t)) {
+				if (seen.has(leaf.id)) continue;
+				seen.add(leaf.id);
+				out.push(leaf.id);
+			}
+		}
+		return out;
+	};
+
+	const bloqueoMemo = new Map<string, boolean>();
+	const estaBloqueado = (t: Tarea, visto = new Set<string>()): boolean => {
+		if (bloqueoMemo.has(t.id)) return bloqueoMemo.get(t.id) ?? false;
+		if (visto.has(t.id)) return false;
+		visto.add(t.id);
+		const bloqueadoPorDependencia = t.depende_de.some((d) => {
+			const dep = porId.get(d);
+			return !dep || !estaHecho(dep);
+		});
+		const padre = t.padre ? porId.get(t.padre) : null;
+		const bloqueadoPorPadre = padre ? estaBloqueado(padre, visto) : false;
+		const bloqueado = bloqueadoPorDependencia || bloqueadoPorPadre;
+		bloqueoMemo.set(t.id, bloqueado);
+		return bloqueado;
+	};
+
+	for (const t of porId.values()) {
+		t.bloqueado = estaBloqueado(t);
 	}
 
 	for (const [carrilId, c] of Object.entries(carriles)) {
@@ -189,15 +236,24 @@ export function buildModel(input: BuildModelInput): Modelo {
 				errores.push(`carril ${carrilId}: tarea inexistente '${id}' en la cola`);
 				continue;
 			}
-			if (t.carril) errores.push(`${id}: aparece en dos carriles (${t.carril} y ${carrilId})`);
-			t.carril = carrilId;
-			t.posicion = i;
+			if (t.esContenedor) {
+				if (t.carril) errores.push(`${id}: aparece en dos carriles (${t.carril} y ${carrilId})`);
+				t.carril = carrilId;
+				t.posicion = i;
+			}
+			for (const leaf of collectLeaves(t)) {
+				if (leaf.carril) {
+					errores.push(`${leaf.id}: aparece en dos carriles (${leaf.carril} y ${carrilId})`);
+				}
+				leaf.carril = carrilId;
+				leaf.posicion = i;
+			}
 		}
 	}
 
 	const carrilesModel: Modelo["carriles"] = {};
 	for (const [carrilId, c] of Object.entries(carriles)) {
-		const cola = (c.cola || []).filter((id) => porId.has(id));
+		const cola = expandQueue(c.cola || []);
 		const proximo = cola.find((id) => {
 			const t = porId.get(id);
 			return t !== undefined && t.estado !== "hecho" && !t.bloqueado;
@@ -215,27 +271,33 @@ export function buildModel(input: BuildModelInput): Modelo {
 		if (c.proximo) proximoDe.add(c.proximo);
 	}
 
-	const estaHecho = (t: Tarea): boolean =>
-		t.esContenedor
-			? t.hijos.length > 0 &&
-			  t.hijos.every((h) => {
-				  const hijo = porId.get(h);
-				  return hijo ? estaHecho(hijo) : false;
-			  })
-			: t.estado === "hecho";
+	const esperaMemo = new Map<string, string[]>();
+	const esperaDe = (t: Tarea, visto = new Set<string>()): string[] => {
+		if (esperaMemo.has(t.id)) return esperaMemo.get(t.id) ?? [];
+		if (visto.has(t.id)) return [];
+		visto.add(t.id);
+		const espera = t.depende_de.filter((d) => {
+			const dep = porId.get(d);
+			return !dep || !estaHecho(dep);
+		});
+		const padre = t.padre ? porId.get(t.padre) : null;
+		for (const id of padre ? esperaDe(padre, visto) : []) {
+			if (!espera.includes(id)) espera.push(id);
+		}
+		esperaMemo.set(t.id, espera);
+		return espera;
+	};
 
 	for (const t of porId.values()) {
-		t.esperaIds = t.depende_de.filter((d) => {
-			const dep = porId.get(d);
-			return !dep || dep.estado !== "hecho";
-		});
-
+		t.esperaIds = esperaDe(t);
 		if (t.esContenedor) {
 			const hijos = t.hijos.map((h) => porId.get(h)).filter((h): h is Tarea => h !== undefined);
 			const hechos = hijos.filter((h) => estaHecho(h)).length;
 			t.estadoVisual =
 				hijos.length > 0 && hechos === hijos.length
 					? "hecho"
+					: t.bloqueado
+						? "fuera-de-turno"
 					: hechos > 0
 						? "en-curso"
 						: "en-espera";
@@ -251,9 +313,9 @@ export function buildModel(input: BuildModelInput): Modelo {
 	}
 
 	const zonasDeCarril: Record<string, string[]> = {};
-	for (const carrilId of Object.keys(carriles)) {
+	for (const carrilId of Object.keys(carrilesModel)) {
 		const zonas = new Set<string>();
-		for (const id of carriles[carrilId].cola || []) {
+		for (const id of carrilesModel[carrilId].cola) {
 			const t = porId.get(id);
 			if (t && t.estado !== "hecho") {
 				for (const zona of t.zonas) zonas.add(zona);
@@ -291,7 +353,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 					carrilDe: t.carril,
 					aQue: d,
 					carrilA: dep.carril,
-					abierto: dep.estado !== "hecho",
+					abierto: !estaHecho(dep),
 				});
 			}
 		}
