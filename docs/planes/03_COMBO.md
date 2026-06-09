@@ -104,9 +104,12 @@ depende_de: []
 
 ### 5.2 `src/buildModel.ts`
 - **`parseDuracionHoras(duracion: number | string | undefined)`**: ya no recibe `horasPorDia`.
-  - `undefined`/`""` → `{ horas: null, error: null }`.
-  - número finito ≥ 0, o string puramente numérico → `{ horas: n }`.
-  - cualquier otra cosa (`"5d"`, `"abc"`, negativo) → `{ horas: null, error: "duracion inválida '…' (debe ser un número de horas)" }`.
+  Devuelve `{ horas: number | null; invalida: boolean }` (**sin texto**: el core no emite mensajes — ver
+  `02_ALERTAS_SEVERIDAD.md` §2):
+  - `undefined`/`""` → `{ horas: null, invalida: false }`.
+  - número finito ≥ 0, o string puramente numérico → `{ horas: n, invalida: false }`.
+  - cualquier otra cosa (`"5d"`, `"abc"`, negativo) → `{ horas: null, invalida: true }`.
+  - `buildModel` emite `alerta("duracion-invalida", "error", { id, valor })`.
 - **`horasEfectivas`**: para `esContenedor` **siempre suma los hijos**, ignorando su `duracionHoras`
   declarada. Para hoja: `duracionHoras ?? 0`. (Hoy un contenedor que declarara duracion devolvería esa
   duracion; con COMBO declarando `duracion` hay que forzar la suma de hijos.)
@@ -217,7 +220,9 @@ COMBOs (jerarquía `CC → {CC-1 → DT-010 → [ETAPA-A, ETAPA-B]}, {CC-2 → E
 | CC-1 | COMBO | 40 | esqueleto | pendiente | = DT-010 |
 | CC | COMBO | 104 | esqueleto | pendiente | 40+64; min de todas las hojas |
 
-- Todos los valores coinciden con la derivación → el fixture demo queda **sin alertas de error**.
+- Todos los valores coinciden con la derivación → el fixture demo queda **sin alertas** (ni errores ni
+  warnings). El demo es el **modelo correcto** que se publica; el comportamiento de alertas se prueba con
+  **tests puntuales** o ejemplos temporales, no con el demo base.
 - Se quitan los comentarios actuales tipo "un contenedor no declara tipo/madurez/duracion".
 - `lanes.yaml`, `taxonomy.yaml`, `zonas` y relaciones: **sin cambios**.
 
@@ -235,7 +240,7 @@ COMBOs (jerarquía `CC → {CC-1 → DT-010 → [ETAPA-A, ETAPA-B]}, {CC-2 → E
   paralelismo = sin alerta, madurez ≠ menor, hijos hechos con estado ≠ hecho.
 - Se mantienen y deben seguir pasando: bloqueos, `desbloquea`, `proximo`, expansión de cola, estado
   visual, gates y solape.
-- Fixture demo: **sin alertas de error**; `EPIC-100.horasEfectivas` = 64; `DT-010.horasEfectivas` = 40; se
+- Fixture demo: **sin alertas** (`m.alertas` = `[]`); `EPIC-100.horasEfectivas` = 64; `DT-010.horasEfectivas` = 40; se
   agrega `CC.horasEfectivas` = 104 y `CC.duracionHoras` = 104.
 
 ---
@@ -270,7 +275,7 @@ DRY: la definición del modelo vive en `VISION.md`; el resto referencia, no dupl
 
 1. **Core**: `types.ts` + `buildModel.ts` (parser, `horasEfectivas`, validaciones) + `dataSource.ts` + tests. Verificable con `vitest`.
 2. **Render**: `render.ts` + `i18n.ts` + `styles.css` (duración declarada, detalle con estado/madurez/badge).
-3. **Ejemplos**: conversión de hojas a horas + campos COMBO en los 5 contenedores. Verificable con el fixture demo (**sin alertas de error**).
+3. **Ejemplos**: conversión de hojas a horas + campos COMBO en los 5 contenedores. Verificable con el fixture demo (**sin alertas**).
 4. **Docs**: `VISION.md`, `guias/FLUJO_DE_TRABAJO.md`, `NOTES.md`, `planes/04_EXPANDIR_CONTRAER_TIEMPO.md`, `planes/01_PORT_CORE.md`, `guias/VISUALIZACION_OBSIDIAN.md`.
 
 (Alternativa: commitear primero `VISION.md` como fuente de verdad. A decidir al aprobar.)
