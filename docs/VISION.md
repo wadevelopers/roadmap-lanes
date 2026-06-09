@@ -22,7 +22,7 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 
 1. **Sin build ni `datos.js`.** La web precompilaba un `datos.js` gigante; editar un `.md` obligaba a `npm run build` + recargar. El plugin lee el **`metadataCache`** de Obsidian — un índice del *frontmatter* de todo el vault que se mantiene **solo** y se actualiza al guardar. Editar → listo.
 2. **Render markdown nativo.** El cuerpo de cada tarea se muestra con `MarkdownRenderer` de Obsidian: tablas, listas, callouts, `[[wikilinks]]`, todo — no el render casero limitado de la web.
-3. **El ecosistema, gratis.** Como los datos son *frontmatter* estándar con **wikilinks**, los **mismos datos** quedan disponibles para el grafo nativo, los backlinks, **Dataview** y **Breadcrumbs**, sin trabajo extra (§8).
+3. **El ecosistema, gratis.** Como los datos son *frontmatter* estándar con **wikilinks**, los **mismos datos** quedan disponibles para el grafo nativo, los backlinks y **Bases** (y plugins como **Extended Graph**), sin trabajo extra (§8).
 
 ## 4. Principios de diseño (los no-negociables)
 
@@ -30,7 +30,7 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 2. **Fuente única.** Cada dato vive en **un solo lugar**. El estado es un campo (`estado: hecho`), no la ubicación. Nada se duplica para "sincronizar".
 3. **Una tarea = un archivo.** Cada DT, FT, etapa o épica es su propio `.md`.
 4. **El vault *es* la base.** RL usa una carpeta de roadmap configurable dentro del *vault*; por defecto `roadmap/`.
-5. **Dos vistas sobre la misma fuente.** El tablero de RL y las vistas nativas de Obsidian (grafo, Dataview, Breadcrumbs) miran los **mismos** `.md`.
+5. **Dos vistas sobre la misma fuente.** El tablero de RL y las vistas nativas de Obsidian (grafo, Bases) miran los **mismos** `.md`.
 6. **El sistema asiste, no impone.** Ni el orden ni el solape se deciden solos: RL **muestra y alerta**; las decisiones las toma el usuario.
 7. **Previsión aproximada, no estimación exacta.** El tiempo sirve para **coordinar carriles** y **minimizar solape/bloqueos**, no para *tracking* de horas (§7.9).
 
@@ -104,7 +104,7 @@ depende_de: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
 (el cuerpo del archivo es el plan completo en markdown)
 ```
 
-**Las relaciones (`padre`, `depende_de`, `absorbe`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL, para el grafo/backlinks nativos y para Dataview. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
+**Las relaciones (`padre`, `depende_de`, `absorbe`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
 
 ### 7.3 `tipo` — lista cerrada (3), árbol de decisión
 
@@ -137,7 +137,7 @@ Es **MECE**: cada tarea cae en exactamente una. Los **contenedores** (tareas con
 - **`areas`** — clasificación **gruesa**, lista cerrada definida en `taxonomy.yaml`. Filtro y agrupación.
 - **`zonas`** — segundo nivel (subdivisión de las áreas). **No son rutas de archivos.** Son **las que "chocan"**: el **solape** entre dos tareas = intersección de sus `zonas`.
 - **Cerrada pero extensible:** una tarea sólo usa valores que **ya existen** en `taxonomy.yaml`; el doc se amplía editándolo a propósito.
-- `areas`/`zonas` se dejan como **arrays planos** en el frontmatter (no wikilinks): Dataview los consulta igual, y no aportan al grafo de dependencias.
+- `areas`/`zonas` se dejan como **arrays planos** en el frontmatter (no wikilinks): Bases los consulta igual, y no aportan al grafo de dependencias.
 
 ### 7.7 El archivo de carriles — orden y pertenencia
 
@@ -159,27 +159,27 @@ lanes:
 
 ### 7.9 Tiempo — `duracion` con unidad
 
-`duracion` se declara con **unidad**: `5d` (días) o `4h` (horas). Se normaliza a horas con una **jornada configurable** (cuántas horas = un día). La **altura** de la tarjeta representa ese tiempo, con un switch **expandir/contraer** (modo Gantt ↔ modo orden). El detalle de la conversión y el render está en `docs/PLAN_expandir_contraer_tiempo.md`. El objetivo es **previsión aproximada** (principio §4.7), no exactitud.
+`duracion` se declara con **unidad**: `5d` (días) o `4h` (horas). Se normaliza a horas con una **jornada configurable** (cuántas horas = un día). La **altura** de la tarjeta representa ese tiempo, con un switch **expandir/contraer** (modo Gantt ↔ modo orden). El detalle de la conversión y el render está en `docs/planes/04_EXPANDIR_CONTRAER_TIEMPO.md`. El objetivo es **previsión aproximada** (principio §4.7), no exactitud.
 
 ---
 
 ## 8. Integración con Obsidian (lo que se gana por el formato)
 
-Como las relaciones son **wikilinks en frontmatter** (`padre: "[[EPIC-100]]"`, `depende_de: ["[[FT-001]]"]`), los **mismos datos** que usa RL alimentan, sin trabajo extra:
+Como las relaciones son **wikilinks en frontmatter** (`padre: "[[EPIC-100]]"`, `depende_de: ["[[FT-001]]"]`) y la clasificación son **propiedades** (`tipo`, `estado`, `madurez`, `areas`, `zonas`), los **mismos datos** que usa RL alimentan, sin trabajo extra:
 
-| Herramienta nativa / plugin | Qué da |
+| Herramienta | Qué da |
 |---|---|
-| **Grafo nativo** | Jerarquía (`padre`) y dependencias (`depende_de`) como grafo. |
-| **Backlinks** | "¿Qué depende de esta tarea?" aparece solo. |
-| **Dataview** | Tablas/consultas del frontmatter, con links clickeables. |
-| **Breadcrumbs** (plugin, mantenido) | Árbol/matriz de dependencias dedicado y navegable. |
+| **Grafo nativo** | Jerarquía (`padre`) y dependencias (`depende_de`) como grafo, coloreable por `tipo`/`estado`/`madurez`. |
+| **Backlinks** | "¿Qué depende de esta tarea?" aparece solo (es `depende_de` invertido). |
+| **Bases** (nativo) | Tablas y consultas del frontmatter (`tipo`, `estado`, `areas`…), sin configuración de datos extra. |
+| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`padre`/`depende_de`/`absorbe`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duracion`**. |
 
-> Verificado (jun 2026): desde Obsidian 1.4, los wikilinks **entrecomillados** en frontmatter se parsean (`frontmatterLinks`), aparecen en el grafo y backlinks, se actualizan al renombrar, **y** Dataview los lee como tipo `Link`. Por eso **no se duplican campos** ni hace falta un script de sincronización: un único formato sirve para todo. El plugin normaliza wikilink→id en **un solo punto** (al leer del `metadataCache`, que ya entrega el destino resuelto).
+> Verificado (jun 2026): desde Obsidian 1.4, los wikilinks **entrecomillados** en frontmatter se parsean (`frontmatterLinks`), aparecen en el grafo y los backlinks y se actualizan al renombrar. Por eso **no se duplican campos** ni hace falta un script de sincronización: un único formato sirve para todo. El plugin normaliza wikilink→id en **un solo punto** (al leer del `metadataCache`, que ya entrega el destino resuelto).
 
 Esto reescribe la antigua nota "wikilinks diferidos" de la web: en el plugin, **adoptarlos es la decisión correcta**, no deuda.
 
-El uso práctico del grafo nativo, backlinks y Breadcrumbs está documentado en
-[`VISUALIZACION_OBSIDIAN.md`](VISUALIZACION_OBSIDIAN.md).
+La configuración práctica del grafo (nativo y con Extended Graph) y de Bases está en
+[`VISUALIZACION_OBSIDIAN.md`](guias/VISUALIZACION_OBSIDIAN.md).
 
 ## 9. Las vistas
 
@@ -191,7 +191,7 @@ El uso práctico del grafo nativo, backlinks y Breadcrumbs está documentado en
 
 **b) Panel de detalle** — al clickear una tarjeta: datos, relaciones, solape y el **cuerpo del `.md` renderizado con `MarkdownRenderer`** nativo.
 
-**c) Vistas del ecosistema** (§8) — grafo, Dataview, Breadcrumbs: las da Obsidian sobre los mismos datos.
+**c) Vistas del ecosistema** (§8) — grafo (nativo + Extended Graph) y Bases: las da Obsidian sobre los mismos datos.
 
 ## 10. Alcance y no-objetivos
 

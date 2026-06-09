@@ -1,7 +1,7 @@
 # Flujo de trabajo con Roadmap Lanes
 
 > Cómo descubrir, documentar y ejecutar el trabajo de un proyecto con RL, **sin un índice
-> maestro mantenido a mano**. Asume el modelo de datos de [`VISION.md`](VISION.md) (tipos,
+> maestro mantenido a mano**. Asume el modelo de datos de [`VISION.md`](../VISION.md) (tipos,
 > madurez, estado, carriles, solape, gates).
 
 ## El anti-patrón que RL reemplaza

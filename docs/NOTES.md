@@ -24,7 +24,7 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   `tasks/`.
 - **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
   backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
-  no reemplazan el tablero de RL. Ver `VISUALIZACION_OBSIDIAN.md`.
+  no reemplazan el tablero de RL. Ver `guias/VISUALIZACION_OBSIDIAN.md`.
 
 ## Pendientes
 
@@ -33,7 +33,7 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 - **Settings adicionales del plugin.** Ya existe `PluginSettingTab` y persistencia con
   `loadData`/`saveData` para `roadmapFolder`. Falta agregar horas por día y modo tiempo/orden.
 - **Modo expandir/contraer tiempo.** Implementar el switch Gantt/orden y la jornada configurable
-  según `PLAN_expandir_contraer_tiempo.md`.
+  según `planes/04_EXPANDIR_CONTRAER_TIEMPO.md`.
 - **Panel de detalle.** Mejorar acciones y navegación: abrir la nota original, resolver/abrir links
   internos, y pulir el layout de relaciones.
 - **Render/UX fino.** Revisar iconos de madurez/absorción/solape, tratamiento visual de gates,

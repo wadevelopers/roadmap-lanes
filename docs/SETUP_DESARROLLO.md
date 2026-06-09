@@ -85,7 +85,7 @@ carpeta a `.obsidian/plugins/hot-reload/` y activarlo).
 ### 7. Abrir la vista
 
 `Ctrl+P` → comando **"Abrir tablero de carriles"**, o el ícono de la barra lateral (ribbon).
-Por ahora vas a ver el placeholder; a medida que se porte el core y el render, ahí aparece el tablero.
+Se abre el tablero de carriles con las tareas del vault.
 
 ### 8. Debug
 

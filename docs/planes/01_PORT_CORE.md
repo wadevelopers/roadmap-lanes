@@ -5,7 +5,7 @@
 > tests**, con una **salida mínima visible** que confirme que funciona (todavía **no** el tablero;
 > eso es el plan de render aparte).
 >
-> Depende de: el entorno de desarrollo ([`PLAN_entorno_desarrollo.md`](PLAN_entorno_desarrollo.md))
+> Depende de: el entorno de desarrollo ([`SETUP_DESARROLLO.md`](../SETUP_DESARROLLO.md))
 > para poder verlo en Obsidian.
 
 ## Estado: implementado como salida mínima
