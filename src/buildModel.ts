@@ -184,6 +184,16 @@ export function buildModel(input: BuildModelInput): Modelo {
 			  })
 			: t.estado === "hecho";
 
+	const algunaHojaHecha = (t: Tarea, visto = new Set<string>()): boolean => {
+		if (visto.has(t.id)) return false;
+		visto.add(t.id);
+		if (!t.esContenedor) return t.estado === "hecho";
+		return t.hijos.some((h) => {
+			const hijo = porId.get(h);
+			return hijo ? algunaHojaHecha(hijo, visto) : false;
+		});
+	};
+
 	const collectLeaves = (t: Tarea, visto = new Set<string>()): Tarea[] => {
 		if (visto.has(t.id)) return [];
 		visto.add(t.id);
@@ -291,15 +301,12 @@ export function buildModel(input: BuildModelInput): Modelo {
 	for (const t of porId.values()) {
 		t.esperaIds = esperaDe(t);
 		if (t.esContenedor) {
-			const hijos = t.hijos.map((h) => porId.get(h)).filter((h): h is Tarea => h !== undefined);
-			const hechos = hijos.filter((h) => estaHecho(h)).length;
-			t.estadoVisual =
-				hijos.length > 0 && hechos === hijos.length
-					? "hecho"
+			t.estadoVisual = estaHecho(t)
+				? "hecho"
+				: algunaHojaHecha(t)
+					? "en-curso"
 					: t.bloqueado
 						? "fuera-de-turno"
-					: hechos > 0
-						? "en-curso"
 						: "en-espera";
 		} else if (t.estado === "hecho") {
 			t.estadoVisual = "hecho";

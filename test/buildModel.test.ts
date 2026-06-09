@@ -157,6 +157,17 @@ describe("buildModel", () => {
 		expect(m.tareas.get("E")?.estadoVisual).toBe("en-curso");
 	});
 
+	test("en-curso se propaga por combos anidados", () => {
+		const datos = datosBase();
+		datos.tareas.push({ id: "GC" });
+		datos.tareas.push({ id: "MID", padre: "GC" });
+		datos.tareas.push({ id: "L1", tipo: "FT", estado: "hecho", duracion: "1d", padre: "MID" });
+		datos.tareas.push({ id: "L2", tipo: "FT", estado: "pendiente", duracion: "1d", padre: "MID" });
+		const m = buildModel(datos);
+		expect(m.tareas.get("MID")?.estadoVisual).toBe("en-curso");
+		expect(m.tareas.get("GC")?.estadoVisual).toBe("en-curso");
+	});
+
 	test("una dependencia contra contenedor espera a que todos sus hijos estén hechos", () => {
 		const datos = datosBase();
 		datos.carriles.A.cola = ["T4"];
