@@ -204,7 +204,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 @container rl-coordination (max-width: 863px) {
-	.roadmap-lanes-view .rl-errors {
+	.roadmap-lanes-view .rl-alerts {
 		grid-column: 1 / -1;
 	}
 }
@@ -240,8 +240,32 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	font-variant-numeric: tabular-nums;
 }
 
-.roadmap-lanes-view .rl-error-item {
-	border-left-color: var(--rl-state-blocked);
+.roadmap-lanes-view .rl-alerts-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.roadmap-lanes-view .rl-alerts-head h3 {
+	margin: 0;
+}
+
+.roadmap-lanes-view .rl-alerts-count {
+	font-size: 11px;
+}
+
+.roadmap-lanes-view .rl-alert-error {
+	border-left-color: var(--color-red);
+}
+
+.roadmap-lanes-view .rl-alert-warning {
+	border-left-color: var(--color-orange);
+}
+
+.roadmap-lanes-view .rl-alert-info {
+	border-left-color: var(--color-blue);
 }
 
 .roadmap-lanes-view .rl-solape-border-0 {

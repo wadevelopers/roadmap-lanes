@@ -1,7 +1,7 @@
 import { MarkdownRenderer, type App, type Component } from "obsidian";
 
-import type { Modelo, Tarea } from "./types";
-import type { Translator } from "./i18n";
+import type { Alerta, Modelo, Severidad, Tarea } from "./types";
+import type { TranslationKey, Translator } from "./i18n";
 import {
 	DETAIL_PANEL_MAX_WIDTH,
 	DETAIL_PANEL_MIN_WIDTH,
@@ -519,7 +519,7 @@ function renderCoordination(ctx: RenderContext, parent: HTMLElement): void {
 		}
 	}
 
-	renderErrors(ctx, section);
+	renderAlertas(ctx, section);
 }
 
 function applyFilters(root: HTMLElement, filtros: Filtros): void {
@@ -710,17 +710,47 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filtros: Filtros
 	filters.createEl("span", { cls: "rl-filter-count" });
 }
 
-function renderErrors(ctx: RenderContext, parent: HTMLElement): void {
-	const section = parent.createEl("div", { cls: "rl-coord-block rl-errors" });
-	section.createEl("h3", { text: ctx.t("errorTitle") });
-	if (ctx.modelo.errores.length === 0) {
-		section.createEl("p", { cls: "rl-muted", text: ctx.t("validationOk") });
+function formatAlerta(alerta: Alerta, t: Translator): string {
+	const template = t(`alert_${alerta.codigo}` as TranslationKey);
+	return template.replace(/\{(\w+)\}/g, (_, key) => {
+		const value = alerta.params?.[key];
+		return value === undefined ? `{${key}}` : String(value);
+	});
+}
+
+function contarPorSeveridad(alertas: Alerta[]): Record<Severidad, number> {
+	const counts: Record<Severidad, number> = { error: 0, warning: 0, info: 0 };
+	for (const alerta of alertas) counts[alerta.severidad]++;
+	return counts;
+}
+
+function renderAlertas(ctx: RenderContext, parent: HTMLElement): void {
+	const section = parent.createEl("div", { cls: "rl-coord-block rl-alerts" });
+	const head = section.createEl("div", { cls: "rl-alerts-head" });
+	head.createEl("h3", { text: ctx.t("alertsTitle") });
+	const alertas = ctx.modelo.alertas;
+	if (alertas.length === 0) {
+		section.createEl("p", { cls: "rl-muted", text: ctx.t("noAlerts") });
 		return;
 	}
-	for (const error of ctx.modelo.errores) {
+	const counts = contarPorSeveridad(alertas);
+	const resumen = [
+		counts.error ? `${counts.error} ${ctx.t("alertErrorsLabel")}` : null,
+		counts.warning ? `${counts.warning} ${ctx.t("alertWarningsLabel")}` : null,
+		counts.info ? `${counts.info} ${ctx.t("alertInfoLabel")}` : null,
+	]
+		.filter((part): part is string => part !== null)
+		.join(" · ");
+	head.createEl("span", { cls: "rl-muted rl-alerts-count", text: resumen });
+
+	const orden: Severidad[] = ["error", "warning", "info"];
+	const ordenadas = [...alertas].sort(
+		(a, b) => orden.indexOf(a.severidad) - orden.indexOf(b.severidad)
+	);
+	for (const alerta of ordenadas) {
 		section.createEl("div", {
-			cls: "rl-coord-item rl-error-item",
-			text: error,
+			cls: `rl-coord-item rl-alert-item rl-alert-${alerta.severidad}`,
+			text: formatAlerta(alerta, ctx.t),
 		});
 	}
 }

@@ -2,12 +2,15 @@ import {
 	ESTADOS,
 	MADUREZ,
 	TIPOS,
+	type Alerta,
 	type BuildModelInput,
 	type CarrilesInput,
+	type CodigoAlerta,
 	type EstadoTarea,
 	type MadurezTarea,
 	type Modelo,
 	type RawTarea,
+	type Severidad,
 	type Tarea,
 	type TipoTarea,
 } from "./types";
@@ -92,17 +95,25 @@ function normalizeCarriles(carriles: CarrilesInput): CarrilesInput {
 }
 
 export function buildModel(input: BuildModelInput): Modelo {
-	const errores: string[] = [];
+	const alertas: Alerta[] = [];
+	const alerta = (
+		codigo: CodigoAlerta,
+		severidad: Severidad,
+		params?: Alerta["params"],
+		tareaId?: string
+	) => {
+		alertas.push({ codigo, severidad, params, tareaId });
+	};
 	const porId = new Map<string, Tarea>();
 	const horasPorDia = input.horasPorDia ?? DEFAULT_HORAS_POR_DIA;
 	const carriles = normalizeCarriles(input.carriles);
 
 	for (const raw of input.tareas) {
 		if (!raw.id) {
-			errores.push(`${raw._archivo || "(tarea sin archivo)"}: falta 'id'`);
+			alerta("falta-id", "error", { archivo: raw._archivo || "(tarea sin archivo)" });
 			continue;
 		}
-		if (porId.has(raw.id)) errores.push(`id duplicado: ${raw.id}`);
+		if (porId.has(raw.id)) alerta("id-duplicado", "error", { id: raw.id }, raw.id);
 		const tarea = createTarea(raw);
 		if (tarea) porId.set(tarea.id, tarea);
 	}
@@ -117,28 +128,28 @@ export function buildModel(input: BuildModelInput): Modelo {
 
 	for (const t of porId.values()) {
 		const raw = input.tareas.find((item) => item.id === t.id);
-		if (raw?.tipo && !isTipo(raw.tipo)) errores.push(`${t.id}: tipo inválido '${raw.tipo}'`);
+		if (raw?.tipo && !isTipo(raw.tipo)) alerta("tipo-invalido", "error", { id: t.id, valor: raw.tipo }, t.id);
 		if (raw?.madurez && !isMadurez(raw.madurez)) {
-			errores.push(`${t.id}: madurez inválida '${raw.madurez}'`);
+			alerta("madurez-invalida", "error", { id: t.id, valor: raw.madurez }, t.id);
 		}
 
 		for (const area of t.areas) {
-			if (!areasValidas.has(area)) errores.push(`${t.id}: área desconocida '${area}'`);
+			if (!areasValidas.has(area)) alerta("area-desconocida", "warning", { id: t.id, valor: area }, t.id);
 		}
 		for (const zona of t.zonas) {
-			if (!zonasValidas.has(zona)) errores.push(`${t.id}: zona desconocida '${zona}'`);
+			if (!zonasValidas.has(zona)) alerta("zona-desconocida", "warning", { id: t.id, valor: zona }, t.id);
 		}
 
-		if (t.padre && !existe(t.padre)) errores.push(`${t.id}: padre inexistente '${t.padre}'`);
+		if (t.padre && !existe(t.padre)) alerta("padre-inexistente", "error", { id: t.id, ref: t.padre }, t.id);
 		for (const d of t.depende_de) {
-			if (!existe(d)) errores.push(`${t.id}: depende_de inexistente '${d}'`);
+			if (!existe(d)) alerta("depende-inexistente", "error", { id: t.id, ref: d }, t.id);
 		}
 		for (const ab of t.absorbe) {
-			if (!existe(ab)) errores.push(`${t.id}: absorbe inexistente '${ab}'`);
+			if (!existe(ab)) alerta("absorbe-inexistente", "error", { id: t.id, ref: ab }, t.id);
 		}
 
 		const duracion = parseDuracionHoras(t.duracion, horasPorDia);
-		if (duracion.error) errores.push(`${t.id}: ${duracion.error}`);
+		if (duracion.error) alerta("duracion-invalida", "error", { id: t.id, valor: String(t.duracion) }, t.id);
 		t.duracionHoras = duracion.horas;
 	}
 
@@ -161,7 +172,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 		t.esContenedor = t.hijos.length > 0;
 		const raw = input.tareas.find((item) => item.id === t.id);
 		if (!t.esContenedor && raw?.estado && !isEstado(raw.estado)) {
-			errores.push(`${t.id}: estado inválido '${raw.estado}' (sólo pendiente | hecho)`);
+			alerta("estado-invalido", "error", { id: t.id, valor: raw.estado }, t.id);
 		}
 	}
 
@@ -243,17 +254,17 @@ export function buildModel(input: BuildModelInput): Modelo {
 		for (const [i, id] of (c.cola || []).entries()) {
 			const t = porId.get(id);
 			if (!t) {
-				errores.push(`carril ${carrilId}: tarea inexistente '${id}' en la cola`);
+				alerta("carril-tarea-inexistente", "error", { carril: carrilId, id });
 				continue;
 			}
 			if (t.esContenedor) {
-				if (t.carril) errores.push(`${id}: aparece en dos carriles (${t.carril} y ${carrilId})`);
+				if (t.carril) alerta("doble-carril", "error", { id, carrilA: t.carril, carrilB: carrilId }, id);
 				t.carril = carrilId;
 				t.posicion = i;
 			}
 			for (const leaf of collectLeaves(t)) {
 				if (leaf.carril) {
-					errores.push(`${leaf.id}: aparece en dos carriles (${leaf.carril} y ${carrilId})`);
+					alerta("doble-carril", "error", { id: leaf.id, carrilA: leaf.carril, carrilB: carrilId }, leaf.id);
 				}
 				leaf.carril = carrilId;
 				leaf.posicion = i;
@@ -375,6 +386,6 @@ export function buildModel(input: BuildModelInput): Modelo {
 		zonasDeCarril,
 		solapeCarriles,
 		gatesCruzados,
-		errores,
+		alertas,
 	};
 }

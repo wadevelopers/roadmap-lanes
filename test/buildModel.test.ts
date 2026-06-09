@@ -134,8 +134,10 @@ describe("buildModel", () => {
 		const datos = datosBase();
 		datos.tareas.push({ id: "X", tipo: "NOPE", depende_de: ["FANTASMA"] });
 		const m = buildModel(datos);
-		expect(m.errores.some((error) => error.includes("tipo inválido 'NOPE'"))).toBe(true);
-		expect(m.errores.some((error) => error.includes("depende_de inexistente 'FANTASMA'"))).toBe(true);
+		expect(m.alertas.some((a) => a.codigo === "tipo-invalido" && a.params?.valor === "NOPE")).toBe(true);
+		expect(
+			m.alertas.some((a) => a.codigo === "depende-inexistente" && a.params?.ref === "FANTASMA")
+		).toBe(true);
 	});
 
 	test("estado visual derivado: hoja y contenedor", () => {
@@ -194,19 +196,41 @@ describe("buildModel", () => {
 		const datos = datosBase();
 		datos.tareas.push({ id: "X", tipo: "FT", estado: "en-curso" });
 		const m = buildModel(datos);
-		expect(m.errores.some((error) => error.includes("estado inválido 'en-curso'"))).toBe(true);
+		expect(
+			m.alertas.some((a) => a.codigo === "estado-invalido" && a.params?.valor === "en-curso")
+		).toBe(true);
 	});
 
 	test("rechaza duracion sin unidad", () => {
 		const datos = datosBase();
 		datos.tareas.push({ id: "X", tipo: "FT", estado: "pendiente", duracion: "2" });
 		const m = buildModel(datos);
-		expect(m.errores.some((error) => error.includes("duracion inválida '2'"))).toBe(true);
+		expect(
+			m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.valor === "2")
+		).toBe(true);
+	});
+
+	test("severidad: referencias rotas = error, taxonomía desconocida = warning", () => {
+		const datos = datosBase();
+		datos.tareas.push({
+			id: "X",
+			tipo: "FT",
+			estado: "pendiente",
+			duracion: "1d",
+			padre: "FANTASMA",
+			areas: ["inexistente"],
+			zonas: ["ZX"],
+		});
+		const m = buildModel(datos);
+		const sev = (codigo: string) => m.alertas.find((a) => a.codigo === codigo)?.severidad;
+		expect(sev("padre-inexistente")).toBe("error");
+		expect(sev("area-desconocida")).toBe("warning");
+		expect(sev("zona-desconocida")).toBe("warning");
 	});
 
 	test("fixture demo-app: válido y con derivaciones esperadas", () => {
 		const m = buildModel(loadDemo());
-		expect(m.errores).toEqual([]);
+		expect(m.alertas).toEqual([]);
 		expect(m.tareas.get("DT-020")?.bloqueado).toBe(false);
 		expect(m.tareas.get("FT-002")?.bloqueado).toBe(false);
 		expect(m.carriles.A.proximo).toBe("FT-002");

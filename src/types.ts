@@ -14,6 +14,31 @@ export type MadurezTarea = (typeof MADUREZ)[number];
 export type EstadoTarea = (typeof ESTADOS)[number];
 export type EstadoVisual = (typeof ESTADOS_VISUALES)[number];
 
+export type Severidad = "error" | "warning" | "info";
+
+export type CodigoAlerta =
+	| "falta-id"
+	| "id-duplicado"
+	| "tipo-invalido"
+	| "madurez-invalida"
+	| "estado-invalido"
+	| "duracion-invalida"
+	| "padre-inexistente"
+	| "depende-inexistente"
+	| "absorbe-inexistente"
+	| "carril-tarea-inexistente"
+	| "doble-carril"
+	| "area-desconocida"
+	| "zona-desconocida";
+
+export interface Alerta {
+	codigo: CodigoAlerta;
+	severidad: Severidad;
+	tareaId?: string;
+	params?: Record<string, string | number | boolean>;
+	corregible?: boolean;
+}
+
 export interface RawTarea {
 	id?: string;
 	titulo?: string;
@@ -112,5 +137,5 @@ export interface Modelo {
 	zonasDeCarril: Record<string, string[]>;
 	solapeCarriles: SolapeCarriles[];
 	gatesCruzados: GateCruzado[];
-	errores: string[];
+	alertas: Alerta[];
 }
