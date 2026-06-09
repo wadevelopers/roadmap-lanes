@@ -9,6 +9,8 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	--rl-card-gap: 10px;
 	--rl-board-min-column-width: 240px;
 	--rl-board-gap: 12px;
+	/* mitad del gap del board, negativa: centra los divisores en el espacio entre columnas */
+	--rl-coord-divider-offset: -6px;
 	--rl-board-horizontal-padding: 32px;
 	--rl-state-done: var(--color-green);
 	--rl-state-progress: var(--color-blue);
@@ -199,21 +201,57 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	container: rl-coordination / inline-size;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-	gap: 12px;
-	padding: 0 16px 12px;
+	gap: var(--rl-board-gap);
+	margin: 12px 16px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	overflow: hidden;
 }
 
+.roadmap-lanes-view .rl-coord-block {
+	position: relative;
+	padding: 10px;
+}
+
+/* Divisor entre columnas: línea vertical fina centrada en el gap. */
+.roadmap-lanes-view .rl-coord-block:not(:first-child)::before {
+	content: "";
+	position: absolute;
+	top: var(--rl-coord-divider-offset);
+	bottom: var(--rl-coord-divider-offset);
+	left: var(--rl-coord-divider-offset);
+	width: 1px;
+	background: var(--background-modifier-border);
+}
+
+/* Cuando un bloque cae a una fila nueva, su divisor pasa de vertical (izquierda)
+   a horizontal (arriba), para separar las filas y rematar las líneas verticales.
+   Van DESPUÉS de la regla base para ganar por orden de fuente (misma especificidad). */
 @container rl-coordination (max-width: 863px) {
 	.roadmap-lanes-view .rl-alerts {
 		grid-column: 1 / -1;
 	}
+
+	.roadmap-lanes-view .rl-coord-block.rl-alerts::before {
+		top: var(--rl-coord-divider-offset);
+		right: var(--rl-coord-divider-offset);
+		bottom: auto;
+		left: var(--rl-coord-divider-offset);
+		width: auto;
+		height: 1px;
+	}
 }
 
-.roadmap-lanes-view .rl-coord-block {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	background: var(--background-secondary);
-	padding: 10px;
+@container rl-coordination (max-width: 571px) {
+	.roadmap-lanes-view .rl-coord-block:not(:first-child)::before {
+		top: var(--rl-coord-divider-offset);
+		right: var(--rl-coord-divider-offset);
+		bottom: auto;
+		left: var(--rl-coord-divider-offset);
+		width: auto;
+		height: 1px;
+	}
 }
 
 .roadmap-lanes-view .rl-coord-block h3 {
@@ -384,7 +422,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card:hover {
-	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
 .roadmap-lanes-view .rl-card[data-visible="false"],
@@ -588,7 +626,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-container-bar:hover {
-	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
 .roadmap-lanes-view .rl-container-children {
