@@ -17,11 +17,17 @@ interface RenderContext {
 	detailPanelWidth: number;
 	detailHistory: string[];
 	setDetailPanelWidth?: (width: number) => void;
+	isAlertAccepted?: (alerta: Alerta) => boolean;
+	acceptAlert?: (alerta: Alerta) => void | Promise<void>;
+	fixAlert?: (alerta: Alerta) => void | Promise<void>;
 }
 
 export interface RenderModelOptions {
 	detailPanelWidth?: number;
 	setDetailPanelWidth?: (width: number) => void;
+	isAlertAccepted?: (alerta: Alerta) => boolean;
+	acceptAlert?: (alerta: Alerta) => void | Promise<void>;
+	fixAlert?: (alerta: Alerta) => void | Promise<void>;
 }
 
 interface EstadoPresentacion {
@@ -728,7 +734,9 @@ function renderAlertas(ctx: RenderContext, parent: HTMLElement): void {
 	const section = parent.createEl("div", { cls: "rl-coord-block rl-alerts" });
 	const head = section.createEl("div", { cls: "rl-alerts-head" });
 	head.createEl("h3", { text: ctx.t("alertsTitle") });
-	const alertas = ctx.modelo.alertas;
+	const alertas = ctx.modelo.alertas.filter(
+		(alerta) => alerta.severidad === "error" || !ctx.isAlertAccepted?.(alerta)
+	);
 	if (alertas.length === 0) {
 		section.createEl("p", { cls: "rl-muted", text: ctx.t("noAlerts") });
 		return;
@@ -748,10 +756,36 @@ function renderAlertas(ctx: RenderContext, parent: HTMLElement): void {
 		(a, b) => orden.indexOf(a.severidad) - orden.indexOf(b.severidad)
 	);
 	for (const alerta of ordenadas) {
-		section.createEl("div", {
+		const item = section.createEl("div", {
 			cls: `rl-coord-item rl-alert-item rl-alert-${alerta.severidad}`,
-			text: formatAlerta(alerta, ctx.t),
 		});
+		item.createEl("span", { cls: "rl-alert-text", text: formatAlerta(alerta, ctx.t) });
+		const canFix = alerta.corregible === true && ctx.fixAlert !== undefined;
+		const canAccept = alerta.severidad !== "error" && ctx.acceptAlert !== undefined;
+		if (canFix || canAccept) {
+			const actions = item.createEl("div", { cls: "rl-alert-actions" });
+			if (canFix) {
+				const fix = actions.createEl("button", {
+					cls: "rl-alert-btn rl-alert-fix",
+					text: ctx.t("alertFix"),
+					attr: { type: "button" },
+				});
+				fix.addEventListener("click", () => {
+					void ctx.fixAlert?.(alerta);
+				});
+			}
+			if (canAccept) {
+				const accept = actions.createEl("button", {
+					cls: "rl-alert-btn rl-alert-accept",
+					text: ctx.t("alertAccept"),
+					attr: { type: "button" },
+				});
+				accept.addEventListener("click", () => {
+					accept.disabled = true;
+					void ctx.acceptAlert?.(alerta);
+				});
+			}
+		}
 	}
 }
 
@@ -996,6 +1030,9 @@ export function renderModel(
 		detailPanelWidth: normalizeDetailPanelWidth(options.detailPanelWidth),
 		detailHistory: [],
 		setDetailPanelWidth: options.setDetailPanelWidth,
+		isAlertAccepted: options.isAlertAccepted,
+		acceptAlert: options.acceptAlert,
+		fixAlert: options.fixAlert,
 	};
 	const columnasOrden = columnOrder(modelo);
 	const filtros: Filtros = {

@@ -8,6 +8,7 @@ import {
 	type WorkspaceLeaf,
 } from "obsidian";
 
+import { alertFingerprint } from "./src/alerts";
 import { buildModel } from "./src/buildModel";
 import { ensureRoadmapStructure, isRoadmapSourcePath, loadRoadmapData } from "./src/dataSource";
 import { createTranslator, type Translator } from "./src/i18n";
@@ -19,8 +20,18 @@ import {
 	normalizeSettings,
 	type RoadmapLanesSettings,
 } from "./src/settings";
+import type { Alerta } from "./src/types";
 
 export const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
+
+interface RoadmapLanesPluginData extends RoadmapLanesSettings {
+	acceptedAlertFingerprints?: string[];
+}
+
+function normalizeAcceptedAlertFingerprints(value: unknown): Set<string> {
+	if (!Array.isArray(value)) return new Set();
+	return new Set(value.filter((item): item is string => typeof item === "string" && item.length > 0));
+}
 
 class RoadmapLanesView extends ItemView {
 	private readonly plugin: RoadmapLanesPlugin;
@@ -74,6 +85,10 @@ class RoadmapLanesView extends ItemView {
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
 			},
+			isAlertAccepted: (alerta) => this.plugin.isAlertAccepted(alerta),
+			acceptAlert: (alerta) => {
+				void this.plugin.acceptAlert(alerta);
+			},
 		});
 	}
 }
@@ -120,6 +135,7 @@ class RoadmapLanesSettingTab extends PluginSettingTab {
 export default class RoadmapLanesPlugin extends Plugin {
 	translate: Translator = createTranslator();
 	settings: RoadmapLanesSettings = { ...DEFAULT_SETTINGS };
+	private acceptedAlertFingerprints = new Set<string>();
 
 	async onload(): Promise<void> {
 		this.translate = createTranslator();
@@ -157,12 +173,16 @@ export default class RoadmapLanesPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = normalizeSettings(await this.loadData());
+		const data = (await this.loadData()) as RoadmapLanesPluginData | null;
+		this.settings = normalizeSettings(data);
+		this.acceptedAlertFingerprints = normalizeAcceptedAlertFingerprints(
+			data?.acceptedAlertFingerprints
+		);
 	}
 
 	async saveSettings(): Promise<void> {
 		this.settings = normalizeSettings(this.settings);
-		await this.saveData(this.settings);
+		await this.savePluginData();
 		await ensureRoadmapStructure(this.app, this.settings);
 	}
 
@@ -171,6 +191,27 @@ export default class RoadmapLanesPlugin extends Plugin {
 		if (next === this.settings.detailPanelWidth) return;
 		this.settings.detailPanelWidth = next;
 		await this.saveSettings();
+	}
+
+	isAlertAccepted(alerta: Alerta): boolean {
+		return this.acceptedAlertFingerprints.has(alertFingerprint(alerta));
+	}
+
+	async acceptAlert(alerta: Alerta): Promise<void> {
+		if (alerta.severidad === "error") return;
+		const fingerprint = alertFingerprint(alerta);
+		if (this.acceptedAlertFingerprints.has(fingerprint)) return;
+		this.acceptedAlertFingerprints.add(fingerprint);
+		await this.savePluginData();
+		this.refreshOpenViews();
+	}
+
+	private async savePluginData(): Promise<void> {
+		this.settings = normalizeSettings(this.settings);
+		await this.saveData({
+			...this.settings,
+			acceptedAlertFingerprints: [...this.acceptedAlertFingerprints].sort(),
+		} satisfies RoadmapLanesPluginData);
 	}
 
 	private registerRoadmapEvents(): void {
