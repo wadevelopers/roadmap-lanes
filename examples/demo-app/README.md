@@ -8,14 +8,14 @@ Proyecto ficticio (una tienda online) que sirve de **fixture** para desarrollar 
 |---|---|
 | Épica con hijos | `EPIC-100` ← `FT-001`, `FT-002` |
 | Tarea grande partida en etapas | `DT-010` ← `ETAPA-A`, `ETAPA-B` |
-| Tipos `FT` / `DT` / `INFRA` | varias |
-| Estado `hecho` (columna derecha) | `FT-001` |
-| Madurez `esqueleto` (hay que promover) | `ETAPA-B` |
+| Types `feat` / `maint` / `infra` | varias |
+| Status `done` (columna derecha) | `FT-001` |
+| Maturity `draft` (hay que promover) | `ETAPA-B` |
 | Dependencia intra-carril | `FT-002` depende de `FT-001` |
 | Gate cross-carril cerrado | `DT-011` (carril B) depende de `FT-001` (carril A), ya hecho |
 | Absorción | `FT-002` absorbe `DT-005` (no aparece suelta) |
 | Backlog (sin carril) | `DT-010` y sus etapas |
-| `duracion` derivada de hijos | `EPIC-100`, `DT-010` (sin `duracion` propia) |
+| `duration` derivada de hijos | `EPIC-100`, `DT-010` (sin `duration` propia) |
 
 ## Estructura
 

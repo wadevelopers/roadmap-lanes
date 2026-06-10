@@ -4,9 +4,9 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 
 ## Decisiones tomadas
 
-- **Wikilinks `[[id]]` en las relaciones — ADOPTADO** (jun 2026). Las relaciones (`padre`,
-  `depende_de`, `absorbe`) se escriben como **wikilinks entrecomillados** en el frontmatter
-  (p. ej. `padre: "[[FT-001]]"`, `depende_de: ["[[FT-002]]"]`). Verificado empíricamente en
+- **Wikilinks `[[id]]` en las relaciones — ADOPTADO** (jun 2026). Las relaciones (`parent`,
+  `depends_on`, `absorbs`) se escriben como **wikilinks entrecomillados** en el frontmatter
+  (p. ej. `parent: "[[FT-001]]"`, `depends_on: ["[[FT-002]]"]`). Verificado empíricamente en
   Obsidian 1.4+: funcionan **a la vez** para RL (vía `frontmatterLinks` del `metadataCache`, que
   entrega el destino ya resuelto), para el **grafo y los backlinks nativos**, y para **Dataview**
   (los lee como tipo `Link`) — **sin duplicar campos ni scripts de sincronización**. Justificación
@@ -15,8 +15,13 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
     (no había `metadataCache`, no se corría dentro de Obsidian, y la doc de Dataview que se
     consultó estaba desactualizada respecto a Obsidian 1.4).
   - El plugin **normaliza** wikilink→id en un único punto (al leer del `metadataCache`).
-  - `areas`/`zonas` quedan como **arrays planos** (no wikilinks): Dataview los consulta igual y no
+  - `areas`/`zones` quedan como **arrays planos** (no wikilinks): Dataview los consulta igual y no
     aportan al grafo de dependencias.
+- **Frontmatter canónico en inglés — ADOPTADO** (jun 2026). Las claves y valores que el usuario
+  escribe en los `.md` son el contrato interno del plugin: `type` (`feat`/`maint`/`infra`/`combo`),
+  `maturity` (`raw`/`draft`/`ready`), `status` (`pending`/`done`), `title`, `duration`, `zones`,
+  `parent`, `absorbs` y `depends_on`. No hay aliases legacy en español; una capa de alias
+  multi-idioma puede agregarse más adelante sobre este contrato canónico si realmente hace falta.
 - **Carpeta raíz configurable — ADOPTADO** (jun 2026). RL usa una carpeta dentro del vault para
   todos sus archivos. Por defecto es `roadmap/`, configurable desde las settings nativas del plugin.
   Dentro viven `lanes.yaml`, `taxonomy.yaml` y cualquier `.md` de tareas, incluyendo subcarpetas.
@@ -26,9 +31,9 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
   no reemplazan el tablero de RL. Ver `guias/VISUALIZACION_OBSIDIAN.md`.
 - **COMBO + duración en horas — ADOPTADO** (jun 2026). Una tarea con hijos se modela como
-  `tipo: COMBO` y declara `duracion`, `madurez` y `estado` para Obsidian/Bases/grafo; RL sigue
+  `type: combo` y declara `duration`, `maturity` y `status` para Obsidian/Bases/grafo; RL sigue
   derivando los cálculos funcionales desde las hojas y alerta si esos campos se desincronizan.
-  `duracion` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
+  `duration` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
   según la jornada configurada.
 
 ## Pendientes

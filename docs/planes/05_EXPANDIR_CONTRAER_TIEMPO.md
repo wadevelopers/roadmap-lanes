@@ -121,4 +121,26 @@ el **orden de magnitud** temporal. Coherente con VISION §4 (principio 7) y §7.
   y testeable sin Obsidian.
 - El **render** (alturas, filas de `M/4`, divisores de día, el switch) se implementa en el
   `ItemView` del tablero, junto con el resto de la vista portada de la web `v0.2.0`.
-- La duración (`duracion: 40`) sale del *frontmatter* vía `metadataCache` (VISION §7.9).
+- La duración (`duration: 40`) sale del *frontmatter* vía `metadataCache` (VISION §7.9).
+
+## 9. Display del texto de duración: días vs. horas
+
+> No es problema hoy (jornada fija = default), pero **sí** cuando la jornada sea configurable (este
+> plan): el texto puede mostrar días aunque la nota esté en horas, y confundir. `duration` se anota
+> **siempre en horas**; el display la convierte a días según `hoursPerDay`. Reglas para que no engañe:
+
+1. **Badge del card** (texto `Nd`/`Nh` visible): mostrar **días** (`"Nd"`) **solo si**
+   `horas % hoursPerDay == 0` (días exactos); si no, mostrar **horas** (`"Nh"`). Evita tener que meter
+   un `+ Xh` en el espacio reducido del card.
+   - Ejemplos (jornada 8 h): `16` → `2d`; `24` → `3d`; `12` → `12h`; `4` → `4h`.
+2. **Tooltip de la duración en el card**: el desglose real (días + horas), ya que la nota está en horas.
+   Ej.: badge `2d` → tooltip `2d (16 h)`; badge `12h` → tooltip `1d + 4h (12 h)`. (No entra inline en el
+   card; por eso va al tooltip.)
+3. **Panel de detalle**: el desglose en días con las **horas totales entre paréntesis**, pero **solo
+   cuando hay días**:
+   - días exactos: `2d (16 h)`.
+   - días + resto: `1d + 4h (12 h)`.
+   - menos de un día: solo `4 h` (sin paréntesis — sería información duplicada).
+
+La conversión horas↔días vive en el **core** (§8, separada del render); el badge, el tooltip y el detalle
+la consumen.

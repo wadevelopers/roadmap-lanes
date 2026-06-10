@@ -27,7 +27,7 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 ## 4. Principios de diseño (los no-negociables)
 
 1. **Markdown-first.** La verdad son archivos `.md` con *frontmatter*. Sin base de datos, sin nube.
-2. **Fuente única.** Cada dato vive en **un solo lugar**. El estado es un campo (`estado: hecho`), no la ubicación. Nada se duplica para "sincronizar".
+2. **Fuente única.** Cada dato vive en **un solo lugar**. El estado es un campo (`status: done`), no la ubicación. Nada se duplica para "sincronizar".
 3. **Una tarea = un archivo.** Cada DT, FT, etapa o épica es su propio `.md`.
 4. **El vault *es* la base.** RL usa una carpeta de roadmap configurable dentro del *vault*; por defecto `roadmap/`.
 5. **Dos vistas sobre la misma fuente.** El tablero de RL y las vistas nativas de Obsidian (grafo, Bases) miran los **mismos** `.md`.
@@ -74,14 +74,14 @@ Una tarea tiene **dimensiones independientes**. El error a evitar es meter varia
 
 | Eje | Pregunta | Dónde vive |
 |---|---|---|
-| **Naturaleza** | ¿Qué clase de trabajo es? | `tipo` |
-| **Jerarquía** | ¿Es parte de algo más grande? | `padre` (wikilink) |
-| **Absorción** | ¿Resuelve otras tareas al ejecutarse? | `absorbe` (wikilinks) |
-| **Madurez** | ¿Cuán listo está el *plan*? | `madurez` |
-| **Estado** | ¿Cuánto avanzó el *trabajo*? | `estado` |
-| **Clasificación** | ¿Qué parte del sistema toca? | `areas`, `zonas` |
-| **Tiempo** | ¿Cuánto dura? | `duracion` |
-| **Dependencias** | ¿Qué necesita antes? | `depende_de` (wikilinks) |
+| **Naturaleza** | ¿Qué clase de trabajo es? | `type` |
+| **Jerarquía** | ¿Es parte de algo más grande? | `parent` (wikilink) |
+| **Absorción** | ¿Resuelve otras tareas al ejecutarse? | `absorbs` (wikilinks) |
+| **Madurez** | ¿Cuán listo está el *plan*? | `maturity` |
+| **Estado** | ¿Cuánto avanzó el *trabajo*? | `status` |
+| **Clasificación** | ¿Qué parte del sistema toca? | `areas`, `zones` |
+| **Tiempo** | ¿Cuánto dura? | `duration` |
+| **Dependencias** | ¿Qué necesita antes? | `depends_on` (wikilinks) |
 | **Orden y carril** | ¿En qué carril y posición? | el **archivo de carriles** |
 
 ### 7.2 La ficha de la tarea (frontmatter)
@@ -89,67 +89,67 @@ Una tarea tiene **dimensiones independientes**. El error a evitar es meter varia
 ```yaml
 ---
 id: FT-002
-titulo: Pasarela de pago en el checkout
-tipo: FT                        # FT | DT | INFRA | COMBO     (§7.3)
-madurez: ejecutable             # nota | esqueleto | ejecutable  (§7.4)
-estado: pendiente               # pendiente | hecho          (§7.4; el resto se deriva)
-duracion: 40                    # horas, sin sufijo           (§7.9)
+title: Pasarela de pago en el checkout
+type: feat                        # feat | maint | infra | combo     (§7.3)
+maturity: ready             # raw | draft | ready  (§7.4)
+status: pending               # pending | done          (§7.4; el resto se deriva)
+duration: 40                    # horas, sin sufijo           (§7.9)
 areas: [backend, pagos]         # taxonomía cerrada          (§7.6)
-zonas: [CheckoutService, PaymentGateway]
-padre: "[[EPIC-100]]"           # wikilink → jerarquía       (§7.5, §8)
-absorbe: []                     # wikilinks → tareas que resuelve  (§7.5)
-depende_de: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
+zones: [CheckoutService, PaymentGateway]
+parent: "[[EPIC-100]]"           # wikilink → jerarquía       (§7.5, §8)
+absorbs: []                     # wikilinks → tareas que resuelve  (§7.5)
+depends_on: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
 ---
 
 (el cuerpo del archivo es el plan completo en markdown)
 ```
 
-**Las relaciones (`padre`, `depende_de`, `absorbe`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
+**Las relaciones (`parent`, `depends_on`, `absorbs`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
 
-### 7.3 `tipo` — lista cerrada (4)
+### 7.3 `type` — lista cerrada (4)
 
-`COMBO` es un valor estructural especial: una tarea que tiene hijos. No es una tarjeta ejecutable ni
+`combo` es un valor estructural especial: una tarea que tiene hijos. No es una tarjeta ejecutable ni
 participa del filtro de tipo del tablero.
 
 Para tareas **hoja**, se evalúa de arriba hacia abajo; gana el primero que da "sí":
 
-1. ¿Es plomería de desarrollo o documentación que el usuario final no ve (deps, build, scripts, config, migración, docs)? → **INFRA**
-2. ¿Agrega una **capacidad nueva**? → **FT** (feature)
-3. Si no: arreglar/mejorar algo que **ya existe**, roto (bug) o subóptimo (deuda) → **DT**
+1. ¿Es plomería de desarrollo o documentación que el usuario final no ve (deps, build, scripts, config, migración, docs)? → `infra`
+2. ¿Agrega una **capacidad nueva**? → `feat`
+3. Si no: arreglar/mejorar algo que **ya existe**, roto (bug) o subóptimo (deuda) → `maint`
 
-Las hojas son **MECE**: cada una cae en exactamente una de `FT`, `DT` o `INFRA`. Los **COMBOs**
-(tareas con hijos) declaran `tipo: COMBO` para que Obsidian, Bases y el grafo puedan identificarlos
-directamente, pero RL los reconoce por tener hijos (`padre`), no por ese campo.
+Las hojas son **MECE**: cada una cae en exactamente una de `feat`, `maint` o `infra`. Los **COMBOs**
+(tareas con hijos) declaran `type: combo` para que Obsidian, Bases y el grafo puedan identificarlos
+directamente, pero RL los reconoce por tener hijos (`parent`), no por ese campo.
 
 ### 7.4 Madurez vs. estado — dos ejes del ciclo de vida
 
-- **`madurez`** — cuán listo está el *plan*: `nota` (idea en caliente) → `esqueleto` (documentado, con decisiones abiertas, **no ejecutable**) → `ejecutable` (listo).
-- **`estado`** — cuánto avanzó el *trabajo*: `pendiente` → `hecho`. En hojas es el estado real; en
+- **`maturity`** — cuán listo está el *plan*: `raw` (idea en caliente) → `draft` (documentado, con decisiones abiertas, **no ejecutable**) → `ready` (listo).
+- **`status`** — cuánto avanzó el *trabajo*: `pending` → `done`. En hojas es el estado real; en
   COMBOs es metadata declarada para Obsidian y se valida contra los hijos. No hay estado intermedio
   escrito: *"en progreso"* se deriva.
 - **Estados visuales derivados (no se escriben):**
-  - `fuera de turno` = tiene `depende_de` sin cerrar.
-  - `próximo` = la primera tarea libre del carril.
-  - `en espera` = pendiente sin turno.
-  - `en curso` = **reservado a COMBOs**: algunos hijos hechos, no todos.
-  - `hecho` (COMBO) = todos los hijos hechos.
+  - `out-of-turn` = tiene `depends_on` sin cerrar.
+  - `next` = la primera tarea libre del carril.
+  - `waiting` = pendiente sin turno.
+  - `in-progress` = **reservado a COMBOs**: algunos hijos hechos, no todos.
+  - `done` (COMBO) = todos los hijos hechos.
 
-### 7.5 Jerarquía (`padre`) y absorción (`absorbe`)
+### 7.5 Jerarquía (`parent`) y absorción (`absorbs`)
 
-- **`padre`** — relación estructural (una etapa apunta a su tarea grande; una tarea de una épica apunta a la épica). Un **COMBO** (tarea con hijos) es un agrupador: declara `tipo: COMBO`, `estado`, `madurez` y `duracion` para las herramientas de Obsidian, pero RL deriva orden, bloqueos, gates, solape, estado visual y alturas desde las hojas. "Épica" no es un tipo aparte: es una tarea **que tiene hijos**.
-- **`absorbe`** — decisión de ejecución: una tarea consume otra registrada por separado (`FT-002 absorbe [[DT-005]]`). La absorbida no aparece como tarjeta suelta: se muestra como sub-ítem de quien la absorbe.
+- **`parent`** — relación estructural (una etapa apunta a su tarea grande; una tarea de una épica apunta a la épica). Un **COMBO** (tarea con hijos) es un agrupador: declara `type: combo`, `status`, `maturity` y `duration` para las herramientas de Obsidian, pero RL deriva orden, bloqueos, gates, solape, estado visual y alturas desde las hojas. "Épica" no es un tipo aparte: es una tarea **que tiene hijos**.
+- **`absorbs`** — decisión de ejecución: una tarea consume otra registrada por separado (`FT-002 absorbe [[DT-005]]`). La absorbida no aparece como tarjeta suelta: se muestra como sub-ítem de quien la absorbe.
 
-RL valida los COMBOs sin bloquear el render: alerta si falta `tipo: COMBO`, si una hoja declara
-`COMBO`, si la duración declarada es físicamente imposible, si falta duración/madurez/estado o si
+RL valida los COMBOs sin bloquear el render: alerta si falta `type: combo`, si una hoja declara
+`combo`, si la `duration` declarada es físicamente imposible, si falta `duration`/`maturity`/`status` o si
 esos campos se desvían de lo derivado. La duración mayor que la suma de hijos puede ser legítima
 (coordinación extra) y se puede aceptar.
 
 ### 7.6 Áreas y zonas — taxonomía cerrada, no rutas
 
 - **`areas`** — clasificación **gruesa**, lista cerrada definida en `taxonomy.yaml`. Filtro y agrupación.
-- **`zonas`** — segundo nivel (subdivisión de las áreas). **No son rutas de archivos.** Son **las que "chocan"**: el **solape** entre dos tareas = intersección de sus `zonas`.
+- **`zones`** — segundo nivel (subdivisión de las áreas). **No son rutas de archivos.** Son **las que "chocan"**: el **solape** entre dos tareas = intersección de sus `zones`.
 - **Cerrada pero extensible:** una tarea sólo usa valores que **ya existen** en `taxonomy.yaml`; el doc se amplía editándolo a propósito.
-- `areas`/`zonas` se dejan como **arrays planos** en el frontmatter (no wikilinks): Bases los consulta igual, y no aportan al grafo de dependencias.
+- `areas`/`zones` se dejan como **arrays planos** en el frontmatter (no wikilinks): Bases los consulta igual, y no aportan al grafo de dependencias.
 
 ### 7.7 El archivo de carriles — orden y pertenencia
 
@@ -164,19 +164,19 @@ lanes:
 
 **Regla de orden (la lista manda; las dependencias sólo alertan):** RL **nunca reordena solo**. Si la lista pone una tarea antes que algo de lo que depende (sin cerrar), la marca **"fuera de turno"** y explica por qué. *"Lo próximo agarrable"* = la primera de la cola que esté **libre**.
 
-### 7.8 Relaciones derivadas — gates y `desbloquea` no son campos
+### 7.8 Relaciones derivadas — gates y `unlocks` no son campos
 
-- **Gates (semáforos cruzados):** una `depende_de` entre tareas de **carriles distintos**. RL la dibuja como semáforo. No es un campo aparte.
-- **`desbloquea`:** es `depende_de` invertido. RL lo deriva del grafo. **Un solo lado es editable** (`depende_de`), para que las dos puntas no se desincronicen.
+- **Gates (semáforos cruzados):** una `depends_on` entre tareas de **carriles distintos**. RL la dibuja como semáforo. No es un campo aparte.
+- **`unlocks`:** es `depends_on` invertido. RL lo deriva del grafo. **Un solo lado es editable** (`depends_on`), para que las dos puntas no se desincronicen.
 
-### 7.9 Tiempo — `duracion` en horas
+### 7.9 Tiempo — `duration` en horas
 
-`duracion` se declara como **número de horas sin sufijo**: `40`, `8`, `4`. El display convierte esas
+`duration` se declara como **número de horas sin sufijo**: `40`, `8`, `4`. El display convierte esas
 horas a días usando la jornada configurada (`40` → `5d` con jornada de 8 h), pero el frontmatter
 queda numérico para Bases, grafo extendido y validaciones. Valores con letras (`5d`, `4h`) son
 alertas de duración inválida.
 
-En una hoja, `duracion` alimenta la altura de la tarjeta. En un COMBO, `duracion` es la estimación de
+En una hoja, `duration` alimenta la altura de la tarjeta. En un COMBO, `duration` es la estimación de
 la etapa completa y se muestra igual en la barra y el detalle; la altura del bloque sigue saliendo de
 las hojas visibles en cada columna. El objetivo es **previsión aproximada** (principio §4.7), no
 tracking exacto.
@@ -185,14 +185,14 @@ tracking exacto.
 
 ## 8. Integración con Obsidian (lo que se gana por el formato)
 
-Como las relaciones son **wikilinks en frontmatter** (`padre: "[[EPIC-100]]"`, `depende_de: ["[[FT-001]]"]`) y la clasificación son **propiedades** (`tipo`, `estado`, `madurez`, `areas`, `zonas`), los **mismos datos** que usa RL alimentan, sin trabajo extra:
+Como las relaciones son **wikilinks en frontmatter** (`parent: "[[EPIC-100]]"`, `depends_on: ["[[FT-001]]"]`) y la clasificación son **propiedades** (`type`, `status`, `maturity`, `areas`, `zones`), los **mismos datos** que usa RL alimentan, sin trabajo extra:
 
 | Herramienta | Qué da |
 |---|---|
-| **Grafo nativo** | Jerarquía (`padre`) y dependencias (`depende_de`) como grafo, coloreable por `tipo`/`estado`/`madurez`. |
-| **Backlinks** | "¿Qué depende de esta tarea?" aparece solo (es `depende_de` invertido). |
-| **Bases** (nativo) | Tablas y consultas del frontmatter (`tipo`, `estado`, `areas`…), sin configuración de datos extra. |
-| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`padre`/`depende_de`/`absorbe`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duracion`**. |
+| **Grafo nativo** | Jerarquía (`parent`) y dependencias (`depends_on`) como grafo, coloreable por `type`/`status`/`maturity`. |
+| **Backlinks** | "¿Qué depende de esta tarea?" aparece solo (es `depends_on` invertido). |
+| **Bases** (nativo) | Tablas y consultas del frontmatter (`type`, `status`, `areas`…), sin configuración de datos extra. |
+| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`parent`/`depends_on`/`absorbs`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duration`**. |
 
 > Verificado (jun 2026): desde Obsidian 1.4, los wikilinks **entrecomillados** en frontmatter se parsean (`frontmatterLinks`), aparecen en el grafo y los backlinks y se actualizan al renombrar. Por eso **no se duplican campos** ni hace falta un script de sincronización: un único formato sirve para todo. El plugin normaliza wikilink→id en **un solo punto** (al leer del `metadataCache`, que ya entrega el destino resuelto).
 

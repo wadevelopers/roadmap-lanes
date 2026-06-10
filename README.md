@@ -10,10 +10,9 @@ plugin. La visión y las especificaciones se portan al `docs/` de este repo.
 
 ## Estado
 
-**Scaffold.** Compila, carga en Obsidian y abre una vista *placeholder*. Falta
-portar el core (`buildModel`: estados derivados, solape, gates) y el render del
-tablero, y leer los datos desde `app.metadataCache` en lugar del `datos.js`
-precompilado.
+Plugin funcional en desarrollo: carga datos desde `app.metadataCache`, lee
+`roadmap/lanes.yaml` y `roadmap/taxonomy.yaml`, renderiza el tablero, el panel de
+detalle, alertas del modelo, solape entre carriles y gates cruzados.
 
 ## Desarrollo
 
@@ -38,5 +37,5 @@ comando **"Abrir tablero de carriles"** o el icono de la barra lateral.
 - `manifest.json` / `versions.json` — metadata del plugin.
 - `esbuild.config.mjs` — bundler.
 - `styles.css` — estilos (deben usar las variables de tema de Obsidian).
-- `src/` — *(próximo)* core portado + render del tablero.
-- `docs/` — *(próximo)* visión y planes portados desde el repo anterior.
+- `src/` — core del modelo, lectura de datos, render e i18n.
+- `docs/` — visión, guías y planes de evolución.

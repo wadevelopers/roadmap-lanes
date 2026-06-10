@@ -77,16 +77,16 @@ Antes no declaraban nada. Ahora declaran (todo manual, sincronizado con hijos):
 ```yaml
 ---
 id: CC
-titulo: Compras Core
-tipo: COMBO              # nuevo valor de tipo
-madurez: esqueleto      # = la MENOR madurez de sus hojas
-estado: pendiente       # pendiente | hecho (la app deriva el estado visual)
-duracion: 104           # horas; estimación de etapa (≈ suma; fuente del display)
+title: Compras Core
+type: combo             # nuevo valor de type
+maturity: draft         # = la MENOR madurez de sus hojas
+status: pending         # pending | done (la app deriva el estado visual)
+duration: 104           # horas; estimación de etapa (≈ suma; fuente del display)
 areas: [...]
-zonas: [...]
-padre:                  # o "[[OTRO-COMBO]]" si está anidado
-absorbe: []
-depende_de: []
+zones: [...]
+parent:                 # o "[[OTRO-COMBO]]" si está anidado
+absorbs: []
+depends_on: []
 ---
 
 (el cuerpo documenta la coordinación: orden, gates, carriles, absorciones, no-colisión)
@@ -253,7 +253,7 @@ COMBOs (jerarquía `CC → {CC-1 → DT-010 → [ETAPA-A, ETAPA-B]}, {CC-2 → E
 | `NOTES.md` | Entrada de decisión (COMBO + horas). |
 | `planes/05_EXPANDIR_CONTRAER_TIEMPO.md` | `duracion` con unidad → número de horas (§2, §6.1, §8); "contenedor" → COMBO (§6.3). La jornada sigue mapeando horas→altura. |
 | `planes/01_PORT_CORE.md` | Corregir menciones a `duracion` con unidad y "contenedor". |
-| `guias/VISUALIZACION_OBSIDIAN.md` | Agregar `[tipo:COMBO]` al ejemplo de colorear por tipo (§1). |
+| `guias/VISUALIZACION_OBSIDIAN.md` | Agregar `[type:combo]` al ejemplo de colorear por tipo (§1). |
 
 DRY: la definición del modelo vive en `VISION.md`; el resto referencia, no duplica.
 

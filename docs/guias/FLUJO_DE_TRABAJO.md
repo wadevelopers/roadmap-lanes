@@ -71,8 +71,8 @@ carpeta se interpreta como una unidad de trabajo.
 Cada tarea (DT, FT, INFRA, épica…) es **su propio `.md`**, y **el mismo archivo evoluciona** a lo
 largo de su vida — no se mueve, no se renombra, no se copia a otro documento:
 
-- **`madurez`** (cuán listo está el *plan*): `nota` → `esqueleto` → `ejecutable`. *(VISION §7.4)*
-- **`estado`** (cuánto avanzó el *trabajo*): `pendiente` → `hecho`. En hojas es el estado real; en
+- **`maturity`** (cuán listo está el *plan*): `raw` → `draft` → `ready`. *(VISION §7.4)*
+- **`status`** (cuánto avanzó el *trabajo*): `pending` → `done`. En hojas es el estado real; en
   COMBOs se valida contra sus hijos. *(VISION §7.4)*
 
 La idea cruda y el plan formal son **el mismo documento** en distinta madurez. Esto es la mejora
@@ -88,48 +88,48 @@ mínimo y un párrafo. Ejemplo:
 ```yaml
 ---
 id: DT-042
-titulo: El stock no se reajusta al devolver un ítem
-tipo: DT
-madurez: nota            # idea en caliente, sin investigar
-estado: pendiente
-duracion: 8               # horas, sin sufijo
-zonas: [CheckoutService] # aunque sea aproximada: alimenta el cálculo de solape
+title: El stock no se reajusta al devolver un ítem
+type: maint
+maturity: raw            # idea en caliente, sin investigar
+status: pending
+duration: 8               # horas, sin sufijo
+zones: [CheckoutService] # aunque sea aproximada: alimenta el cálculo de solape
 ---
 
 Detectado al tocar el checkout: al devolver un ítem la cantidad no vuelve al stock.
 Falta investigar si afecta también a las notas de crédito.
 ```
 
-> Poner `zonas` desde el inicio (aunque sea tentativo) es lo que permite que RL ya muestre el
+> Poner `zones` desde el inicio (aunque sea tentativo) es lo que permite que RL ya muestre el
 > solape de esta tarea con las demás. El resto de los campos puede completarse al madurar.
 
 ### 2. Aparece sola en el backlog
 
 No se toca ningún índice: RL escanea la carpeta. La tarea nueva entra al **backlog** (no está en
-ninguna cola de carril) y, por tener `zonas`, **ya participa del cálculo de solape**.
+ninguna cola de carril) y, por tener `zones`, **ya participa del cálculo de solape**.
 
 ### 3. Evaluación
 
-- **Trivial / se resuelve en el acto** → se arregla, `estado: hecho`, al commit. *(Lo que se
+- **Trivial / se resuelve en el acto** → se arregla, `status: done`, al commit. *(Lo que se
   resuelve al instante no necesita archivo — ver abajo.)*
-- **Se resuelve dentro de otra tarea en curso** → se marca `absorbe` desde esa otra tarea; la
+- **Se resuelve dentro de otra tarea en curso** → se marca `absorbs` desde esa otra tarea; la
   absorbida no aparece como tarjeta suelta. *(VISION §7.5)*
 - **Necesita plan** → se **madura el mismo documento** (paso 4).
 
 ### 4. Maduración (el mismo documento)
 
-`madurez: nota → esqueleto → ejecutable`. El **cuerpo del `.md` es el plan que crece**: en
-`esqueleto` se documenta con decisiones abiertas (no ejecutable aún); en `ejecutable` queda listo
+`maturity: raw → draft → ready`. El **cuerpo del `.md` es el plan que crece**: en
+`draft` se documenta con decisiones abiertas (no ejecutable aún); en `ready` queda listo
 para agarrar. No se crea un documento aparte.
 
-Si el documento crece y otras tareas empiezan a apuntarlo con `padre`, deja de ser una hoja y pasa a
+Si el documento crece y otras tareas empiezan a apuntarlo con `parent`, deja de ser una hoja y pasa a
 ser un **COMBO**. En ese momento se cambia manualmente su frontmatter:
 
 ```yaml
-tipo: COMBO
-duracion: 40       # estimación de etapa en horas
-madurez: esqueleto # menor madurez de sus hojas
-estado: pendiente  # hecho sólo cuando todos los hijos están hechos
+type: combo
+duration: 40       # estimación de etapa en horas
+maturity: draft # menor madurez de sus hojas
+status: pending  # hecho sólo cuando todos los hijos están hechos
 ```
 
 RL sigue derivando bloqueos, solape, gates y estado visual desde las hojas, pero valida que esos
@@ -154,10 +154,10 @@ pendiente**, hay que **priorizar** contra otras tareas, o hay que **madurar**.
 | Índice maestro (a mano) | Roadmap Lanes (derivado / visual) |
 |---|---|
 | Lista de trabajo "en orden de ejecución" | `roadmap/lanes.yaml` + el tablero |
-| Columna "Prerequisitos" | `depende_de` |
-| Semáforos cruzados (A→B entre carriles) | gates (derivados de `depende_de` entre carriles) |
-| "Absorbe X, Y…" | `absorbe` |
-| Estado `✅`/`⏳` por bloque | `estado` (+ estados derivados) |
+| Columna "Prerequisitos" | `depends_on` |
+| Semáforos cruzados (A→B entre carriles) | gates (derivados de `depends_on` entre carriles) |
+| "Absorbe X, Y…" | `absorbs` |
+| Estado `✅`/`⏳` por bloque | `status` (+ estados derivados) |
 | "Carril A / Carril B" descritos en prosa | las columnas del tablero |
 | "Por qué este orden" / priorización | se **ve** en el tablero; no se escribe |
 
@@ -168,7 +168,7 @@ pendiente**, hay que **priorizar** contra otras tareas, o hay que **madurar**.
   ese razonamiento, si se quiere conservar, va en el **cuerpo** de la tarea o en un documento de
   estrategia. RL orquesta, no narra.
 - **El historial de lo completado** (qué se cerró, en qué versión). Eso es historial → vive en
-  `CHANGELOG.md` y `git`. RL muestra el **estado actual** (hecho/pendiente), no la línea de tiempo
+  `CHANGELOG.md` y `git`. RL muestra el **estado actual** (`done`/`pending`), no la línea de tiempo
   de releases.
 
 ## En una frase
