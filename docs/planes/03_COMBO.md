@@ -251,7 +251,7 @@ COMBOs (jerarquía `CC → {CC-1 → DT-010 → [ETAPA-A, ETAPA-B]}, {CC-2 → E
 | `VISION.md` | Concepto COMBO en §7.3 (4º valor de `tipo`; cómo una tarea se vuelve COMBO), §7.4 (madurez/estado del COMBO), §7.5 (el COMBO declara y se valida, el sistema deriva), §7.9 (`duracion` = número de horas y por qué; gráfico vs texto). Ejemplo de frontmatter (§7.2) con `duracion` numérica. Sección nueva: reglas de validación del COMBO. |
 | `guias/FLUJO_DE_TRABAJO.md` | Flujo **manual** de conversión a COMBO (cambiar `tipo`, fijar `duracion`/`madurez`/`estado`), tablero read-only que **valida y alerta**, el cuerpo del COMBO documenta la coordinación. |
 | `NOTES.md` | Entrada de decisión (COMBO + horas). |
-| `planes/04_EXPANDIR_CONTRAER_TIEMPO.md` | `duracion` con unidad → número de horas (§2, §6.1, §8); "contenedor" → COMBO (§6.3). La jornada sigue mapeando horas→altura. |
+| `planes/05_EXPANDIR_CONTRAER_TIEMPO.md` | `duracion` con unidad → número de horas (§2, §6.1, §8); "contenedor" → COMBO (§6.3). La jornada sigue mapeando horas→altura. |
 | `planes/01_PORT_CORE.md` | Corregir menciones a `duracion` con unidad y "contenedor". |
 | `guias/VISUALIZACION_OBSIDIAN.md` | Agregar `[tipo:COMBO]` al ejemplo de colorear por tipo (§1). |
 
@@ -272,6 +272,6 @@ DRY: la definición del modelo vive en `VISION.md`; el resto referencia, no dupl
 1. **Core**: `types.ts` + `buildModel.ts` (parser, `horasEfectivas`, validaciones) + `dataSource.ts` + tests. Verificable con `vitest`.
 2. **Render**: `render.ts` + `i18n.ts` + `styles.css` (duración declarada, detalle con estado/madurez/badge).
 3. **Ejemplos**: conversión de hojas a horas + campos COMBO en los 5 contenedores. Verificable con el fixture demo (**sin alertas**).
-4. **Docs**: `VISION.md`, `guias/FLUJO_DE_TRABAJO.md`, `NOTES.md`, `planes/04_EXPANDIR_CONTRAER_TIEMPO.md`, `planes/01_PORT_CORE.md`, `guias/VISUALIZACION_OBSIDIAN.md`.
+4. **Docs**: `VISION.md`, `guias/FLUJO_DE_TRABAJO.md`, `NOTES.md`, `planes/05_EXPANDIR_CONTRAER_TIEMPO.md`, `planes/01_PORT_CORE.md`, `guias/VISUALIZACION_OBSIDIAN.md`.
 
 (Alternativa: commitear primero `VISION.md` como fuente de verdad. A decidir al aprobar.)

@@ -38,7 +38,7 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 - **Settings adicionales del plugin.** Ya existe `PluginSettingTab` y persistencia con
   `loadData`/`saveData` para `roadmapFolder`. Falta agregar horas por día y modo tiempo/orden.
 - **Modo expandir/contraer tiempo.** Implementar el switch Gantt/orden y la jornada configurable
-  según `planes/04_EXPANDIR_CONTRAER_TIEMPO.md`.
+  según `planes/05_EXPANDIR_CONTRAER_TIEMPO.md`.
 - **Panel de detalle.** Mejorar acciones y navegación: abrir la nota original, resolver/abrir links
   internos, y pulir el layout de relaciones.
 - **Render/UX fino.** Revisar iconos de madurez/absorción/solape, tratamiento visual de gates,
