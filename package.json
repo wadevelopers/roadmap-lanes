@@ -1,6 +1,6 @@
 {
 	"name": "roadmap-lanes",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Plugin de Obsidian: tablero de carriles de trabajo en paralelo con tiempo-como-altura y cálculo de solape.",
 	"main": "main.js",
 	"scripts": {
