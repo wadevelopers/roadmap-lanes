@@ -20,7 +20,7 @@ import {
 	normalizeSettings,
 	type RoadmapLanesSettings,
 } from "./src/settings";
-import type { Alerta } from "./src/types";
+import type { Alert } from "./src/types";
 
 export const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
 
@@ -85,9 +85,9 @@ class RoadmapLanesView extends ItemView {
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
 			},
-			isAlertAccepted: (alerta) => this.plugin.isAlertAccepted(alerta),
-			acceptAlert: (alerta) => {
-				void this.plugin.acceptAlert(alerta);
+			isAlertAccepted: (alert) => this.plugin.isAlertAccepted(alert),
+			acceptAlert: (alert) => {
+				void this.plugin.acceptAlert(alert);
 			},
 		});
 	}
@@ -193,13 +193,13 @@ export default class RoadmapLanesPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
-	isAlertAccepted(alerta: Alerta): boolean {
-		return this.acceptedAlertFingerprints.has(alertFingerprint(alerta));
+	isAlertAccepted(alert: Alert): boolean {
+		return this.acceptedAlertFingerprints.has(alertFingerprint(alert));
 	}
 
-	async acceptAlert(alerta: Alerta): Promise<void> {
-		if (alerta.severidad === "error") return;
-		const fingerprint = alertFingerprint(alerta);
+	async acceptAlert(alert: Alert): Promise<void> {
+		if (alert.severity === "error") return;
+		const fingerprint = alertFingerprint(alert);
 		if (this.acceptedAlertFingerprints.has(fingerprint)) return;
 		this.acceptedAlertFingerprints.add(fingerprint);
 		await this.savePluginData();

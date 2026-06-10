@@ -4,34 +4,34 @@ import { join } from "node:path";
 import * as yaml from "js-yaml";
 
 import { buildModel } from "../src/buildModel";
-import type { BuildModelInput, RawTarea } from "../src/types";
+import type { BuildModelInput, RawTask } from "../src/types";
 
-function datosBase(): BuildModelInput {
+function baseData(): BuildModelInput {
 	return {
-		taxonomia: { areas: { back: { zonas: ["Z1"] } } },
-		carriles: { A: { foco: "", worktree: "", cola: ["T1", "T2"] } },
-		tareas: [
+		taxonomy: { areas: { back: { zones: ["Z1"] } } },
+		lanes: { A: { focus: "", worktree: "", queue: ["T1", "T2"] } },
+		tasks: [
 			{
 				id: "T1",
-				tipo: "FT",
-				estado: "hecho",
-				duracion: 16,
+				type: "feat",
+				status: "done",
+				duration: 16,
 				areas: ["back"],
-				zonas: ["Z1"],
+				zones: ["Z1"],
 			},
-			{ id: "T2", tipo: "FT", estado: "pendiente", duracion: 24, depende_de: ["T1"] },
-			{ id: "T3", tipo: "DT", estado: "pendiente", duracion: 4, depende_de: ["T2"] },
-			{ id: "E", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 },
+			{ id: "T2", type: "feat", status: "pending", duration: 24, depends_on: ["T1"] },
+			{ id: "T3", type: "maint", status: "pending", duration: 4, depends_on: ["T2"] },
+			{ id: "E", type: "combo", status: "pending", maturity: "ready", duration: 16 },
 			{
 				id: "H1",
-				tipo: "FT",
-				estado: "pendiente",
-				madurez: "ejecutable",
-				duracion: 16,
-				padre: "E",
+				type: "feat",
+				status: "pending",
+				maturity: "ready",
+				duration: 16,
+				parent: "E",
 			},
 		],
-		horasPorDia: 8,
+		hoursPerDay: 8,
 	};
 }
 
@@ -72,267 +72,266 @@ function listMarkdownFiles(dir: string, prefix = ""): string[] {
 function loadDemo(): BuildModelInput {
 	const dir = join(process.cwd(), "examples", "demo-app");
 	const roadmapDir = join(dir, "roadmap");
-	const tareas = listMarkdownFiles(roadmapDir)
+	const tasks = listMarkdownFiles(roadmapDir)
 		.sort()
-		.map((file): RawTarea => {
+		.map((file): RawTask => {
 			const { fm, body } = splitFrontmatter(readFileSync(join(roadmapDir, file), "utf8"), file);
 			const data = (yaml.load(fm) as Record<string, unknown> | undefined) || {};
 			return {
 				...data,
-				padre: normalizeRelation(data.padre)[0] || null,
-				absorbe: normalizeRelation(data.absorbe),
-				depende_de: normalizeRelation(data.depende_de),
-				cuerpo: body,
-				_archivo: `roadmap/${file}`,
+				parent: normalizeRelation(data.parent)[0] || null,
+				absorbs: normalizeRelation(data.absorbs),
+				depends_on: normalizeRelation(data.depends_on),
+				body,
+				_file: `roadmap/${file}`,
 			};
 		});
 
-	const taxonomia = yaml.load(readFileSync(join(roadmapDir, "taxonomy.yaml"), "utf8"));
+	const taxonomy = yaml.load(readFileSync(join(roadmapDir, "taxonomy.yaml"), "utf8"));
 	const lanesYaml = yaml.load(readFileSync(join(roadmapDir, "lanes.yaml"), "utf8")) as {
-		lanes?: BuildModelInput["carriles"];
-		carriles?: BuildModelInput["carriles"];
+		lanes?: BuildModelInput["lanes"];
 	};
 
 	return {
-		tareas,
-		taxonomia: (taxonomia as BuildModelInput["taxonomia"]) || { areas: {} },
-		carriles: lanesYaml.lanes || lanesYaml.carriles || {},
-		horasPorDia: 8,
+		tasks,
+		taxonomy: (taxonomy as BuildModelInput["taxonomy"]) || { areas: {} },
+		lanes: lanesYaml.lanes || {},
+		hoursPerDay: 8,
 	};
 }
 
 describe("buildModel", () => {
 	test("una dependencia hecha no bloquea; una pendiente sí", () => {
-		const m = buildModel(datosBase());
-		expect(m.tareas.get("T2")?.bloqueado).toBe(false);
-		expect(m.tareas.get("T3")?.bloqueado).toBe(true);
+		const m = buildModel(baseData());
+		expect(m.tasks.get("T2")?.blocked).toBe(false);
+		expect(m.tasks.get("T3")?.blocked).toBe(true);
 	});
 
-	test("desbloquea es la inversa de depende_de", () => {
-		const m = buildModel(datosBase());
-		expect(m.tareas.get("T1")?.desbloquea).toEqual(["T2"]);
-		expect(m.tareas.get("T2")?.desbloquea).toEqual(["T3"]);
+	test("unlocks es la inversa de depends_on", () => {
+		const m = buildModel(baseData());
+		expect(m.tasks.get("T1")?.unlocks).toEqual(["T2"]);
+		expect(m.tasks.get("T2")?.unlocks).toEqual(["T3"]);
 	});
 
 	test("proximo del carril = primera tarea libre", () => {
-		const m = buildModel(datosBase());
-		expect(m.carriles.A.proximo).toBe("T2");
+		const m = buildModel(baseData());
+		expect(m.lanes.A.next).toBe("T2");
 	});
 
-	test("contenedor: hijos, esContenedor y horas derivadas de hijos", () => {
-		const m = buildModel(datosBase());
-		const e = m.tareas.get("E");
-		expect(e?.hijos).toEqual(["H1"]);
-		expect(e?.esContenedor).toBe(true);
-		expect(e?.horasEfectivas).toBe(16);
+	test("contenedor: children, isContainer y horas derivadas de children", () => {
+		const m = buildModel(baseData());
+		const e = m.tasks.get("E");
+		expect(e?.children).toEqual(["H1"]);
+		expect(e?.isContainer).toBe(true);
+		expect(e?.effectiveHours).toBe(16);
 	});
 
-	test("un contenedor en la cola se expande a sus hojas ejecutables", () => {
-		const datos = datosBase();
-		datos.carriles.A.cola = ["E"];
+	test("un contenedor en la queue se expande a sus hojas ejecutables", () => {
+		const datos = baseData();
+		datos.lanes.A.queue = ["E"];
 		const m = buildModel(datos);
-		expect(m.carriles.A.cola).toEqual(["H1"]);
-		expect(m.carriles.A.proximo).toBe("H1");
-		expect(m.tareas.get("E")?.carril).toBe("A");
-		expect(m.tareas.get("H1")?.carril).toBe("A");
+		expect(m.lanes.A.queue).toEqual(["H1"]);
+		expect(m.lanes.A.next).toBe("H1");
+		expect(m.tasks.get("E")?.lane).toBe("A");
+		expect(m.tasks.get("H1")?.lane).toBe("A");
 	});
 
-	test("detecta tipo inválido y referencia inexistente", () => {
-		const datos = datosBase();
-		datos.tareas.push({ id: "X", tipo: "NOPE", depende_de: ["FANTASMA"] });
+	test("detecta type inválido y referencia inexistente", () => {
+		const datos = baseData();
+		datos.tasks.push({ id: "X", type: "NOPE", depends_on: ["FANTASMA"] });
 		const m = buildModel(datos);
-		expect(m.alertas.some((a) => a.codigo === "tipo-invalido" && a.params?.valor === "NOPE")).toBe(true);
+		expect(m.alerts.some((a) => a.code === "invalid-type" && a.params?.value === "NOPE")).toBe(true);
 		expect(
-			m.alertas.some((a) => a.codigo === "depende-inexistente" && a.params?.ref === "FANTASMA")
+			m.alerts.some((a) => a.code === "missing-dependency" && a.params?.ref === "FANTASMA")
 		).toBe(true);
 	});
 
-	test("estado visual derivado: hoja y contenedor", () => {
-		const m = buildModel(datosBase());
-		expect(m.tareas.get("T1")?.estadoVisual).toBe("hecho");
-		expect(m.tareas.get("T2")?.estadoVisual).toBe("proximo");
-		expect(m.tareas.get("T3")?.estadoVisual).toBe("fuera-de-turno");
-		expect(m.tareas.get("T3")?.esperaIds).toEqual(["T2"]);
-		expect(m.tareas.get("E")?.estadoVisual).toBe("en-espera");
-		expect(m.tareas.get("H1")?.estadoVisual).toBe("en-espera");
+	test("status visual derivado: hoja y contenedor", () => {
+		const m = buildModel(baseData());
+		expect(m.tasks.get("T1")?.visualState).toBe("done");
+		expect(m.tasks.get("T2")?.visualState).toBe("next");
+		expect(m.tasks.get("T3")?.visualState).toBe("out-of-turn");
+		expect(m.tasks.get("T3")?.waitingFor).toEqual(["T2"]);
+		expect(m.tasks.get("E")?.visualState).toBe("waiting");
+		expect(m.tasks.get("H1")?.visualState).toBe("waiting");
 	});
 
-	test("contenedor en-curso = algunos hijos hechos pero no todos", () => {
-		const datos = datosBase();
-		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
-		if (h1) h1.estado = "hecho";
-		datos.tareas.push({
+	test("contenedor en-curso = algunos children hechos pero no todos", () => {
+		const datos = baseData();
+		const h1 = datos.tasks.find((tarea) => tarea.id === "H1");
+		if (h1) h1.status = "done";
+		datos.tasks.push({
 			id: "H2",
-			tipo: "FT",
-			estado: "pendiente",
-			madurez: "ejecutable",
-			duracion: 8,
-			padre: "E",
+			type: "feat",
+			status: "pending",
+			maturity: "ready",
+			duration: 8,
+			parent: "E",
 		});
 		const m = buildModel(datos);
-		expect(m.tareas.get("E")?.estadoVisual).toBe("en-curso");
+		expect(m.tasks.get("E")?.visualState).toBe("in-progress");
 	});
 
 	test("en-curso se propaga por combos anidados", () => {
-		const datos = datosBase();
-		datos.tareas.push({ id: "GC", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 });
-		datos.tareas.push({ id: "MID", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "GC" });
-		datos.tareas.push({ id: "L1", tipo: "FT", estado: "hecho", madurez: "ejecutable", duracion: 8, padre: "MID" });
-		datos.tareas.push({ id: "L2", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 8, padre: "MID" });
+		const datos = baseData();
+		datos.tasks.push({ id: "GC", type: "combo", status: "pending", maturity: "ready", duration: 16 });
+		datos.tasks.push({ id: "MID", type: "combo", status: "pending", maturity: "ready", duration: 16, parent: "GC" });
+		datos.tasks.push({ id: "L1", type: "feat", status: "done", maturity: "ready", duration: 8, parent: "MID" });
+		datos.tasks.push({ id: "L2", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "MID" });
 		const m = buildModel(datos);
-		expect(m.tareas.get("MID")?.estadoVisual).toBe("en-curso");
-		expect(m.tareas.get("GC")?.estadoVisual).toBe("en-curso");
+		expect(m.tasks.get("MID")?.visualState).toBe("in-progress");
+		expect(m.tasks.get("GC")?.visualState).toBe("in-progress");
 	});
 
-	test("una dependencia contra contenedor espera a que todos sus hijos estén hechos", () => {
-		const datos = datosBase();
-		datos.carriles.A.cola = ["T4"];
-		datos.tareas.push({ id: "T4", tipo: "FT", estado: "pendiente", duracion: 8, depende_de: ["E"] });
-		datos.tareas.push({ id: "C2", tipo: "COMBO", estado: "pendiente", duracion: 8, depende_de: ["E"] });
-		datos.tareas.push({ id: "C2-H1", tipo: "DT", estado: "pendiente", duracion: 8, padre: "C2" });
+	test("una dependencia contra contenedor espera a que todos sus children estén hechos", () => {
+		const datos = baseData();
+		datos.lanes.A.queue = ["T4"];
+		datos.tasks.push({ id: "T4", type: "feat", status: "pending", duration: 8, depends_on: ["E"] });
+		datos.tasks.push({ id: "C2", type: "combo", status: "pending", duration: 8, depends_on: ["E"] });
+		datos.tasks.push({ id: "C2-H1", type: "maint", status: "pending", duration: 8, parent: "C2" });
 		let m = buildModel(datos);
-		expect(m.tareas.get("T4")?.bloqueado).toBe(true);
-		expect(m.tareas.get("T4")?.esperaIds).toEqual(["E"]);
-		expect(m.tareas.get("C2")?.estadoVisual).toBe("fuera-de-turno");
-		expect(m.tareas.get("C2-H1")?.bloqueado).toBe(true);
-		expect(m.tareas.get("C2-H1")?.esperaIds).toEqual(["E"]);
+		expect(m.tasks.get("T4")?.blocked).toBe(true);
+		expect(m.tasks.get("T4")?.waitingFor).toEqual(["E"]);
+		expect(m.tasks.get("C2")?.visualState).toBe("out-of-turn");
+		expect(m.tasks.get("C2-H1")?.blocked).toBe(true);
+		expect(m.tasks.get("C2-H1")?.waitingFor).toEqual(["E"]);
 
-		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
-		if (h1) h1.estado = "hecho";
+		const h1 = datos.tasks.find((tarea) => tarea.id === "H1");
+		if (h1) h1.status = "done";
 		m = buildModel(datos);
-		expect(m.tareas.get("T4")?.bloqueado).toBe(false);
-		expect(m.tareas.get("T4")?.esperaIds).toEqual([]);
-		expect(m.tareas.get("C2")?.estadoVisual).toBe("en-espera");
-		expect(m.tareas.get("C2-H1")?.bloqueado).toBe(false);
+		expect(m.tasks.get("T4")?.blocked).toBe(false);
+		expect(m.tasks.get("T4")?.waitingFor).toEqual([]);
+		expect(m.tasks.get("C2")?.visualState).toBe("waiting");
+		expect(m.tasks.get("C2-H1")?.blocked).toBe(false);
 	});
 
-	test("rechaza estado en-curso escrito en una hoja", () => {
-		const datos = datosBase();
-		datos.tareas.push({ id: "X", tipo: "FT", estado: "en-curso" });
+	test("rechaza status en-curso escrito en una hoja", () => {
+		const datos = baseData();
+		datos.tasks.push({ id: "X", type: "feat", status: "in-progress" });
 		const m = buildModel(datos);
 		expect(
-			m.alertas.some((a) => a.codigo === "estado-invalido" && a.params?.valor === "en-curso")
+			m.alerts.some((a) => a.code === "invalid-status" && a.params?.value === "in-progress")
 		).toBe(true);
 	});
 
-	test("acepta duracion numérica y rechaza con sufijo", () => {
-		const datos = datosBase();
-		datos.tareas.push({ id: "X", tipo: "FT", estado: "pendiente", duracion: 16 });
-		datos.tareas.push({ id: "Y", tipo: "FT", estado: "pendiente", duracion: "2d" });
+	test("acepta duration numérica y rechaza con sufijo", () => {
+		const datos = baseData();
+		datos.tasks.push({ id: "X", type: "feat", status: "pending", duration: 16 });
+		datos.tasks.push({ id: "Y", type: "feat", status: "pending", duration: "2d" });
 		const m = buildModel(datos);
-		expect(m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.id === "X")).toBe(false);
+		expect(m.alerts.some((a) => a.code === "invalid-duration" && a.params?.id === "X")).toBe(false);
 		expect(
-			m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.valor === "2d")
+			m.alerts.some((a) => a.code === "invalid-duration" && a.params?.value === "2d")
 		).toBe(true);
 	});
 
 	test("severidad: referencias rotas = error, taxonomía desconocida = warning", () => {
-		const datos = datosBase();
-		datos.tareas.push({
+		const datos = baseData();
+		datos.tasks.push({
 			id: "X",
-			tipo: "FT",
-			estado: "pendiente",
-			duracion: 8,
-			padre: "FANTASMA",
+			type: "feat",
+			status: "pending",
+			duration: 8,
+			parent: "FANTASMA",
 			areas: ["inexistente"],
-			zonas: ["ZX"],
+			zones: ["ZX"],
 		});
 		const m = buildModel(datos);
-		const sev = (codigo: string) => m.alertas.find((a) => a.codigo === codigo)?.severidad;
-		expect(sev("padre-inexistente")).toBe("error");
-		expect(sev("area-desconocida")).toBe("warning");
-		expect(sev("zona-desconocida")).toBe("warning");
+		const severityOf = (code: string) => m.alerts.find((a) => a.code === code)?.severity;
+		expect(severityOf("missing-parent")).toBe("error");
+		expect(severityOf("unknown-area")).toBe("warning");
+		expect(severityOf("unknown-zone")).toBe("warning");
 	});
 
 	test("valida contrato COMBO básico", () => {
-		const datos = datosBase();
-		const e = datos.tareas.find((tarea) => tarea.id === "E");
-		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
-		if (e) e.tipo = "FT";
-		if (h1) h1.tipo = "COMBO";
+		const datos = baseData();
+		const e = datos.tasks.find((tarea) => tarea.id === "E");
+		const h1 = datos.tasks.find((tarea) => tarea.id === "H1");
+		if (e) e.type = "feat";
+		if (h1) h1.type = "combo";
 		const m = buildModel(datos);
 
-		expect(m.alertas.some((a) => a.codigo === "combo-tipo-faltante" && a.tareaId === "E")).toBe(true);
-		expect(m.alertas.some((a) => a.codigo === "combo-en-hoja" && a.tareaId === "H1")).toBe(true);
+		expect(m.alerts.some((a) => a.code === "combo-missing-type" && a.taskId === "E")).toBe(true);
+		expect(m.alerts.some((a) => a.code === "combo-on-leaf" && a.taskId === "H1")).toBe(true);
 	});
 
 	test("valida duración de COMBO con cota física y paralelismo", () => {
-		const imposible = datosBase();
-		const e = imposible.tareas.find((tarea) => tarea.id === "E");
-		if (e) e.duracion = 8;
+		const imposible = baseData();
+		const e = imposible.tasks.find((tarea) => tarea.id === "E");
+		if (e) e.duration = 8;
 		let m = buildModel(imposible);
 		expect(
-			m.alertas.some((a) => a.codigo === "combo-duracion-imposible" && a.severidad === "error")
+			m.alerts.some((a) => a.code === "combo-impossible-duration" && a.severity === "error")
 		).toBe(true);
 
-		const mayor = datosBase();
-		const eMayor = mayor.tareas.find((tarea) => tarea.id === "E");
-		if (eMayor) eMayor.duracion = 24;
+		const mayor = baseData();
+		const eMayor = mayor.tasks.find((tarea) => tarea.id === "E");
+		if (eMayor) eMayor.duration = 24;
 		m = buildModel(mayor);
 		expect(
-			m.alertas.some((a) => a.codigo === "combo-duracion-mayor" && a.severidad === "warning")
+			m.alerts.some((a) => a.code === "combo-duration-too-high" && a.severity === "warning")
 		).toBe(true);
 
 		const paralelo: BuildModelInput = {
-			taxonomia: { areas: {} },
-			carriles: { A: { cola: ["L1"] }, B: { cola: ["L2"] } },
-			tareas: [
-				{ id: "C", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 },
-				{ id: "L1", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "C" },
-				{ id: "L2", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "C" },
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["L1"] }, B: { queue: ["L2"] } },
+			tasks: [
+				{ id: "C", type: "combo", status: "pending", maturity: "ready", duration: 16 },
+				{ id: "L1", type: "feat", status: "pending", maturity: "ready", duration: 16, parent: "C" },
+				{ id: "L2", type: "feat", status: "pending", maturity: "ready", duration: 16, parent: "C" },
 			],
 		};
 		m = buildModel(paralelo);
-		expect(m.alertas.some((a) => a.codigo === "combo-duracion-imposible")).toBe(false);
-		expect(m.alertas.some((a) => a.codigo === "combo-duracion-mayor")).toBe(false);
+		expect(m.alerts.some((a) => a.code === "combo-impossible-duration")).toBe(false);
+		expect(m.alerts.some((a) => a.code === "combo-duration-too-high")).toBe(false);
 	});
 
-	test("valida madurez y estado declarados en COMBO", () => {
-		const datos = datosBase();
-		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
-		if (h1) h1.madurez = "nota";
+	test("valida maturity y status declarados en COMBO", () => {
+		const datos = baseData();
+		const h1 = datos.tasks.find((tarea) => tarea.id === "H1");
+		if (h1) h1.maturity = "raw";
 		let m = buildModel(datos);
 		expect(
-			m.alertas.some((a) => a.codigo === "combo-madurez-mayor" && a.params?.derivada === "nota")
+			m.alerts.some((a) => a.code === "combo-maturity-too-high" && a.params?.derived === "raw")
 		).toBe(true);
 
 		if (h1) {
-			h1.madurez = "ejecutable";
-			h1.estado = "hecho";
+			h1.maturity = "ready";
+			h1.status = "done";
 		}
 		m = buildModel(datos);
 		expect(
-			m.alertas.some((a) => a.codigo === "combo-estado-deberia-hecho" && a.params?.esperado === "hecho")
+			m.alerts.some((a) => a.code === "combo-should-be-done" && a.params?.expected === "done")
 		).toBe(true);
 	});
 
 	test("fixture demo-app: válido y con derivaciones esperadas", () => {
 		const m = buildModel(loadDemo());
-		expect(m.alertas).toEqual([]);
-		expect(m.tareas.get("DT-020")?.bloqueado).toBe(false);
-		expect(m.tareas.get("FT-002")?.bloqueado).toBe(false);
-		expect(m.carriles.A.proximo).toBe("FT-002");
-		expect(m.carriles.B.proximo).toBe("DT-011");
-		expect(m.tareas.get("EPIC-100")?.horasEfectivas).toBe(64);
-		expect(m.tareas.get("DT-010")?.horasEfectivas).toBe(40);
-		expect(m.tareas.get("DT-005")?.absorbidaPor).toBe("FT-002");
-		expect(m.tareas.get("FT-001")?.desbloquea).toContain("FT-002");
+		expect(m.alerts).toEqual([]);
+		expect(m.tasks.get("DT-020")?.blocked).toBe(false);
+		expect(m.tasks.get("FT-002")?.blocked).toBe(false);
+		expect(m.lanes.A.next).toBe("FT-002");
+		expect(m.lanes.B.next).toBe("DT-011");
+		expect(m.tasks.get("EPIC-100")?.effectiveHours).toBe(64);
+		expect(m.tasks.get("DT-010")?.effectiveHours).toBe(40);
+		expect(m.tasks.get("DT-005")?.absorbedBy).toBe("FT-002");
+		expect(m.tasks.get("FT-001")?.unlocks).toContain("FT-002");
 	});
 
-	test("fixture demo-app: gates cruzados y solape entre carriles", () => {
+	test("fixture demo-app: gates cruzados y solape entre lanes", () => {
 		const m = buildModel(loadDemo());
-		expect(m.gatesCruzados).toHaveLength(1);
-		expect(m.gatesCruzados[0]).toEqual({
-			de: "DT-011",
-			aQue: "FT-001",
-			carrilDe: "B",
-			carrilA: "A",
-			abierto: false,
+		expect(m.crossLaneGates).toHaveLength(1);
+		expect(m.crossLaneGates[0]).toEqual({
+			from: "DT-011",
+			to: "FT-001",
+			fromLane: "B",
+			toLane: "A",
+			open: false,
 		});
 
-		const s = m.solapeCarriles.find((item) => item.a === "A" && item.b === "B");
+		const s = m.laneOverlaps.find((item) => item.a === "A" && item.b === "B");
 		expect(s).toBeDefined();
-		expect(s?.comunes).toEqual(["CheckoutService"]);
+		expect(s?.common).toEqual(["CheckoutService"]);
 		expect(s?.pct).toBe(33);
 	});
 });

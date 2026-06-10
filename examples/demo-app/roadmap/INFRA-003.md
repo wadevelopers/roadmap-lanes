@@ -1,15 +1,15 @@
 ---
 id: INFRA-003
-titulo: Configurar CI de tests
-tipo: INFRA
-madurez: ejecutable
-estado: pendiente
-duracion: 16
+title: Configurar CI de tests
+type: infra
+maturity: ready
+status: pending
+duration: 16
 areas: [infra]
-zonas: [CI]
-padre:
-absorbe: []
-depende_de: []
+zones: [CI]
+parent:
+absorbs: []
+depends_on: []
 ---
 
 Pipeline de integración continua que corre los tests en cada push. Carril B.

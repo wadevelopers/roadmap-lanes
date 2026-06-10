@@ -1,15 +1,15 @@
 ---
 id: INFRA-005
-titulo: Cachear assets en el build
-tipo: INFRA
-madurez: ejecutable
-estado: pendiente
-duracion: 16
+title: Cachear assets en el build
+type: infra
+maturity: ready
+status: pending
+duration: 16
 areas: [infra]
-zonas: [Build]
-padre:
-absorbe: []
-depende_de: []
+zones: [Build]
+parent:
+absorbs: []
+depends_on: []
 ---
 
 Agregar hashing y cache de assets estáticos en el pipeline de build.

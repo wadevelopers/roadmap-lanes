@@ -1,151 +1,150 @@
-export const TIPOS = ["FT", "DT", "INFRA", "COMBO"] as const;
-export const MADUREZ = ["nota", "esqueleto", "ejecutable"] as const;
-export const ESTADOS = ["pendiente", "hecho"] as const;
-export const ESTADOS_VISUALES = [
-	"hecho",
-	"fuera-de-turno",
-	"proximo",
-	"en-espera",
-	"en-curso",
+export const TYPES = ["feat", "maint", "infra", "combo"] as const;
+export const FILTERABLE_TYPES = ["feat", "maint", "infra"] as const;
+export const MATURITIES = ["raw", "draft", "ready"] as const;
+export const STATUSES = ["pending", "done"] as const;
+export const VISUAL_STATES = [
+	"done",
+	"out-of-turn",
+	"next",
+	"waiting",
+	"in-progress",
 ] as const;
 
-export type TipoTarea = (typeof TIPOS)[number];
-export type MadurezTarea = (typeof MADUREZ)[number];
-export type EstadoTarea = (typeof ESTADOS)[number];
-export type EstadoVisual = (typeof ESTADOS_VISUALES)[number];
+export type TaskType = (typeof TYPES)[number];
+export type FilterableTaskType = (typeof FILTERABLE_TYPES)[number];
+export type TaskMaturity = (typeof MATURITIES)[number];
+export type TaskStatus = (typeof STATUSES)[number];
+export type VisualState = (typeof VISUAL_STATES)[number];
 
-export type Severidad = "error" | "warning" | "info";
+export type Severity = "error" | "warning" | "info";
 
-export type CodigoAlerta =
-	| "falta-id"
-	| "id-duplicado"
-	| "tipo-invalido"
-	| "madurez-invalida"
-	| "estado-invalido"
-	| "duracion-invalida"
-	| "padre-inexistente"
-	| "depende-inexistente"
-	| "absorbe-inexistente"
-	| "carril-tarea-inexistente"
-	| "doble-carril"
-	| "area-desconocida"
-	| "zona-desconocida"
-	| "combo-tipo-faltante"
-	| "combo-en-hoja"
-	| "combo-duracion-imposible"
-	| "combo-duracion-mayor"
-	| "combo-duracion-faltante"
-	| "combo-madurez-mayor"
-	| "combo-madurez-menor"
-	| "combo-madurez-faltante"
-	| "combo-estado-deberia-hecho"
-	| "combo-estado-falso-hecho"
-	| "combo-estado-faltante";
+export type AlertCode =
+	| "missing-id"
+	| "duplicate-id"
+	| "invalid-type"
+	| "invalid-maturity"
+	| "invalid-status"
+	| "invalid-duration"
+	| "missing-parent"
+	| "missing-dependency"
+	| "missing-absorbed"
+	| "missing-lane-task"
+	| "duplicate-lane"
+	| "unknown-area"
+	| "unknown-zone"
+	| "combo-missing-type"
+	| "combo-on-leaf"
+	| "combo-impossible-duration"
+	| "combo-duration-too-high"
+	| "combo-missing-duration"
+	| "combo-maturity-too-high"
+	| "combo-maturity-too-low"
+	| "combo-missing-maturity"
+	| "combo-should-be-done"
+	| "combo-falsely-done"
+	| "combo-missing-status";
 
-export interface Alerta {
-	codigo: CodigoAlerta;
-	severidad: Severidad;
-	tareaId?: string;
+export interface Alert {
+	code: AlertCode;
+	severity: Severity;
+	taskId?: string;
 	params?: Record<string, string | number | boolean>;
 }
 
-export interface RawTarea {
+export interface RawTask {
 	id?: string;
-	titulo?: string;
-	tipo?: string;
-	madurez?: string;
-	estado?: string;
-	duracion?: number | string;
+	title?: string;
+	type?: string;
+	maturity?: string;
+	status?: string;
+	duration?: number | string;
 	areas?: string[];
-	zonas?: string[];
-	padre?: string | null;
-	absorbe?: string[];
-	depende_de?: string[];
-	cuerpo?: string;
-	_archivo?: string;
+	zones?: string[];
+	parent?: string | null;
+	absorbs?: string[];
+	depends_on?: string[];
+	body?: string;
+	_file?: string;
 }
 
-export interface Tarea extends RawTarea {
+export interface Task extends RawTask {
 	id: string;
-	titulo: string;
-	tipo?: TipoTarea;
-	madurez?: MadurezTarea;
-	estado?: EstadoTarea;
+	title: string;
+	type?: TaskType;
+	maturity?: TaskMaturity;
+	status?: TaskStatus;
 	areas: string[];
-	zonas: string[];
-	padre: string | null;
-	absorbe: string[];
-	depende_de: string[];
-	hijos: string[];
-	desbloquea: string[];
-	absorbidaPor: string | null;
-	esContenedor: boolean;
-	duracionHoras: number | null;
-	horasEfectivas: number;
-	bloqueado: boolean;
-	estadoVisual: EstadoVisual;
-	esperaIds: string[];
-	carril: string | null;
-	posicion: number | null;
+	zones: string[];
+	parent: string | null;
+	absorbs: string[];
+	depends_on: string[];
+	children: string[];
+	unlocks: string[];
+	absorbedBy: string | null;
+	isContainer: boolean;
+	durationHours: number | null;
+	effectiveHours: number;
+	blocked: boolean;
+	visualState: VisualState;
+	waitingFor: string[];
+	lane: string | null;
+	position: number | null;
 }
 
-export interface TaxonomiaArea {
-	zonas?: string[];
+export interface TaxonomyArea {
 	zones?: string[];
 }
 
-export interface Taxonomia {
-	areas?: Record<string, TaxonomiaArea>;
+export interface Taxonomy {
+	areas?: Record<string, TaxonomyArea>;
 }
 
-export interface CarrilInput {
-	foco?: string;
+export interface LaneInput {
 	focus?: string;
 	worktree?: string;
-	cola?: string[];
 	queue?: string[];
 }
 
-export type CarrilesInput = Record<string, CarrilInput>;
+export type LanesInput = Record<string, LaneInput>;
 
-export interface CarrilModel {
-	foco: string;
+export interface LaneModel {
+	focus: string;
 	worktree: string;
-	cola: string[];
-	proximo: string | null;
+	queue: string[];
+	next: string | null;
 }
 
-export interface SolapeCarriles {
+export interface LaneOverlap {
 	a: string;
 	b: string;
-	comunes: string[];
+	common: string[];
 	pct: number;
 }
 
-export interface GateCruzado {
-	de: string;
-	carrilDe: string;
-	aQue: string;
-	carrilA: string;
-	abierto: boolean;
+export interface CrossLaneGate {
+	from: string;
+	fromLane: string;
+	to: string;
+	toLane: string;
+	open: boolean;
 }
 
 export interface BuildModelInput {
-	tareas: RawTarea[];
-	taxonomia: Taxonomia;
-	carriles: CarrilesInput;
-	horasPorDia?: number;
+	tasks: RawTask[];
+	taxonomy: Taxonomy;
+	lanes: LanesInput;
+	hoursPerDay?: number;
 	projectName?: string;
 }
 
-export interface Modelo {
+export interface Model {
 	projectName?: string;
-	tareas: Map<string, Tarea>;
-	carriles: Record<string, CarrilModel>;
-	taxonomia: Taxonomia;
-	horasPorDia: number;
-	zonasDeCarril: Record<string, string[]>;
-	solapeCarriles: SolapeCarriles[];
-	gatesCruzados: GateCruzado[];
-	alertas: Alerta[];
+	tasks: Map<string, Task>;
+	lanes: Record<string, LaneModel>;
+	taxonomy: Taxonomy;
+	hoursPerDay: number;
+	laneZones: Record<string, string[]>;
+	laneOverlaps: LaneOverlap[];
+	crossLaneGates: CrossLaneGate[];
+	alerts: Alert[];
 }

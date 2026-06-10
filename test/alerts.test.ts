@@ -1,36 +1,36 @@
 import { describe, expect, test } from "vitest";
 
 import { alertFingerprint } from "../src/alerts";
-import type { Alerta } from "../src/types";
+import type { Alert } from "../src/types";
 
 describe("alertFingerprint", () => {
 	test("es estable aunque cambie el orden de params", () => {
-		const a: Alerta = {
-			codigo: "area-desconocida",
-			severidad: "warning",
-			tareaId: "DT-040",
-			params: { valor: "ux", id: "DT-040" },
+		const a: Alert = {
+			code: "unknown-area",
+			severity: "warning",
+			taskId: "DT-040",
+			params: { value: "ux", id: "DT-040" },
 		};
-		const b: Alerta = {
-			codigo: "area-desconocida",
-			severidad: "warning",
-			tareaId: "DT-040",
-			params: { id: "DT-040", valor: "ux" },
+		const b: Alert = {
+			code: "unknown-area",
+			severity: "warning",
+			taskId: "DT-040",
+			params: { id: "DT-040", value: "ux" },
 		};
 
 		expect(alertFingerprint(a)).toBe(alertFingerprint(b));
 	});
 
 	test("cambia cuando cambian los valores de la alerta", () => {
-		const base: Alerta = {
-			codigo: "zona-desconocida",
-			severidad: "warning",
-			tareaId: "DT-040",
-			params: { id: "DT-040", valor: "BillingUI" },
+		const base: Alert = {
+			code: "unknown-zone",
+			severity: "warning",
+			taskId: "DT-040",
+			params: { id: "DT-040", value: "BillingUI" },
 		};
-		const changed: Alerta = {
+		const changed: Alert = {
 			...base,
-			params: { id: "DT-040", valor: "CheckoutUI" },
+			params: { id: "DT-040", value: "CheckoutUI" },
 		};
 
 		expect(alertFingerprint(base)).not.toBe(alertFingerprint(changed));

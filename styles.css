@@ -17,14 +17,14 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	--rl-state-next: var(--color-yellow);
 	--rl-state-blocked: var(--color-red);
 	--rl-state-waiting: var(--text-muted);
-	--rl-type-ft: var(--color-blue);
-	--rl-type-dt: var(--color-orange);
+	--rl-type-feat: var(--color-blue);
+	--rl-type-maint: var(--color-orange);
 	--rl-type-infra: var(--color-purple);
 	--rl-type-combo: var(--interactive-accent);
-	--rl-solape-0: var(--color-green);
-	--rl-solape-1: var(--color-yellow);
-	--rl-solape-2: var(--color-orange);
-	--rl-solape-3: var(--color-red);
+	--rl-overlap-0: var(--color-green);
+	--rl-overlap-1: var(--color-yellow);
+	--rl-overlap-2: var(--color-orange);
+	--rl-overlap-3: var(--color-red);
 	color: var(--text-normal);
 	height: 100%;
 	overflow: auto;
@@ -95,13 +95,27 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-filter-chip {
 	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
+	border-radius: 16px;
 	background: var(--background-secondary);
 	color: var(--text-muted);
 	font-size: 12px;
+	font-weight: 700;
 	line-height: 1;
 	padding: 7px 9px;
+	text-transform: uppercase;
 	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-filter-type-feat {
+	--rl-filter-type-color: var(--rl-type-feat);
+}
+
+.roadmap-lanes-view .rl-filter-type-maint {
+	--rl-filter-type-color: var(--rl-type-maint);
+}
+
+.roadmap-lanes-view .rl-filter-type-infra {
+	--rl-filter-type-color: var(--rl-type-infra);
 }
 
 .roadmap-lanes-view .rl-filter-chip:hover,
@@ -111,8 +125,9 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-filter-chip.is-active {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
+	border-color: var(--rl-filter-type-color, var(--interactive-accent));
+	background: var(--rl-filter-type-color, var(--interactive-accent));
+	color: white;
 }
 
 .roadmap-lanes-view .rl-filter-count {
@@ -353,19 +368,19 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	box-shadow: none;
 }
 
-.roadmap-lanes-view .rl-solape-border-0 {
-	--rl-coord-c: var(--rl-solape-0);
+.roadmap-lanes-view .rl-overlap-border-0 {
+	--rl-coord-c: var(--rl-overlap-0);
 }
 
-.roadmap-lanes-view .rl-solape-border-1 {
-	--rl-coord-c: var(--rl-solape-1);
+.roadmap-lanes-view .rl-overlap-border-1 {
+	--rl-coord-c: var(--rl-overlap-1);
 }
 
-.roadmap-lanes-view .rl-solape-border-2 {
-	--rl-coord-c: var(--rl-solape-2);
+.roadmap-lanes-view .rl-overlap-border-2 {
+	--rl-coord-c: var(--rl-overlap-2);
 }
 
-.roadmap-lanes-view .rl-solape-border-3,
+.roadmap-lanes-view .rl-overlap-border-3,
 .roadmap-lanes-view .rl-gate-open {
 	--rl-coord-c: var(--rl-state-blocked);
 }
@@ -482,43 +497,61 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	align-items: center;
 	gap: 6px;
 	min-height: 18px;
+	flex-wrap: nowrap;
+	overflow: hidden;
+}
+
+.roadmap-lanes-view .rl-id-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .roadmap-lanes-view .rl-task-id {
 	font-family: var(--font-monospace);
 	font-size: 12px;
 	font-weight: 700;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .roadmap-lanes-view .rl-duration {
 	margin-left: auto;
+	flex-shrink: 0;
 	color: var(--text-muted);
 	font-size: 12px;
 	font-variant-numeric: tabular-nums;
 }
 
 .roadmap-lanes-view .rl-type {
+	flex-shrink: 0;
 	border-radius: 999px;
 	color: white;
 	font-size: 10px;
 	font-weight: 700;
 	line-height: 1;
 	padding: 3px 6px;
+	text-transform: uppercase;
+	white-space: nowrap;
 }
 
-.roadmap-lanes-view .rl-type-FT {
-	background: var(--rl-type-ft);
+.roadmap-lanes-view .rl-type-feat {
+	background: var(--rl-type-feat);
 }
 
-.roadmap-lanes-view .rl-type-DT {
-	background: var(--rl-type-dt);
+.roadmap-lanes-view .rl-type-maint {
+	background: var(--rl-type-maint);
 }
 
-.roadmap-lanes-view .rl-type-INFRA {
+.roadmap-lanes-view .rl-type-infra {
 	background: var(--rl-type-infra);
 }
 
-.roadmap-lanes-view .rl-type-COMBO {
+.roadmap-lanes-view .rl-type-combo {
 	background: var(--rl-type-combo);
 }
 
@@ -565,20 +598,20 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	font-family: var(--font-monospace);
 }
 
-.roadmap-lanes-view .rl-solape-0 {
-	color: var(--rl-solape-0);
+.roadmap-lanes-view .rl-overlap-0 {
+	color: var(--rl-overlap-0);
 }
 
-.roadmap-lanes-view .rl-solape-1 {
-	color: var(--rl-solape-1);
+.roadmap-lanes-view .rl-overlap-1 {
+	color: var(--rl-overlap-1);
 }
 
-.roadmap-lanes-view .rl-solape-2 {
-	color: var(--rl-solape-2);
+.roadmap-lanes-view .rl-overlap-2 {
+	color: var(--rl-overlap-2);
 }
 
-.roadmap-lanes-view .rl-solape-3 {
-	color: var(--rl-solape-3);
+.roadmap-lanes-view .rl-overlap-3 {
+	color: var(--rl-overlap-3);
 }
 
 .roadmap-lanes-view .rl-card-state {
@@ -590,48 +623,48 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	font-weight: 600;
 }
 
-.roadmap-lanes-view .rl-card.rl-state-hecho,
-.roadmap-lanes-view .rl-container-bar.rl-state-hecho {
+.roadmap-lanes-view .rl-card.rl-state-done,
+.roadmap-lanes-view .rl-container-bar.rl-state-done {
 	border-left-color: var(--rl-state-done);
 }
 
-.roadmap-lanes-view .rl-card.rl-state-en-curso,
-.roadmap-lanes-view .rl-container-bar.rl-state-en-curso {
+.roadmap-lanes-view .rl-card.rl-state-in-progress,
+.roadmap-lanes-view .rl-container-bar.rl-state-in-progress {
 	border-left-color: var(--rl-state-progress);
 }
 
-.roadmap-lanes-view .rl-card.rl-state-proximo,
-.roadmap-lanes-view .rl-container-bar.rl-state-proximo {
+.roadmap-lanes-view .rl-card.rl-state-next,
+.roadmap-lanes-view .rl-container-bar.rl-state-next {
 	border-left-color: var(--rl-state-next);
 }
 
-.roadmap-lanes-view .rl-card.rl-state-bloqueado,
-.roadmap-lanes-view .rl-container-bar.rl-state-bloqueado {
+.roadmap-lanes-view .rl-card.rl-state-blocked,
+.roadmap-lanes-view .rl-container-bar.rl-state-blocked {
 	border-left-color: var(--rl-state-blocked);
 }
 
-.roadmap-lanes-view .rl-card.rl-state-libre,
-.roadmap-lanes-view .rl-container-bar.rl-state-libre {
+.roadmap-lanes-view .rl-card.rl-state-free,
+.roadmap-lanes-view .rl-container-bar.rl-state-free {
 	border-left-color: var(--rl-state-waiting);
 }
 
-.roadmap-lanes-view .rl-card-state.rl-state-hecho {
+.roadmap-lanes-view .rl-card-state.rl-state-done {
 	color: var(--rl-state-done);
 }
 
-.roadmap-lanes-view .rl-card-state.rl-state-en-curso {
+.roadmap-lanes-view .rl-card-state.rl-state-in-progress {
 	color: var(--rl-state-progress);
 }
 
-.roadmap-lanes-view .rl-card-state.rl-state-proximo {
+.roadmap-lanes-view .rl-card-state.rl-state-next {
 	color: var(--rl-state-next);
 }
 
-.roadmap-lanes-view .rl-card-state.rl-state-bloqueado {
+.roadmap-lanes-view .rl-card-state.rl-state-blocked {
 	color: var(--rl-state-blocked);
 }
 
-.roadmap-lanes-view .rl-card-state.rl-state-libre {
+.roadmap-lanes-view .rl-card-state.rl-state-free {
 	color: var(--rl-state-waiting);
 }
 

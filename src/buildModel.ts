@@ -1,32 +1,32 @@
 import {
-	ESTADOS,
-	MADUREZ,
-	TIPOS,
-	type Alerta,
+	MATURITIES,
+	STATUSES,
+	TYPES,
+	type Alert,
+	type AlertCode,
 	type BuildModelInput,
-	type CarrilesInput,
-	type CodigoAlerta,
-	type EstadoTarea,
-	type MadurezTarea,
-	type Modelo,
-	type RawTarea,
-	type Severidad,
-	type Tarea,
-	type TipoTarea,
+	type LanesInput,
+	type Model,
+	type RawTask,
+	type Severity,
+	type Task,
+	type TaskMaturity,
+	type TaskStatus,
+	type TaskType,
 } from "./types";
 
-const DEFAULT_HORAS_POR_DIA = 8;
+const DEFAULT_HOURS_PER_DAY = 8;
 
-function isTipo(value: unknown): value is TipoTarea {
-	return typeof value === "string" && TIPOS.includes(value as TipoTarea);
+function isType(value: unknown): value is TaskType {
+	return typeof value === "string" && TYPES.includes(value as TaskType);
 }
 
-function isMadurez(value: unknown): value is MadurezTarea {
-	return typeof value === "string" && MADUREZ.includes(value as MadurezTarea);
+function isMaturity(value: unknown): value is TaskMaturity {
+	return typeof value === "string" && MATURITIES.includes(value as TaskMaturity);
 }
 
-function isEstado(value: unknown): value is EstadoTarea {
-	return typeof value === "string" && ESTADOS.includes(value as EstadoTarea);
+function isStatus(value: unknown): value is TaskStatus {
+	return typeof value === "string" && STATUSES.includes(value as TaskStatus);
 }
 
 function normalizeStringList(value: unknown): string[] {
@@ -34,192 +34,202 @@ function normalizeStringList(value: unknown): string[] {
 	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
 }
 
-function normalizePadre(value: unknown): string | null {
+function normalizeParent(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-export function parseDuracionHoras(
-	duracion: number | string | undefined
-): { horas: number | null; invalida: boolean } {
-	if (duracion === undefined || duracion === "") return { horas: null, invalida: false };
-	if (typeof duracion === "number") {
-		return Number.isFinite(duracion) && duracion >= 0
-			? { horas: duracion, invalida: false }
-			: { horas: null, invalida: true };
+export function parseDurationHours(
+	duration: number | string | undefined
+): { hours: number | null; invalid: boolean } {
+	if (duration === undefined || duration === "") return { hours: null, invalid: false };
+	if (typeof duration === "number") {
+		return Number.isFinite(duration) && duration >= 0
+			? { hours: duration, invalid: false }
+			: { hours: null, invalid: true };
 	}
 
-	const trimmed = duracion.trim();
-	if (trimmed.length === 0) return { horas: null, invalida: false };
-	if (!/^\d+(?:\.\d+)?$/.test(trimmed)) return { horas: null, invalida: true };
+	const trimmed = duration.trim();
+	if (trimmed.length === 0) return { hours: null, invalid: false };
+	if (!/^\d+(?:\.\d+)?$/.test(trimmed)) return { hours: null, invalid: true };
 
-	const horas = Number(trimmed);
-	return Number.isFinite(horas) && horas >= 0
-		? { horas, invalida: false }
-		: { horas: null, invalida: true };
+	const hours = Number(trimmed);
+	return Number.isFinite(hours) && hours >= 0
+		? { hours, invalid: false }
+		: { hours: null, invalid: true };
 }
 
-function createTarea(raw: RawTarea): Tarea | null {
+function createTask(raw: RawTask): Task | null {
 	if (!raw.id) return null;
 	return {
 		...raw,
 		id: raw.id,
-		titulo: raw.titulo ?? raw.id,
-		tipo: isTipo(raw.tipo) ? raw.tipo : undefined,
-		madurez: isMadurez(raw.madurez) ? raw.madurez : undefined,
-		estado: isEstado(raw.estado) ? raw.estado : undefined,
+		title: raw.title ?? raw.id,
+		type: isType(raw.type) ? raw.type : undefined,
+		maturity: isMaturity(raw.maturity) ? raw.maturity : undefined,
+		status: isStatus(raw.status) ? raw.status : undefined,
 		areas: normalizeStringList(raw.areas),
-		zonas: normalizeStringList(raw.zonas),
-		padre: normalizePadre(raw.padre),
-		absorbe: normalizeStringList(raw.absorbe),
-		depende_de: normalizeStringList(raw.depende_de),
-		hijos: [],
-		desbloquea: [],
-		absorbidaPor: null,
-		esContenedor: false,
-		duracionHoras: null,
-		horasEfectivas: 0,
-		bloqueado: false,
-		estadoVisual: "en-espera",
-		esperaIds: [],
-		carril: null,
-		posicion: null,
+		zones: normalizeStringList(raw.zones),
+		parent: normalizeParent(raw.parent),
+		absorbs: normalizeStringList(raw.absorbs),
+		depends_on: normalizeStringList(raw.depends_on),
+		children: [],
+		unlocks: [],
+		absorbedBy: null,
+		isContainer: false,
+		durationHours: null,
+		effectiveHours: 0,
+		blocked: false,
+		visualState: "waiting",
+		waitingFor: [],
+		lane: null,
+		position: null,
 	};
 }
 
-function normalizeCarriles(carriles: CarrilesInput): CarrilesInput {
-	const result: CarrilesInput = {};
-	for (const [id, carril] of Object.entries(carriles)) {
+function normalizeLanes(lanes: LanesInput): LanesInput {
+	const result: LanesInput = {};
+	for (const [id, lane] of Object.entries(lanes)) {
 		result[id] = {
-			foco: carril.foco ?? carril.focus ?? "",
-			worktree: carril.worktree ?? "",
-			cola: normalizeStringList(carril.cola ?? carril.queue),
+			focus: lane.focus ?? "",
+			worktree: lane.worktree ?? "",
+			queue: normalizeStringList(lane.queue),
 		};
 	}
 	return result;
 }
 
-export function buildModel(input: BuildModelInput): Modelo {
-	const alertas: Alerta[] = [];
-	const alerta = (
-		codigo: CodigoAlerta,
-		severidad: Severidad,
-		params?: Alerta["params"],
-		tareaId?: string
+export function buildModel(input: BuildModelInput): Model {
+	const alerts: Alert[] = [];
+	const alert = (
+		code: AlertCode,
+		severity: Severity,
+		params?: Alert["params"],
+		taskId?: string
 	) => {
-		alertas.push({ codigo, severidad, params, tareaId });
+		alerts.push({ code, severity, params, taskId });
 	};
-	const porId = new Map<string, Tarea>();
-	const rawPorId = new Map<string, RawTarea>();
-	const horasPorDia = input.horasPorDia ?? DEFAULT_HORAS_POR_DIA;
-	const carriles = normalizeCarriles(input.carriles);
+	const byId = new Map<string, Task>();
+	const rawById = new Map<string, RawTask>();
+	const hoursPerDay = input.hoursPerDay ?? DEFAULT_HOURS_PER_DAY;
+	const lanes = normalizeLanes(input.lanes);
 
-	for (const raw of input.tareas) {
+	for (const raw of input.tasks) {
 		if (!raw.id) {
-			alerta("falta-id", "error", { archivo: raw._archivo || "(tarea sin archivo)" });
+			alert("missing-id", "error", { file: raw._file || "(task without file)" });
 			continue;
 		}
-		if (porId.has(raw.id)) alerta("id-duplicado", "error", { id: raw.id }, raw.id);
-		const tarea = createTarea(raw);
-		if (tarea) {
-			porId.set(tarea.id, tarea);
-			rawPorId.set(tarea.id, raw);
+		if (byId.has(raw.id)) alert("duplicate-id", "error", { id: raw.id }, raw.id);
+		const task = createTask(raw);
+		if (task) {
+			byId.set(task.id, task);
+			rawById.set(task.id, raw);
 		}
 	}
 
-	const areasValidas = new Set(Object.keys(input.taxonomia.areas || {}));
-	const zonasValidas = new Set<string>();
-	for (const area of Object.values(input.taxonomia.areas || {})) {
-		for (const zona of area.zonas || area.zones || []) zonasValidas.add(zona);
+	const validAreas = new Set(Object.keys(input.taxonomy.areas || {}));
+	const validZones = new Set<string>();
+	for (const area of Object.values(input.taxonomy.areas || {})) {
+		for (const zone of area.zones || []) validZones.add(zone);
 	}
 
-	const existe = (id: string): boolean => porId.has(id);
+	const exists = (id: string): boolean => byId.has(id);
 
-	for (const t of porId.values()) {
-		const raw = rawPorId.get(t.id);
-		if (raw?.tipo && !isTipo(raw.tipo)) alerta("tipo-invalido", "error", { id: t.id, valor: raw.tipo }, t.id);
-		if (raw?.madurez && !isMadurez(raw.madurez)) {
-			alerta("madurez-invalida", "error", { id: t.id, valor: raw.madurez }, t.id);
+	for (const task of byId.values()) {
+		const raw = rawById.get(task.id);
+		if (raw?.type && !isType(raw.type)) {
+			alert("invalid-type", "error", { id: task.id, value: raw.type }, task.id);
 		}
-
-		for (const area of t.areas) {
-			if (!areasValidas.has(area)) alerta("area-desconocida", "warning", { id: t.id, valor: area }, t.id);
-		}
-		for (const zona of t.zonas) {
-			if (!zonasValidas.has(zona)) alerta("zona-desconocida", "warning", { id: t.id, valor: zona }, t.id);
+		if (raw?.maturity && !isMaturity(raw.maturity)) {
+			alert("invalid-maturity", "error", { id: task.id, value: raw.maturity }, task.id);
 		}
 
-		if (t.padre && !existe(t.padre)) alerta("padre-inexistente", "error", { id: t.id, ref: t.padre }, t.id);
-		for (const d of t.depende_de) {
-			if (!existe(d)) alerta("depende-inexistente", "error", { id: t.id, ref: d }, t.id);
+		for (const area of task.areas) {
+			if (!validAreas.has(area)) alert("unknown-area", "warning", { id: task.id, value: area }, task.id);
 		}
-		for (const ab of t.absorbe) {
-			if (!existe(ab)) alerta("absorbe-inexistente", "error", { id: t.id, ref: ab }, t.id);
+		for (const zone of task.zones) {
+			if (!validZones.has(zone)) alert("unknown-zone", "warning", { id: task.id, value: zone }, task.id);
 		}
 
-		const duracion = parseDuracionHoras(t.duracion);
-		if (duracion.invalida) alerta("duracion-invalida", "error", { id: t.id, valor: String(t.duracion) }, t.id);
-		t.duracionHoras = duracion.horas;
+		if (task.parent && !exists(task.parent)) {
+			alert("missing-parent", "error", { id: task.id, ref: task.parent }, task.id);
+		}
+		for (const dependency of task.depends_on) {
+			if (!exists(dependency)) {
+				alert("missing-dependency", "error", { id: task.id, ref: dependency }, task.id);
+			}
+		}
+		for (const absorbed of task.absorbs) {
+			if (!exists(absorbed)) {
+				alert("missing-absorbed", "error", { id: task.id, ref: absorbed }, task.id);
+			}
+		}
+
+		const duration = parseDurationHours(task.duration);
+		if (duration.invalid) {
+			alert("invalid-duration", "error", { id: task.id, value: String(task.duration) }, task.id);
+		}
+		task.durationHours = duration.hours;
 	}
 
-	for (const t of porId.values()) {
-		if (t.padre && porId.has(t.padre)) porId.get(t.padre)?.hijos.push(t.id);
-		for (const d of t.depende_de) {
-			if (porId.has(d)) porId.get(d)?.desbloquea.push(t.id);
-		}
-	}
-
-	const absorbidaPor = new Map<string, string>();
-	for (const t of porId.values()) {
-		for (const ab of t.absorbe) {
-			if (porId.has(ab)) absorbidaPor.set(ab, t.id);
-		}
-	}
-
-	for (const t of porId.values()) {
-		t.absorbidaPor = absorbidaPor.get(t.id) || null;
-		t.esContenedor = t.hijos.length > 0;
-		const raw = rawPorId.get(t.id);
-		if (raw?.estado && !isEstado(raw.estado)) {
-			alerta("estado-invalido", "error", { id: t.id, valor: raw.estado }, t.id);
+	for (const task of byId.values()) {
+		if (task.parent && byId.has(task.parent)) byId.get(task.parent)?.children.push(task.id);
+		for (const dependency of task.depends_on) {
+			if (byId.has(dependency)) byId.get(dependency)?.unlocks.push(task.id);
 		}
 	}
 
-	const horasEfectivas = (id: string, visto = new Set<string>()): number => {
-		const t = porId.get(id);
-		if (!t) return 0;
-		if (visto.has(id)) return 0;
-		visto.add(id);
-		if (!t.esContenedor) return t.duracionHoras ?? 0;
-		return t.hijos.reduce((sum, h) => sum + horasEfectivas(h, visto), 0);
+	const absorbedBy = new Map<string, string>();
+	for (const task of byId.values()) {
+		for (const absorbed of task.absorbs) {
+			if (byId.has(absorbed)) absorbedBy.set(absorbed, task.id);
+		}
+	}
+
+	for (const task of byId.values()) {
+		task.absorbedBy = absorbedBy.get(task.id) || null;
+		task.isContainer = task.children.length > 0;
+		const raw = rawById.get(task.id);
+		if (raw?.status && !isStatus(raw.status)) {
+			alert("invalid-status", "error", { id: task.id, value: raw.status }, task.id);
+		}
+	}
+
+	const effectiveHours = (id: string, seen = new Set<string>()): number => {
+		const task = byId.get(id);
+		if (!task) return 0;
+		if (seen.has(id)) return 0;
+		seen.add(id);
+		if (!task.isContainer) return task.durationHours ?? 0;
+		return task.children.reduce((sum, child) => sum + effectiveHours(child, seen), 0);
 	};
-	for (const t of porId.values()) t.horasEfectivas = horasEfectivas(t.id);
+	for (const task of byId.values()) task.effectiveHours = effectiveHours(task.id);
 
-	const estaHecho = (t: Tarea): boolean =>
-		t.esContenedor
-			? t.hijos.length > 0 &&
-			  t.hijos.every((h) => {
-				  const hijo = porId.get(h);
-				  return hijo ? estaHecho(hijo) : false;
+	const isDone = (task: Task): boolean =>
+		task.isContainer
+			? task.children.length > 0 &&
+			  task.children.every((child) => {
+				  const childTask = byId.get(child);
+				  return childTask ? isDone(childTask) : false;
 			  })
-			: t.estado === "hecho";
+			: task.status === "done";
 
-	const algunaHojaHecha = (t: Tarea, visto = new Set<string>()): boolean => {
-		if (visto.has(t.id)) return false;
-		visto.add(t.id);
-		if (!t.esContenedor) return t.estado === "hecho";
-		return t.hijos.some((h) => {
-			const hijo = porId.get(h);
-			return hijo ? algunaHojaHecha(hijo, visto) : false;
+	const hasDoneLeaf = (task: Task, seen = new Set<string>()): boolean => {
+		if (seen.has(task.id)) return false;
+		seen.add(task.id);
+		if (!task.isContainer) return task.status === "done";
+		return task.children.some((child) => {
+			const childTask = byId.get(child);
+			return childTask ? hasDoneLeaf(childTask, seen) : false;
 		});
 	};
 
-	const collectLeaves = (t: Tarea, visto = new Set<string>()): Tarea[] => {
-		if (visto.has(t.id)) return [];
-		visto.add(t.id);
-		if (!t.esContenedor) return [t];
-		return t.hijos.flatMap((h) => {
-			const hijo = porId.get(h);
-			return hijo ? collectLeaves(hijo, visto) : [];
+	const collectLeaves = (task: Task, seen = new Set<string>()): Task[] => {
+		if (seen.has(task.id)) return [];
+		seen.add(task.id);
+		if (!task.isContainer) return [task];
+		return task.children.flatMap((child) => {
+			const childTask = byId.get(child);
+			return childTask ? collectLeaves(childTask, seen) : [];
 		});
 	};
 
@@ -227,9 +237,9 @@ export function buildModel(input: BuildModelInput): Modelo {
 		const out: string[] = [];
 		const seen = new Set<string>();
 		for (const id of queue) {
-			const t = porId.get(id);
-			if (!t) continue;
-			for (const leaf of collectLeaves(t)) {
+			const task = byId.get(id);
+			if (!task) continue;
+			for (const leaf of collectLeaves(task)) {
 				if (seen.has(leaf.id)) continue;
 				seen.add(leaf.id);
 				out.push(leaf.id);
@@ -238,252 +248,252 @@ export function buildModel(input: BuildModelInput): Modelo {
 		return out;
 	};
 
-	const bloqueoMemo = new Map<string, boolean>();
-	const estaBloqueado = (t: Tarea, visto = new Set<string>()): boolean => {
-		if (bloqueoMemo.has(t.id)) return bloqueoMemo.get(t.id) ?? false;
-		if (visto.has(t.id)) return false;
-		visto.add(t.id);
-		const bloqueadoPorDependencia = t.depende_de.some((d) => {
-			const dep = porId.get(d);
-			return !dep || !estaHecho(dep);
+	const blockedMemo = new Map<string, boolean>();
+	const isBlocked = (task: Task, seen = new Set<string>()): boolean => {
+		if (blockedMemo.has(task.id)) return blockedMemo.get(task.id) ?? false;
+		if (seen.has(task.id)) return false;
+		seen.add(task.id);
+		const blockedByDependency = task.depends_on.some((dependency) => {
+			const dep = byId.get(dependency);
+			return !dep || !isDone(dep);
 		});
-		const padre = t.padre ? porId.get(t.padre) : null;
-		const bloqueadoPorPadre = padre ? estaBloqueado(padre, visto) : false;
-		const bloqueado = bloqueadoPorDependencia || bloqueadoPorPadre;
-		bloqueoMemo.set(t.id, bloqueado);
-		return bloqueado;
+		const parent = task.parent ? byId.get(task.parent) : null;
+		const blockedByParent = parent ? isBlocked(parent, seen) : false;
+		const blocked = blockedByDependency || blockedByParent;
+		blockedMemo.set(task.id, blocked);
+		return blocked;
 	};
 
-	for (const t of porId.values()) {
-		t.bloqueado = estaBloqueado(t);
+	for (const task of byId.values()) {
+		task.blocked = isBlocked(task);
 	}
 
-	for (const [carrilId, c] of Object.entries(carriles)) {
-		for (const [i, id] of (c.cola || []).entries()) {
-			const t = porId.get(id);
-			if (!t) {
-				alerta("carril-tarea-inexistente", "error", { carril: carrilId, id });
+	for (const [laneId, lane] of Object.entries(lanes)) {
+		for (const [index, id] of (lane.queue || []).entries()) {
+			const task = byId.get(id);
+			if (!task) {
+				alert("missing-lane-task", "error", { lane: laneId, id });
 				continue;
 			}
-			if (t.esContenedor) {
-				if (t.carril) alerta("doble-carril", "error", { id, carrilA: t.carril, carrilB: carrilId }, id);
-				t.carril = carrilId;
-				t.posicion = i;
+			if (task.isContainer) {
+				if (task.lane) alert("duplicate-lane", "error", { id, laneA: task.lane, laneB: laneId }, id);
+				task.lane = laneId;
+				task.position = index;
 			}
-			for (const leaf of collectLeaves(t)) {
-				if (leaf.carril) {
-					alerta("doble-carril", "error", { id: leaf.id, carrilA: leaf.carril, carrilB: carrilId }, leaf.id);
+			for (const leaf of collectLeaves(task)) {
+				if (leaf.lane) {
+					alert("duplicate-lane", "error", { id: leaf.id, laneA: leaf.lane, laneB: laneId }, leaf.id);
 				}
-				leaf.carril = carrilId;
-				leaf.posicion = i;
+				leaf.lane = laneId;
+				leaf.position = index;
 			}
 		}
 	}
 
-	const minMadurez = (leaves: Tarea[]): MadurezTarea | null => {
+	const minMaturity = (leaves: Task[]): TaskMaturity | null => {
 		const values = leaves
-			.map((leaf) => leaf.madurez)
-			.filter((value): value is MadurezTarea => value !== undefined);
+			.map((leaf) => leaf.maturity)
+			.filter((value): value is TaskMaturity => value !== undefined);
 		if (values.length === 0) return null;
 		return values.reduce((min, value) =>
-			MADUREZ.indexOf(value) < MADUREZ.indexOf(min) ? value : min
+			MATURITIES.indexOf(value) < MATURITIES.indexOf(min) ? value : min
 		);
 	};
 
-	const duracionCombo = (leaves: Tarea[]): { suma: number; cota: number } => {
-		const suma = leaves.reduce((sum, leaf) => sum + leaf.horasEfectivas, 0);
-		const tareaMasLarga = leaves.reduce(
-			(max, leaf) => Math.max(max, leaf.horasEfectivas),
+	const comboDurationBounds = (leaves: Task[]): { sum: number; lowerBound: number } => {
+		const sum = leaves.reduce((total, leaf) => total + leaf.effectiveHours, 0);
+		const longestTask = leaves.reduce(
+			(max, leaf) => Math.max(max, leaf.effectiveHours),
 			0
 		);
-		const porCarril = new Map<string, number>();
+		const byLane = new Map<string, number>();
 		for (const leaf of leaves) {
-			if (!leaf.carril) continue;
-			porCarril.set(leaf.carril, (porCarril.get(leaf.carril) ?? 0) + leaf.horasEfectivas);
+			if (!leaf.lane) continue;
+			byLane.set(leaf.lane, (byLane.get(leaf.lane) ?? 0) + leaf.effectiveHours);
 		}
-		const carrilMasCargado = [...porCarril.values()].reduce(
-			(max, horas) => Math.max(max, horas),
+		const busiestLane = [...byLane.values()].reduce(
+			(max, hours) => Math.max(max, hours),
 			0
 		);
-		return { suma, cota: Math.max(tareaMasLarga, carrilMasCargado) };
+		return { sum, lowerBound: Math.max(longestTask, busiestLane) };
 	};
 
-	for (const t of porId.values()) {
-		const raw = rawPorId.get(t.id);
-		if (!t.esContenedor) {
-			if (raw?.tipo === "COMBO") alerta("combo-en-hoja", "warning", { id: t.id }, t.id);
+	for (const task of byId.values()) {
+		const raw = rawById.get(task.id);
+		if (!task.isContainer) {
+			if (raw?.type === "combo") alert("combo-on-leaf", "warning", { id: task.id }, task.id);
 			continue;
 		}
 
-		const leaves = collectLeaves(t);
-		if (raw?.tipo !== "COMBO") alerta("combo-tipo-faltante", "warning", { id: t.id }, t.id);
+		const leaves = collectLeaves(task);
+		if (raw?.type !== "combo") alert("combo-missing-type", "warning", { id: task.id }, task.id);
 
-		const { suma, cota } = duracionCombo(leaves);
-		if (t.duracionHoras === null) {
-			alerta("combo-duracion-faltante", "warning", { id: t.id, suma }, t.id);
-		} else if (t.duracionHoras < cota) {
-			alerta(
-				"combo-duracion-imposible",
+		const { sum, lowerBound } = comboDurationBounds(leaves);
+		if (task.durationHours === null) {
+			alert("combo-missing-duration", "warning", { id: task.id, sum }, task.id);
+		} else if (task.durationHours < lowerBound) {
+			alert(
+				"combo-impossible-duration",
 				"error",
-				{ id: t.id, declarada: t.duracionHoras, cota },
-				t.id
+				{ id: task.id, declared: task.durationHours, lowerBound },
+				task.id
 			);
-		} else if (t.duracionHoras > suma) {
-			alerta(
-				"combo-duracion-mayor",
+		} else if (task.durationHours > sum) {
+			alert(
+				"combo-duration-too-high",
 				"warning",
-				{ id: t.id, declarada: t.duracionHoras, suma },
-				t.id
+				{ id: task.id, declared: task.durationHours, sum },
+				task.id
 			);
 		}
 
-		const derivadaMadurez = minMadurez(leaves);
-		if (derivadaMadurez) {
-			if (!raw?.madurez) {
-				alerta("combo-madurez-faltante", "info", { id: t.id, derivada: derivadaMadurez }, t.id);
-			} else if (t.madurez) {
-				const declaradaRank = MADUREZ.indexOf(t.madurez);
-				const derivadaRank = MADUREZ.indexOf(derivadaMadurez);
-				if (declaradaRank > derivadaRank) {
-					alerta(
-						"combo-madurez-mayor",
+		const derivedMaturity = minMaturity(leaves);
+		if (derivedMaturity) {
+			if (!raw?.maturity) {
+				alert("combo-missing-maturity", "info", { id: task.id, derived: derivedMaturity }, task.id);
+			} else if (task.maturity) {
+				const declaredRank = MATURITIES.indexOf(task.maturity);
+				const derivedRank = MATURITIES.indexOf(derivedMaturity);
+				if (declaredRank > derivedRank) {
+					alert(
+						"combo-maturity-too-high",
 						"warning",
-						{ id: t.id, declarada: t.madurez, derivada: derivadaMadurez },
-						t.id
+						{ id: task.id, declared: task.maturity, derived: derivedMaturity },
+						task.id
 					);
-				} else if (declaradaRank < derivadaRank) {
-					alerta(
-						"combo-madurez-menor",
+				} else if (declaredRank < derivedRank) {
+					alert(
+						"combo-maturity-too-low",
 						"info",
-						{ id: t.id, declarada: t.madurez, derivada: derivadaMadurez },
-						t.id
+						{ id: task.id, declared: task.maturity, derived: derivedMaturity },
+						task.id
 					);
 				}
 			}
 		}
 
-		const esperado = estaHecho(t) ? "hecho" : "pendiente";
-		if (!raw?.estado) {
-			alerta("combo-estado-faltante", "info", { id: t.id, esperado }, t.id);
-		} else if (t.estado) {
-			if (t.estado === "hecho" && esperado !== "hecho") {
-				alerta(
-					"combo-estado-falso-hecho",
+		const expected = isDone(task) ? "done" : "pending";
+		if (!raw?.status) {
+			alert("combo-missing-status", "info", { id: task.id, expected }, task.id);
+		} else if (task.status) {
+			if (task.status === "done" && expected !== "done") {
+				alert(
+					"combo-falsely-done",
 					"warning",
-					{ id: t.id, declarado: t.estado, esperado },
-					t.id
+					{ id: task.id, declared: task.status, expected },
+					task.id
 				);
-			} else if (t.estado !== "hecho" && esperado === "hecho") {
-				alerta(
-					"combo-estado-deberia-hecho",
+			} else if (task.status !== "done" && expected === "done") {
+				alert(
+					"combo-should-be-done",
 					"warning",
-					{ id: t.id, declarado: t.estado, esperado },
-					t.id
+					{ id: task.id, declared: task.status, expected },
+					task.id
 				);
 			}
 		}
 	}
 
-	const carrilesModel: Modelo["carriles"] = {};
-	for (const [carrilId, c] of Object.entries(carriles)) {
-		const cola = expandQueue(c.cola || []);
-		const proximo = cola.find((id) => {
-			const t = porId.get(id);
-			return t !== undefined && t.estado !== "hecho" && !t.bloqueado;
+	const laneModels: Model["lanes"] = {};
+	for (const [laneId, lane] of Object.entries(lanes)) {
+		const queue = expandQueue(lane.queue || []);
+		const next = queue.find((id) => {
+			const task = byId.get(id);
+			return task !== undefined && task.status !== "done" && !task.blocked;
 		});
-		carrilesModel[carrilId] = {
-			foco: c.foco || "",
-			worktree: c.worktree || "",
-			cola,
-			proximo: proximo || null,
+		laneModels[laneId] = {
+			focus: lane.focus || "",
+			worktree: lane.worktree || "",
+			queue,
+			next: next || null,
 		};
 	}
 
-	const proximoDe = new Set<string>();
-	for (const c of Object.values(carrilesModel)) {
-		if (c.proximo) proximoDe.add(c.proximo);
+	const nextByLane = new Set<string>();
+	for (const lane of Object.values(laneModels)) {
+		if (lane.next) nextByLane.add(lane.next);
 	}
 
-	const esperaMemo = new Map<string, string[]>();
-	const esperaDe = (t: Tarea, visto = new Set<string>()): string[] => {
-		if (esperaMemo.has(t.id)) return esperaMemo.get(t.id) ?? [];
-		if (visto.has(t.id)) return [];
-		visto.add(t.id);
-		const espera = t.depende_de.filter((d) => {
-			const dep = porId.get(d);
-			return !dep || !estaHecho(dep);
+	const waitingMemo = new Map<string, string[]>();
+	const waitingForTask = (task: Task, seen = new Set<string>()): string[] => {
+		if (waitingMemo.has(task.id)) return waitingMemo.get(task.id) ?? [];
+		if (seen.has(task.id)) return [];
+		seen.add(task.id);
+		const waitingFor = task.depends_on.filter((dependency) => {
+			const dep = byId.get(dependency);
+			return !dep || !isDone(dep);
 		});
-		const padre = t.padre ? porId.get(t.padre) : null;
-		for (const id of padre ? esperaDe(padre, visto) : []) {
-			if (!espera.includes(id)) espera.push(id);
+		const parent = task.parent ? byId.get(task.parent) : null;
+		for (const id of parent ? waitingForTask(parent, seen) : []) {
+			if (!waitingFor.includes(id)) waitingFor.push(id);
 		}
-		esperaMemo.set(t.id, espera);
-		return espera;
+		waitingMemo.set(task.id, waitingFor);
+		return waitingFor;
 	};
 
-	for (const t of porId.values()) {
-		t.esperaIds = esperaDe(t);
-		if (t.esContenedor) {
-			t.estadoVisual = estaHecho(t)
-				? "hecho"
-				: algunaHojaHecha(t)
-					? "en-curso"
-					: t.bloqueado
-						? "fuera-de-turno"
-						: "en-espera";
-		} else if (t.estado === "hecho") {
-			t.estadoVisual = "hecho";
-		} else if (t.bloqueado) {
-			t.estadoVisual = "fuera-de-turno";
-		} else if (proximoDe.has(t.id)) {
-			t.estadoVisual = "proximo";
+	for (const task of byId.values()) {
+		task.waitingFor = waitingForTask(task);
+		if (task.isContainer) {
+			task.visualState = isDone(task)
+				? "done"
+				: hasDoneLeaf(task)
+					? "in-progress"
+					: task.blocked
+						? "out-of-turn"
+						: "waiting";
+		} else if (task.status === "done") {
+			task.visualState = "done";
+		} else if (task.blocked) {
+			task.visualState = "out-of-turn";
+		} else if (nextByLane.has(task.id)) {
+			task.visualState = "next";
 		} else {
-			t.estadoVisual = "en-espera";
+			task.visualState = "waiting";
 		}
 	}
 
-	const zonasDeCarril: Record<string, string[]> = {};
-	for (const carrilId of Object.keys(carrilesModel)) {
-		const zonas = new Set<string>();
-		for (const id of carrilesModel[carrilId].cola) {
-			const t = porId.get(id);
-			if (t && t.estado !== "hecho") {
-				for (const zona of t.zonas) zonas.add(zona);
+	const laneZones: Record<string, string[]> = {};
+	for (const laneId of Object.keys(laneModels)) {
+		const zones = new Set<string>();
+		for (const id of laneModels[laneId].queue) {
+			const task = byId.get(id);
+			if (task && task.status !== "done") {
+				for (const zone of task.zones) zones.add(zone);
 			}
 		}
-		zonasDeCarril[carrilId] = [...zonas];
+		laneZones[laneId] = [...zones];
 	}
 
-	const idsCarriles = Object.keys(carriles);
-	const solapeCarriles: Modelo["solapeCarriles"] = [];
-	for (let i = 0; i < idsCarriles.length; i++) {
-		for (let j = i + 1; j < idsCarriles.length; j++) {
-			const aId = idsCarriles[i];
-			const bId = idsCarriles[j];
-			const a = new Set(zonasDeCarril[aId]);
-			const b = new Set(zonasDeCarril[bId]);
-			const comunes = [...a].filter((zona) => b.has(zona));
-			const minTam = Math.min(a.size, b.size) || 1;
-			solapeCarriles.push({
+	const laneIds = Object.keys(lanes);
+	const laneOverlaps: Model["laneOverlaps"] = [];
+	for (let i = 0; i < laneIds.length; i++) {
+		for (let j = i + 1; j < laneIds.length; j++) {
+			const aId = laneIds[i];
+			const bId = laneIds[j];
+			const a = new Set(laneZones[aId]);
+			const b = new Set(laneZones[bId]);
+			const common = [...a].filter((zone) => b.has(zone));
+			const minSize = Math.min(a.size, b.size) || 1;
+			laneOverlaps.push({
 				a: aId,
 				b: bId,
-				comunes,
-				pct: Math.round((comunes.length / minTam) * 100),
+				common,
+				pct: Math.round((common.length / minSize) * 100),
 			});
 		}
 	}
 
-	const gatesCruzados: Modelo["gatesCruzados"] = [];
-	for (const t of porId.values()) {
-		for (const d of t.depende_de) {
-			const dep = porId.get(d);
-			if (dep && t.carril && dep.carril && t.carril !== dep.carril) {
-				gatesCruzados.push({
-					de: t.id,
-					carrilDe: t.carril,
-					aQue: d,
-					carrilA: dep.carril,
-					abierto: !estaHecho(dep),
+	const crossLaneGates: Model["crossLaneGates"] = [];
+	for (const task of byId.values()) {
+		for (const dependency of task.depends_on) {
+			const dep = byId.get(dependency);
+			if (dep && task.lane && dep.lane && task.lane !== dep.lane) {
+				crossLaneGates.push({
+					from: task.id,
+					fromLane: task.lane,
+					to: dependency,
+					toLane: dep.lane,
+					open: !isDone(dep),
 				});
 			}
 		}
@@ -491,13 +501,13 @@ export function buildModel(input: BuildModelInput): Modelo {
 
 	return {
 		projectName: input.projectName,
-		tareas: porId,
-		carriles: carrilesModel,
-		taxonomia: input.taxonomia,
-		horasPorDia,
-		zonasDeCarril,
-		solapeCarriles,
-		gatesCruzados,
-		alertas,
+		tasks: byId,
+		lanes: laneModels,
+		taxonomy: input.taxonomy,
+		hoursPerDay,
+		laneZones,
+		laneOverlaps,
+		crossLaneGates,
+		alerts,
 	};
 }

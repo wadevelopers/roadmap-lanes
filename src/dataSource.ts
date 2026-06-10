@@ -1,17 +1,17 @@
 import { normalizePath, type App, type CachedMetadata, type FrontmatterLinkCache, type TFile } from "obsidian";
 import * as yaml from "js-yaml";
 
-import type { BuildModelInput, CarrilesInput, RawTarea, Taxonomia } from "./types";
+import type { BuildModelInput, LanesInput, RawTask, Taxonomy } from "./types";
 import { DEFAULT_SETTINGS, normalizeRoadmapFolder } from "./settings";
 
 export interface RoadmapDataSourceOptions {
 	roadmapFolder?: string;
-	horasPorDia?: number;
+	hoursPerDay?: number;
 }
 
 const DEFAULT_OPTIONS: Required<RoadmapDataSourceOptions> = {
 	roadmapFolder: DEFAULT_SETTINGS.roadmapFolder,
-	horasPorDia: 8,
+	hoursPerDay: 8,
 };
 
 const LANES_FILENAME = "lanes.yaml";
@@ -40,7 +40,7 @@ areas: {}
 function resolveOptions(options: RoadmapDataSourceOptions = {}): Required<RoadmapDataSourceOptions> {
 	return {
 		roadmapFolder: normalizeRoadmapFolder(options.roadmapFolder ?? DEFAULT_OPTIONS.roadmapFolder),
-		horasPorDia: options.horasPorDia ?? DEFAULT_OPTIONS.horasPorDia,
+		hoursPerDay: options.hoursPerDay ?? DEFAULT_OPTIONS.hoursPerDay,
 	};
 }
 
@@ -116,26 +116,26 @@ function markdownBody(raw: string): string {
 	return lines.slice(end + 1).join("\n").trim();
 }
 
-async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): Promise<RawTarea> {
+async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): Promise<RawTask> {
 	const frontmatter = cache?.frontmatter || {};
 	const raw = await app.vault.cachedRead(file);
 	return {
 		id: typeof frontmatter.id === "string" ? frontmatter.id : file.basename,
-		titulo: typeof frontmatter.titulo === "string" ? frontmatter.titulo : file.basename,
-		tipo: typeof frontmatter.tipo === "string" ? frontmatter.tipo : undefined,
-		madurez: typeof frontmatter.madurez === "string" ? frontmatter.madurez : undefined,
-		estado: typeof frontmatter.estado === "string" ? frontmatter.estado : undefined,
-		duracion:
-			typeof frontmatter.duracion === "number" || typeof frontmatter.duracion === "string"
-				? frontmatter.duracion
+		title: typeof frontmatter.title === "string" ? frontmatter.title : file.basename,
+		type: typeof frontmatter.type === "string" ? frontmatter.type : undefined,
+		maturity: typeof frontmatter.maturity === "string" ? frontmatter.maturity : undefined,
+		status: typeof frontmatter.status === "string" ? frontmatter.status : undefined,
+		duration:
+			typeof frontmatter.duration === "number" || typeof frontmatter.duration === "string"
+				? frontmatter.duration
 				: undefined,
 		areas: stringList(frontmatter.areas),
-		zonas: stringList(frontmatter.zonas),
-		padre: relationSingle(cache, "padre", frontmatter.padre),
-		absorbe: relationList(cache, "absorbe", frontmatter.absorbe),
-		depende_de: relationList(cache, "depende_de", frontmatter.depende_de),
-		cuerpo: markdownBody(raw),
-		_archivo: file.path,
+		zones: stringList(frontmatter.zones),
+		parent: relationSingle(cache, "parent", frontmatter.parent),
+		absorbs: relationList(cache, "absorbs", frontmatter.absorbs),
+		depends_on: relationList(cache, "depends_on", frontmatter.depends_on),
+		body: markdownBody(raw),
+		_file: file.path,
 	};
 }
 
@@ -161,13 +161,13 @@ export async function loadRoadmapData(
 		.filter((file) => file.path.startsWith(folderPrefix))
 		.sort((a, b) => a.path.localeCompare(b.path));
 
-	const tareas = await Promise.all(
+	const tasks = await Promise.all(
 		files.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
 	);
-	const taxonomia = await loadYaml<Taxonomia>(app, roadmapPath(resolved, TAXONOMY_FILENAME), {
+	const taxonomy = await loadYaml<Taxonomy>(app, roadmapPath(resolved, TAXONOMY_FILENAME), {
 		areas: {},
 	});
-	const lanesYaml = await loadYaml<{ lanes?: CarrilesInput; carriles?: CarrilesInput }>(
+	const lanesYaml = await loadYaml<{ lanes?: LanesInput }>(
 		app,
 		roadmapPath(resolved, LANES_FILENAME),
 		{
@@ -177,10 +177,10 @@ export async function loadRoadmapData(
 
 	return {
 		projectName: app.vault.getName(),
-		tareas,
-		taxonomia,
-		carriles: lanesYaml.lanes || lanesYaml.carriles || {},
-		horasPorDia: resolved.horasPorDia,
+		tasks,
+		taxonomy,
+		lanes: lanesYaml.lanes || {},
+		hoursPerDay: resolved.hoursPerDay,
 	};
 }
 

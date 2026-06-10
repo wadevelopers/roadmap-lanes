@@ -1,17 +1,17 @@
 ---
 id: ETAPA-B
-titulo: Producto — migrar los callers al esquema nuevo
-tipo: DT
-madurez: esqueleto
-estado: pendiente
-duracion: 24
+title: Producto — migrar los callers al esquema nuevo
+type: maint
+maturity: draft
+status: pending
+duration: 24
 areas:
   - backend
-zonas:
+zones:
   - ProductModel
-padre: "[[DT-010]]"
-absorbe: []
-depende_de:
+parent: "[[DT-010]]"
+absorbs: []
+depends_on:
   - "[[ETAPA-A]]"
 ---
 

@@ -1,15 +1,15 @@
 ---
 id: CC
-titulo: Compras Core
-tipo: COMBO
-madurez: esqueleto
-estado: pendiente
-duracion: 104
+title: Compras Core
+type: combo
+maturity: draft
+status: pending
+duration: 104
 areas: [backend, frontend, datos]
-zonas: [CheckoutService, ProductSchema, PaymentGateway]
-padre:
-absorbe: []
-depende_de: []
+zones: [CheckoutService, ProductSchema, PaymentGateway]
+parent:
+absorbs: []
+depends_on: []
 ---
 
 Ejemplo de plan maestro con subcontenedores operativos.

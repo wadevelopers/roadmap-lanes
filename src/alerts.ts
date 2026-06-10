@@ -1,4 +1,4 @@
-import type { Alerta } from "./types";
+import type { Alert } from "./types";
 
 type FingerprintValue = string | number | boolean | null | FingerprintValue[] | {
 	[key: string]: FingerprintValue;
@@ -19,11 +19,11 @@ function stableValue(value: unknown): FingerprintValue {
 	return result;
 }
 
-export function alertFingerprint(alerta: Alerta): string {
+export function alertFingerprint(alert: Alert): string {
 	return JSON.stringify({
-		codigo: alerta.codigo,
-		severidad: alerta.severidad,
-		tareaId: alerta.tareaId ?? null,
-		params: stableValue(alerta.params ?? {}),
+		code: alert.code,
+		severity: alert.severity,
+		taskId: alert.taskId ?? null,
+		params: stableValue(alert.params ?? {}),
 	});
 }

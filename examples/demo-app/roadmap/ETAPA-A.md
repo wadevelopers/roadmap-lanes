@@ -1,15 +1,15 @@
 ---
 id: ETAPA-A
-titulo: Producto — normalizar columnas del esquema
-tipo: DT
-madurez: ejecutable
-estado: pendiente
-duracion: 16
+title: Producto — normalizar columnas del esquema
+type: maint
+maturity: ready
+status: pending
+duration: 16
 areas: [datos]
-zonas: [ProductSchema, Migrations]
-padre: "[[DT-010]]"
-absorbe: []
-depende_de: []
+zones: [ProductSchema, Migrations]
+parent: "[[DT-010]]"
+absorbs: []
+depends_on: []
 ---
 
 Primera etapa de `DT-010`: migración que normaliza las columnas del producto.

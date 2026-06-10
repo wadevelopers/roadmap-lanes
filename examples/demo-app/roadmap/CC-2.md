@@ -1,15 +1,15 @@
 ---
 id: CC-2
-titulo: Multimoneda Compras
-tipo: COMBO
-madurez: ejecutable
-estado: pendiente
-duracion: 64
+title: Multimoneda Compras
+type: combo
+maturity: ready
+status: pending
+duration: 64
 areas: [backend, frontend]
-zonas: [CheckoutService, PaymentGateway]
-padre: "[[CC]]"
-absorbe: []
-depende_de: []
+zones: [CheckoutService, PaymentGateway]
+parent: "[[CC]]"
+absorbs: []
+depends_on: []
 ---
 
 Ejemplo equivalente a un bloque `CC-2`: agrupa trabajo ejecutable relacionado
