@@ -7,6 +7,17 @@ import {
 	DETAIL_PANEL_MIN_WIDTH,
 	normalizeDetailPanelWidth,
 } from "./settings";
+import {
+	DEFAULT_BOARD_MODE,
+	cardTimePresentation,
+	defaultHoursPerLineForHoursPerDay,
+	formatDurationBadge,
+	formatDurationDetail,
+	normalizeHoursPerLine,
+	timeCardHeight,
+	type BoardMode,
+	type CardLayoutSettings,
+} from "./time";
 
 interface RenderContext {
 	app: App;
@@ -15,15 +26,22 @@ interface RenderContext {
 	model: Model;
 	t: Translator;
 	detailPanelWidth: number;
+	boardMode: BoardMode;
+	hoursPerLine: number;
+	cardLayout: CardLayoutSettings;
 	detailHistory: string[];
 	setDetailPanelWidth?: (width: number) => void;
+	setBoardMode?: (mode: BoardMode) => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
 	acceptAlert?: (alert: Alert) => void | Promise<void>;
 }
 
 export interface RenderModelOptions {
 	detailPanelWidth?: number;
+	boardMode?: BoardMode;
+	hoursPerLine?: number;
 	setDetailPanelWidth?: (width: number) => void;
+	setBoardMode?: (mode: BoardMode) => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
 	acceptAlert?: (alert: Alert) => void | Promise<void>;
 }
@@ -66,6 +84,9 @@ const BOARD_MIN_COLUMN_WIDTH_PX = 240;
 const BOARD_COLUMN_GAP_PX = 12;
 const BOARD_HORIZONTAL_PADDING_PX = 32;
 const DETAIL_PANEL_VIEWPORT_MARGIN_PX = 32;
+const CARD_GAP_PX = 8;
+const TIME_ONE_LINE_CARD_HEIGHT_PX = 28;
+const ORDER_CARD_HEIGHT_PX = 96;
 const columnResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
 type CardIcon = "raw" | "draft" | "ready" | "absorbs" | "overlap";
@@ -110,23 +131,6 @@ function appendDetailIcon(parent: HTMLElement, icon: DetailIcon): void {
 	}
 
 	parent.appendChild(svg);
-}
-
-function formatHours(hours: number): string {
-	return Number.isInteger(hours) ? `${hours}` : `${hours.toFixed(1)}`;
-}
-
-function formatDurationFromHours(hours: number, model: Model): string {
-	const days = hours / model.hoursPerDay;
-	if (days >= 1) {
-		const formatted = Number.isInteger(days) ? `${days}` : `${days.toFixed(1)}`;
-		return `${formatted}d`;
-	}
-	return `${formatHours(hours)}h`;
-}
-
-function formatDuration(task: Task, model: Model): string {
-	return formatDurationFromHours(task.durationHours ?? task.effectiveHours, model);
 }
 
 function visualStatePresentation(task: Task, t: Translator): VisualStatePresentation {
@@ -181,25 +185,32 @@ function overlapFor(model: Model, task: Task): { tasks: Task[]; pct: number } | 
 	};
 }
 
-function renderCardIcon(parent: HTMLElement, icon: CardIcon, cls: string, title: string): void {
+function renderCardIcon(parent: HTMLElement, icon: CardIcon, title: string): void {
 	const span = parent.createEl("span", {
-		cls: `rl-meta-icon ${cls}`,
+		cls: "rl-meta-icon",
 		attr: { "aria-label": title },
 	});
 	span.innerHTML = CARD_ICONS[icon];
 }
 
-function cardHeight(task: Task, model: Model): number {
-	if (task.isContainer) return 96;
-	const dayHeight = 96;
-	const gap = 10;
-	const days = Math.max(0.25, task.effectiveHours / model.hoursPerDay);
-	const whole = Math.floor(days);
-	const fraction = days - whole;
-	const fractionRows = fraction > 0 ? Math.max(1, Math.ceil(fraction * 4)) : 0;
-	const fullRows = whole * 4 + fractionRows;
-	const dayGaps = Math.max(0, Math.ceil(days) - 1) * gap;
-	return Math.max(32, fullRows * (dayHeight / 4) + dayGaps);
+function taskHours(task: Task): number {
+	return task.durationHours ?? task.effectiveHours;
+}
+
+function formatDurationFromHours(hours: number, model: Model): string {
+	return formatDurationBadge(hours, model.hoursPerDay);
+}
+
+function formatDuration(task: Task, model: Model): string {
+	return formatDurationFromHours(taskHours(task), model);
+}
+
+function formatDurationTooltipFromHours(hours: number, model: Model): string {
+	return formatDurationDetail(hours, model.hoursPerDay);
+}
+
+function formatDurationTooltip(task: Task, model: Model): string {
+	return formatDurationTooltipFromHours(taskHours(task), model);
 }
 
 function searchText(task: Task): string {
@@ -256,6 +267,18 @@ function readRootPixelVar(root: HTMLElement, name: string, fallback: number): nu
 	const value = getComputedStyle(root).getPropertyValue(name).trim();
 	const parsed = Number.parseFloat(value);
 	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readCardLayout(root: HTMLElement): CardLayoutSettings {
+	return {
+		oneLineCardHeight: readRootPixelVar(
+			root,
+			"--rl-time-one-line-card-height",
+			TIME_ONE_LINE_CARD_HEIGHT_PX
+		),
+		cardGap: readRootPixelVar(root, "--rl-card-gap", CARD_GAP_PX),
+		orderCardHeight: readRootPixelVar(root, "--rl-order-card-height", ORDER_CARD_HEIGHT_PX),
+	};
 }
 
 function calculateColumnCapacity(root: HTMLElement): number {
@@ -343,7 +366,7 @@ function taskPaths(model: Model, tasks: Task[]): TaskPath[] {
 	return tasks.map((task) => ({ task, ancestors: ancestorChain(model, task) }));
 }
 
-function renderStateLine(parent: HTMLElement, task: Task, t: Translator): void {
+function renderDetailStateLine(parent: HTMLElement, task: Task, t: Translator): void {
 	const status = visualStatePresentation(task, t);
 	parent.createEl("div", {
 		cls: `rl-card-state rl-state-${status.className}`,
@@ -353,6 +376,15 @@ function renderStateLine(parent: HTMLElement, task: Task, t: Translator): void {
 
 function renderCard(ctx: RenderContext, parent: HTMLElement, task: Task, filters: Filters): HTMLElement {
 	const status = visualStatePresentation(task, ctx.t);
+	const presentation = cardTimePresentation(
+		taskHours(task),
+		{
+			hoursPerDay: ctx.model.hoursPerDay,
+			hoursPerLine: ctx.hoursPerLine,
+		},
+		ctx.cardLayout,
+		ctx.boardMode
+	);
 	const card = parent.createEl("article", {
 		cls: `rl-card rl-state-${status.className}`,
 		attr: {
@@ -363,28 +395,46 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Task, filters
 			"data-visible": isVisibleTask(task, filters) ? "true" : "false",
 		},
 	});
-	card.style.height = `${cardHeight(task, ctx.model)}px`;
+	card.style.height = `${presentation.height}px`;
 
-	const head = card.createEl("div", { cls: "rl-card-head" });
+	const head = card.createEl("div", {
+		cls: "rl-card-row rl-card-head",
+		attr: { "data-row-index": "1", "data-row-visible": presentation.visibleRows >= 1 ? "true" : "false" },
+	});
 	const idGroup = head.createEl("div", {
 		cls: "rl-id-group",
 		attr: { "aria-label": task.id, "aria-label-position": "top" },
 	});
 	idGroup.createEl("span", { cls: "rl-task-id", text: task.id });
 	if (task.type) idGroup.createEl("span", { cls: `rl-type rl-type-${task.type}`, text: task.type });
-	head.createEl("span", { cls: "rl-duration", text: formatDuration(task, ctx.model) });
-
-	card.createEl("div", {
-		cls: "rl-card-title",
-		text: task.title,
-		attr: { "aria-label": task.title, "aria-label-position": "top" },
+	head.createEl("span", {
+		cls: "rl-duration",
+		text: presentation.durationBadge,
+		attr: {
+			"aria-label": presentation.durationDetail,
+			"aria-label-position": "top",
+		},
 	});
 
-	const meta = card.createEl("div", { cls: "rl-card-meta" });
-	if (task.maturity) renderCardIcon(meta, task.maturity, "rl-icon-maturity", `${ctx.t("maturity")}: ${task.maturity}`);
+	card.createEl("div", {
+		cls: "rl-card-row rl-card-title",
+		text: task.title,
+		attr: {
+			"data-row-index": "2",
+			"data-row-visible": presentation.visibleRows >= 2 ? "true" : "false",
+			"aria-label": task.title,
+			"aria-label-position": "top",
+		},
+	});
+
+	const meta = card.createEl("div", {
+		cls: "rl-card-row rl-card-meta",
+		attr: { "data-row-index": "3", "data-row-visible": presentation.visibleRows >= 3 ? "true" : "false" },
+	});
+	if (task.maturity) renderCardIcon(meta, task.maturity, `${ctx.t("maturity")}: ${task.maturity}`);
 	if (task.absorbs.length > 0) {
-		renderCardIcon(meta, "absorbs", "rl-icon-absorbs", ctx.t("absorbs"));
-		meta.createEl("span", { cls: "rl-meta-ids rl-absorb-ids", text: task.absorbs.join(", ") });
+		renderCardIcon(meta, "absorbs", ctx.t("absorbs"));
+		meta.createEl("span", { cls: "rl-meta-ids", text: task.absorbs.join(", ") });
 	}
 	const overlap = overlapFor(ctx.model, task);
 	if (overlap) {
@@ -395,8 +445,8 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Task, filters
 				return `${item.id}${showLane ? ` (${item.lane || "-"})` : ""} ${pct}%`;
 			})
 			.join(", ");
-		renderCardIcon(meta, "overlap", "rl-icon-overlap", `${ctx.t("overlap")}: ${overlapText}`);
-		const ids = meta.createEl("span", { cls: "rl-meta-ids rl-overlap-ids" });
+		renderCardIcon(meta, "overlap", `${ctx.t("overlap")}: ${overlapText}`);
+		const ids = meta.createEl("span", { cls: "rl-meta-ids" });
 		overlap.tasks.forEach((item, index) => {
 			if (index > 0) ids.append(document.createTextNode(", "));
 			const pct = laneOverlapPct(ctx.model, task.lane, item.lane);
@@ -407,7 +457,11 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Task, filters
 		});
 	}
 
-	renderStateLine(card, task, ctx.t);
+	card.createEl("div", {
+		cls: `rl-card-row rl-card-state rl-state-${status.className}`,
+		text: status.text,
+		attr: { "data-row-index": "4", "data-row-visible": presentation.visibleRows >= 4 ? "true" : "false" },
+	});
 	card.addEventListener("click", () => {
 		void openDetail(ctx, task);
 	});
@@ -578,6 +632,31 @@ function renderFilterButton(parent: HTMLElement, label: string, value: string, a
 	});
 }
 
+function renderBoardModeToggle(ctx: RenderContext, parent: HTMLElement): void {
+	const group = parent.createEl("div", { cls: "rl-mode-toggle", attr: { role: "group" } });
+	const modes: Array<{ mode: BoardMode; label: TranslationKey }> = [
+		{ mode: "time", label: "boardModeTime" },
+		{ mode: "order", label: "boardModeOrder" },
+	];
+	for (const item of modes) {
+		const active = ctx.boardMode === item.mode;
+		const button = group.createEl("button", {
+			cls: `rl-mode-button ${active ? "is-active" : ""}`,
+			text: ctx.t(item.label),
+			attr: {
+				type: "button",
+				"aria-pressed": active ? "true" : "false",
+			},
+		});
+		button.addEventListener("click", () => {
+			if (ctx.boardMode === item.mode) return;
+			if (!ctx.setBoardMode) return;
+			button.disabled = true;
+			ctx.setBoardMode(item.mode);
+		});
+	}
+}
+
 function closeCheckboxDropdowns(root: HTMLElement, except?: HTMLElement): void {
 	const panels = Array.from(root.querySelectorAll(".rl-check-panel")) as HTMLElement[];
 	for (const panel of panels) {
@@ -678,6 +757,8 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filters: Filters
 		filters.text = search.value.toLowerCase().trim();
 		applyFilters(ctx.root, filters);
 	});
+
+	renderBoardModeToggle(ctx, bar);
 
 	const typeGroup = bar.createEl("div", { cls: "rl-filter-group" });
 	for (const type of FILTERABLE_TYPES) {
@@ -945,7 +1026,7 @@ async function openDetail(
 	appendDetailIcon(close, "x");
 
 	panel.createEl("h2", { text: task.title });
-	renderStateLine(panel, task, ctx.t);
+	renderDetailStateLine(panel, task, ctx.t);
 
 	const meta = panel.createEl("dl", { cls: "rl-detail-meta" });
 	const addMeta = (label: string, value: string) => {
@@ -954,7 +1035,7 @@ async function openDetail(
 	};
 	addMeta(ctx.t("status"), task.status || "-");
 	addMeta(ctx.t("maturity"), task.maturity || "-");
-	addMeta(ctx.t("duration"), formatDuration(task, ctx.model));
+	addMeta(ctx.t("duration"), formatDurationTooltip(task, ctx.model));
 	addMeta(ctx.t("lane"), task.lane || ctx.t("backlog"));
 	addMeta(ctx.t("areas"), task.areas.join(", ") || "-");
 	addMeta(ctx.t("zones"), task.zones.join(", ") || "-");
@@ -1010,6 +1091,17 @@ export function renderModel(
 	root.addClass("roadmap-lanes-view");
 	root.dataset.visibleLabel = t("visible");
 	root.dataset.modelReady = "true";
+	const boardMode = options.boardMode ?? DEFAULT_BOARD_MODE;
+	const hoursPerLine = normalizeHoursPerLine(
+		options.hoursPerLine ?? defaultHoursPerLineForHoursPerDay(model.hoursPerDay),
+		model.hoursPerDay
+	);
+	const cardLayout = readCardLayout(root);
+	root.dataset.boardMode = boardMode;
+	root.style.setProperty(
+		"--rl-day-height",
+		`${timeCardHeight(model.hoursPerDay / hoursPerLine, cardLayout)}px`
+	);
 
 	const ctx: RenderContext = {
 		app,
@@ -1018,8 +1110,12 @@ export function renderModel(
 		model,
 		t,
 		detailPanelWidth: normalizeDetailPanelWidth(options.detailPanelWidth),
+		boardMode,
+		hoursPerLine,
+		cardLayout,
 		detailHistory: [],
 		setDetailPanelWidth: options.setDetailPanelWidth,
+		setBoardMode: options.setBoardMode,
 		isAlertAccepted: options.isAlertAccepted,
 		acceptAlert: options.acceptAlert,
 	};

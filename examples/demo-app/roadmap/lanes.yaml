@@ -1,17 +1,16 @@
 # Lanes for DemoApp.
-# Queue defines execution order; dependencies only mark "out of turn".
-# Any task not listed in a queue stays in backlog.
+# This fixture is optimized to validate time-as-height rendering.
 
 lanes:
   A:
-    focus: Checkout y pagos
-    worktree: main-app
-    queue: [FT-001, FT-002, ETAPA-B]
+    focus: Tareas largas para comparar contra stacks cortos
+    worktree: long
+    queue: [TIME-15, TIME-13]
   B:
-    focus: Mejoras independientes
-    worktree: wt-side
-    queue: [DT-011, INFRA-003, DT-020]
+    focus: Tareas cortas apiladas
+    worktree: short
+    queue: [TIME-01, TIME-02, TIME-03, TIME-04, TIME-05, TIME-08]
   C:
-    focus: Registro y limpieza
-    worktree: wt-registro
-    queue: [DT-030, FT-003, INFRA-005]
+    focus: Tareas medias y largas
+    worktree: medium
+    queue: [TIME-06, TIME-10, TIME-07]

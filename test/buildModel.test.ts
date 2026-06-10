@@ -305,33 +305,40 @@ describe("buildModel", () => {
 		).toBe(true);
 	});
 
-	test("fixture demo-app: válido y con derivaciones esperadas", () => {
+	test("fixture demo-app: válido y centrado en escala horaria", () => {
 		const m = buildModel(loadDemo());
 		expect(m.alerts).toEqual([]);
-		expect(m.tasks.get("DT-020")?.blocked).toBe(false);
-		expect(m.tasks.get("FT-002")?.blocked).toBe(false);
-		expect(m.lanes.A.next).toBe("FT-002");
-		expect(m.lanes.B.next).toBe("DT-011");
-		expect(m.tasks.get("EPIC-100")?.effectiveHours).toBe(64);
-		expect(m.tasks.get("DT-010")?.effectiveHours).toBe(40);
-		expect(m.tasks.get("DT-005")?.absorbedBy).toBe("FT-002");
-		expect(m.tasks.get("FT-001")?.unlocks).toContain("FT-002");
+		const leaves = [...m.tasks.values()].filter((task) => !task.isContainer);
+		const combos = [...m.tasks.values()].filter((task) => task.isContainer);
+		expect(leaves).toHaveLength(16);
+		expect(combos.map((task) => task.id).sort()).toEqual([
+			"COMBO-BACKLOG",
+			"COMBO-MEDIUM",
+			"COMBO-SHORT",
+			"COMBO-SHORT-LOW",
+		]);
+		const durations = leaves
+			.map((task) => task.durationHours)
+			.sort((a, b) => (a ?? 0) - (b ?? 0));
+		expect(durations).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+		expect(m.lanes.A.queue).toEqual(["TIME-15", "TIME-13"]);
+		expect(m.lanes.B.queue).toEqual(["TIME-01", "TIME-02", "TIME-03", "TIME-04", "TIME-05", "TIME-08"]);
+		expect(m.lanes.C.queue).toEqual(["TIME-06", "TIME-10", "TIME-07"]);
+		expect(m.tasks.get("TIME-16")?.status).toBe("done");
+		expect(m.lanes.A.next).toBe("TIME-15");
+		expect(m.lanes.B.next).toBe("TIME-01");
+		expect(m.lanes.C.next).toBe("TIME-06");
+		expect(m.tasks.get("COMBO-SHORT")?.children).toEqual(["COMBO-SHORT-LOW", "TIME-04", "TIME-05"]);
+		expect(m.tasks.get("COMBO-SHORT-LOW")?.children).toEqual(["TIME-01", "TIME-02", "TIME-03"]);
+		expect(m.tasks.get("COMBO-BACKLOG")?.children).toEqual(["TIME-11", "TIME-12", "TIME-13", "TIME-14"]);
+		expect(m.tasks.get("COMBO-SHORT")?.effectiveHours).toBe(15);
+		expect(m.tasks.get("COMBO-MEDIUM")?.effectiveHours).toBe(16);
 	});
 
-	test("fixture demo-app: gates cruzados y solape entre lanes", () => {
+	test("fixture demo-app: sin gates ni solapes para aislar pruebas de tiempo", () => {
 		const m = buildModel(loadDemo());
-		expect(m.crossLaneGates).toHaveLength(1);
-		expect(m.crossLaneGates[0]).toEqual({
-			from: "DT-011",
-			to: "FT-001",
-			fromLane: "B",
-			toLane: "A",
-			open: false,
-		});
-
-		const s = m.laneOverlaps.find((item) => item.a === "A" && item.b === "B");
-		expect(s).toBeDefined();
-		expect(s?.common).toEqual(["CheckoutService"]);
-		expect(s?.pct).toBe(33);
+		expect(m.crossLaneGates).toEqual([]);
+		expect(m.laneOverlaps).toHaveLength(3);
+		expect(m.laneOverlaps.every((item) => item.common.length === 0 && item.pct === 0)).toBe(true);
 	});
 });

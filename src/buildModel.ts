@@ -14,8 +14,7 @@ import {
 	type TaskStatus,
 	type TaskType,
 } from "./types";
-
-const DEFAULT_HOURS_PER_DAY = 8;
+import { normalizeHoursPerDay } from "./time";
 
 function isType(value: unknown): value is TaskType {
 	return typeof value === "string" && TYPES.includes(value as TaskType);
@@ -38,7 +37,7 @@ function normalizeParent(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-export function parseDurationHours(
+function parseDurationHours(
 	duration: number | string | undefined
 ): { hours: number | null; invalid: boolean } {
 	if (duration === undefined || duration === "") return { hours: null, invalid: false };
@@ -110,7 +109,7 @@ export function buildModel(input: BuildModelInput): Model {
 	};
 	const byId = new Map<string, Task>();
 	const rawById = new Map<string, RawTask>();
-	const hoursPerDay = input.hoursPerDay ?? DEFAULT_HOURS_PER_DAY;
+	const hoursPerDay = normalizeHoursPerDay(input.hoursPerDay);
 	const lanes = normalizeLanes(input.lanes);
 
 	for (const raw of input.tasks) {

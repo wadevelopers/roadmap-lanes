@@ -20,9 +20,18 @@ import {
 	normalizeSettings,
 	type RoadmapLanesSettings,
 } from "./src/settings";
+import {
+	HOURS_PER_DAY_OPTIONS,
+	formatHoursPerLine,
+	hoursPerLineOptionsForHoursPerDay,
+	normalizeBoardMode,
+	normalizeHoursPerLine,
+	normalizeHoursPerDay,
+	type BoardMode,
+} from "./src/time";
 import type { Alert } from "./src/types";
 
-export const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
+const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
 
 interface RoadmapLanesPluginData extends RoadmapLanesSettings {
 	acceptedAlertFingerprints?: string[];
@@ -82,8 +91,13 @@ class RoadmapLanesView extends ItemView {
 		const model = buildModel(data);
 		renderModel(root, model, this.plugin.translate, this.app, this, {
 			detailPanelWidth: this.plugin.settings.detailPanelWidth,
+			boardMode: this.plugin.settings.boardMode,
+			hoursPerLine: this.plugin.settings.hoursPerLine,
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
+			},
+			setBoardMode: (mode) => {
+				void this.plugin.setBoardMode(mode);
 			},
 			isAlertAccepted: (alert) => this.plugin.isAlertAccepted(alert),
 			acceptAlert: (alert) => {
@@ -127,6 +141,56 @@ class RoadmapLanesSettingTab extends PluginSettingTab {
 						event.preventDefault();
 						void commit();
 					}
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(this.plugin.translate("hoursPerDaySetting"))
+			.setDesc(this.plugin.translate("hoursPerDayDesc"))
+			.addDropdown((dropdown) => {
+				dropdown.selectEl.classList.add("rl-time-setting-dropdown");
+				for (const option of HOURS_PER_DAY_OPTIONS) {
+					dropdown.addOption(String(option), `${option}${this.plugin.translate("hours")}`);
+				}
+				dropdown.setValue(String(this.plugin.settings.hoursPerDay));
+				dropdown.onChange(async (value) => {
+					const nextHoursPerDay = normalizeHoursPerDay(Number(value));
+					const nextHoursPerLine = normalizeHoursPerLine(
+						this.plugin.settings.hoursPerLine,
+						nextHoursPerDay
+					);
+					if (
+						nextHoursPerDay === this.plugin.settings.hoursPerDay &&
+						nextHoursPerLine === this.plugin.settings.hoursPerLine
+					) {
+						return;
+					}
+					this.plugin.settings.hoursPerDay = nextHoursPerDay;
+					this.plugin.settings.hoursPerLine = nextHoursPerLine;
+					await this.plugin.saveSettings();
+					this.plugin.refreshOpenViews();
+					this.display();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(this.plugin.translate("hoursPerLineSetting"))
+			.setDesc(this.plugin.translate("hoursPerLineDesc"))
+			.addDropdown((dropdown) => {
+				dropdown.selectEl.classList.add("rl-time-setting-dropdown");
+				for (const option of hoursPerLineOptionsForHoursPerDay(this.plugin.settings.hoursPerDay)) {
+					dropdown.addOption(
+						String(option),
+						`${formatHoursPerLine(option)}${this.plugin.translate("hours")}`
+					);
+				}
+				dropdown.setValue(String(this.plugin.settings.hoursPerLine));
+				dropdown.onChange(async (value) => {
+					const next = normalizeHoursPerLine(Number(value), this.plugin.settings.hoursPerDay);
+					if (next === this.plugin.settings.hoursPerLine) return;
+					this.plugin.settings.hoursPerLine = next;
+					await this.plugin.saveSettings();
+					this.plugin.refreshOpenViews();
 				});
 			});
 	}
@@ -191,6 +255,14 @@ export default class RoadmapLanesPlugin extends Plugin {
 		if (next === this.settings.detailPanelWidth) return;
 		this.settings.detailPanelWidth = next;
 		await this.saveSettings();
+	}
+
+	async setBoardMode(mode: BoardMode): Promise<void> {
+		const next = normalizeBoardMode(mode);
+		if (next === this.settings.boardMode) return;
+		this.settings.boardMode = next;
+		await this.saveSettings();
+		this.refreshOpenViews();
 	}
 
 	isAlertAccepted(alert: Alert): boolean {

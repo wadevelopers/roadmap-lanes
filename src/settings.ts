@@ -1,11 +1,28 @@
+import {
+	DEFAULT_BOARD_MODE,
+	DEFAULT_HOURS_PER_LINE,
+	DEFAULT_HOURS_PER_DAY,
+	normalizeBoardMode,
+	normalizeHoursPerLine,
+	normalizeHoursPerDay,
+	type BoardMode,
+	type HoursPerDay,
+} from "./time";
+
 export interface RoadmapLanesSettings {
 	roadmapFolder: string;
 	detailPanelWidth: number;
+	hoursPerDay: HoursPerDay;
+	hoursPerLine: number;
+	boardMode: BoardMode;
 }
 
 export const DEFAULT_SETTINGS: RoadmapLanesSettings = {
 	roadmapFolder: "roadmap",
 	detailPanelWidth: 460,
+	hoursPerDay: DEFAULT_HOURS_PER_DAY,
+	hoursPerLine: DEFAULT_HOURS_PER_LINE,
+	boardMode: DEFAULT_BOARD_MODE,
 };
 
 export const DETAIL_PANEL_MIN_WIDTH = 360;
@@ -24,9 +41,13 @@ export function normalizeRoadmapFolder(value: unknown): string {
 
 export function normalizeSettings(value: unknown): RoadmapLanesSettings {
 	const raw = (value || {}) as Partial<RoadmapLanesSettings>;
+	const hoursPerDay = normalizeHoursPerDay(raw.hoursPerDay);
 	return {
 		roadmapFolder: normalizeRoadmapFolder(raw.roadmapFolder),
 		detailPanelWidth: normalizeDetailPanelWidth(raw.detailPanelWidth),
+		hoursPerDay,
+		hoursPerLine: normalizeHoursPerLine(raw.hoursPerLine, hoursPerDay),
+		boardMode: normalizeBoardMode(raw.boardMode),
 	};
 }
 

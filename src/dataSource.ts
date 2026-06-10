@@ -3,15 +3,16 @@ import * as yaml from "js-yaml";
 
 import type { BuildModelInput, LanesInput, RawTask, Taxonomy } from "./types";
 import { DEFAULT_SETTINGS, normalizeRoadmapFolder } from "./settings";
+import { DEFAULT_HOURS_PER_DAY, normalizeHoursPerDay, type HoursPerDay } from "./time";
 
 export interface RoadmapDataSourceOptions {
 	roadmapFolder?: string;
-	hoursPerDay?: number;
+	hoursPerDay?: HoursPerDay;
 }
 
 const DEFAULT_OPTIONS: Required<RoadmapDataSourceOptions> = {
 	roadmapFolder: DEFAULT_SETTINGS.roadmapFolder,
-	hoursPerDay: 8,
+	hoursPerDay: DEFAULT_HOURS_PER_DAY,
 };
 
 const LANES_FILENAME = "lanes.yaml";
@@ -40,7 +41,7 @@ areas: {}
 function resolveOptions(options: RoadmapDataSourceOptions = {}): Required<RoadmapDataSourceOptions> {
 	return {
 		roadmapFolder: normalizeRoadmapFolder(options.roadmapFolder ?? DEFAULT_OPTIONS.roadmapFolder),
-		hoursPerDay: options.hoursPerDay ?? DEFAULT_OPTIONS.hoursPerDay,
+		hoursPerDay: normalizeHoursPerDay(options.hoursPerDay ?? DEFAULT_OPTIONS.hoursPerDay),
 	};
 }
 

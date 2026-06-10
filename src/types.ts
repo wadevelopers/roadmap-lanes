@@ -2,19 +2,11 @@ export const TYPES = ["feat", "maint", "infra", "combo"] as const;
 export const FILTERABLE_TYPES = ["feat", "maint", "infra"] as const;
 export const MATURITIES = ["raw", "draft", "ready"] as const;
 export const STATUSES = ["pending", "done"] as const;
-export const VISUAL_STATES = [
-	"done",
-	"out-of-turn",
-	"next",
-	"waiting",
-	"in-progress",
-] as const;
 
 export type TaskType = (typeof TYPES)[number];
-export type FilterableTaskType = (typeof FILTERABLE_TYPES)[number];
 export type TaskMaturity = (typeof MATURITIES)[number];
 export type TaskStatus = (typeof STATUSES)[number];
-export type VisualState = (typeof VISUAL_STATES)[number];
+export type VisualState = "done" | "out-of-turn" | "next" | "waiting" | "in-progress";
 
 export type Severity = "error" | "warning" | "info";
 

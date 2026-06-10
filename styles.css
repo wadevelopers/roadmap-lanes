@@ -6,7 +6,13 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view {
 	--rl-day-height: 96px;
-	--rl-card-gap: 10px;
+	--rl-time-one-line-card-height: 28px;
+	--rl-order-card-height: 96px;
+	--rl-card-gap: 8px;
+	--rl-time-card-row-height: 18px;
+	--rl-time-card-row-top: 5px;
+	--rl-time-card-row-left: 13px;
+	--rl-time-card-row-right: 9px;
 	--rl-board-min-column-width: 240px;
 	--rl-board-gap: 12px;
 	/* mitad del gap del board, negativa: centra los divisores en el espacio entre columnas */
@@ -32,6 +38,11 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view * {
 	box-sizing: border-box;
+}
+
+.rl-time-setting-dropdown {
+	width: 104px;
+	min-width: 104px;
 }
 
 .roadmap-lanes-leaf .view-header {
@@ -91,6 +102,50 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	align-items: center;
 	gap: 6px;
 	flex-wrap: wrap;
+}
+
+.roadmap-lanes-view .rl-mode-toggle {
+	display: inline-flex;
+	height: 32px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	overflow: hidden;
+}
+
+.roadmap-lanes-view .rl-mode-button {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 0;
+	height: 30px;
+	margin: 0;
+	padding: 0 10px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-mode-button + .rl-mode-button {
+	border-left: 1px solid var(--background-modifier-border);
+}
+
+.roadmap-lanes-view .rl-mode-button:hover,
+.roadmap-lanes-view .rl-mode-button:focus-visible {
+	color: var(--text-normal);
+	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.roadmap-lanes-view .rl-mode-button.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
 .roadmap-lanes-view .rl-filter-chip {
@@ -447,10 +502,11 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card {
+	--rl-card-row-gap: 5px;
 	position: relative;
-	display: flex;
-	flex-direction: column;
-	gap: 5px;
+	display: grid;
+	grid-template-rows: repeat(4, minmax(0, 1fr));
+	gap: var(--rl-card-row-gap);
 	overflow: hidden;
 	border: 1px solid var(--background-modifier-border);
 	border-left: 4px solid var(--rl-state-waiting);
@@ -458,6 +514,17 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	background-color: var(--background-primary);
 	padding: 8px 9px;
 	cursor: pointer;
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card {
+	--rl-card-row-gap: var(--rl-card-gap);
+	--rl-time-card-slot: calc(var(--rl-time-one-line-card-height) + var(--rl-card-gap));
+	display: block;
+	padding: 0;
+}
+
+.roadmap-lanes-view[data-board-mode="order"] .rl-card::before {
+	display: none;
 }
 
 .roadmap-lanes-view .rl-card::before {
@@ -483,6 +550,41 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	z-index: 1;
 }
 
+.roadmap-lanes-view .rl-card-row {
+	min-width: 0;
+	min-height: 0;
+}
+
+.roadmap-lanes-view .rl-card-row[data-row-visible="false"] {
+	display: none;
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card-row {
+	position: absolute;
+	left: var(--rl-time-card-row-left);
+	right: var(--rl-time-card-row-right);
+	height: var(--rl-time-card-row-height);
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card-row[data-row-index="1"] {
+	top: var(--rl-time-card-row-top);
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card-row[data-row-index="2"] {
+	top: calc(var(--rl-time-card-row-top) + var(--rl-time-card-slot));
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card-row[data-row-index="3"] {
+	top: calc(var(--rl-time-card-row-top) + var(--rl-time-card-slot) + var(--rl-time-card-slot));
+}
+
+.roadmap-lanes-view[data-board-mode="time"] .rl-card-row[data-row-index="4"] {
+	top: calc(
+		var(--rl-time-card-row-top) + var(--rl-time-card-slot) + var(--rl-time-card-slot) +
+			var(--rl-time-card-slot)
+	);
+}
+
 .roadmap-lanes-view .rl-card:hover {
 	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
@@ -493,6 +595,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card-head {
+	grid-row: 1;
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -556,6 +659,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card-title {
+	grid-row: 2;
 	font-size: 13px;
 	line-height: 1.25;
 	overflow: hidden;
@@ -564,6 +668,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card-meta {
+	grid-row: 3;
 	display: flex;
 	align-items: center;
 	gap: 5px;
@@ -615,7 +720,9 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-card-state {
-	margin-top: auto;
+	grid-row: 4;
+	align-self: end;
+	margin-top: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

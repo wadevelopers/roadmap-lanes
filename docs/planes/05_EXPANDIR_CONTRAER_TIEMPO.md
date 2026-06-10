@@ -49,33 +49,32 @@ El usuario también puede definir cuánta precisión quiere en modo `time`: **cu
 cada línea temporal del card**. Esto es configuración de usuario y se muestra debajo de
 `hoursPerDay` en la pestaña de settings.
 
-Importante: internamente conviene guardar **líneas temporales por día** (`timeLinesPerDay`) en vez de
-guardar directamente `hoursPerLine`. Así se evitan errores de redondeo con valores como `14 / 12 =
-1.1666…`. La UI muestra "horas por línea", pero el dato persistido es entero:
+La precisión se guarda directamente como `hoursPerLine`. Esa es la unidad conceptual que configura
+el usuario y evita mantener un modelo indirecto que después hay que traducir en cada cálculo.
 
 ```ts
-hoursPerLine = hoursPerDay / timeLinesPerDay
+timeUnits = durationHours / hoursPerLine
 ```
 
-`timeLinesPerDay: 4` preserva el comportamiento previsto originalmente: un día completo = 4 líneas.
-Valores mayores aumentan precisión a costa de cards más altos.
+Valores menores aumentan precisión a costa de cards más altos.
 
 Opciones permitidas:
 
-| `hoursPerDay` | `timeLinesPerDay` disponibles | UI "horas por línea" |
-|---|---:|---|
-| 4 | 4 | 1 |
-| 6 | 4 | 1.5 |
-| 8 | 8, 4 | 1, 2 |
-| 10 | 8, 4 | 1.25, 2.5 |
-| 12 | 12, 6, 4 | 1, 2, 3 |
-| 14 | 12, 6, 4 | 1.17, 2.33, 3.5 |
+| `hoursPerDay` | `hoursPerLine` disponibles |
+|---|---:|
+| 4 | 1 |
+| 6 | 1, 1.5 |
+| 8 | 1, 1.5, 2 |
+| 10 | 1, 1.5, 2 |
+| 12 | 1, 1.5, 2 |
+| 14 | 1, 1.5, 2 |
 
-Regla al cambiar `hoursPerDay`: si el `timeLinesPerDay` actual sigue siendo válido para la nueva
-jornada, se conserva; si no, se vuelve al default `4`. Ejemplos:
+Regla al cambiar `hoursPerDay`: si el `hoursPerLine` actual sigue siendo válido para la nueva
+jornada, se conserva; si no, se vuelve al default de esa jornada (`2` si existe; si no, la opción
+mayor disponible). Ejemplos:
 
-- `hoursPerDay: 8`, `timeLinesPerDay: 8` → cambiar a `10` conserva `8`.
-- `hoursPerDay: 12`, `timeLinesPerDay: 12` → cambiar a `8` vuelve a `4`.
+- `hoursPerDay: 8`, `hoursPerLine: 2` → cambiar a `10` conserva `2`.
+- `hoursPerDay: 8`, `hoursPerLine: 2` → cambiar a `6` vuelve a `1.5`.
 
 ## 5. Estructura única del card
 
@@ -96,17 +95,24 @@ Las filas semánticas del card, de arriba hacia abajo:
 
 ## 6. Mapeo tiempo → líneas/altura del card (modo `time`)
 
-Un **día completo** = `timeLinesPerDay` líneas temporales. Cada línea representa
-`hoursPerDay / timeLinesPerDay` horas.
+Un **día completo** = `hoursPerDay / hoursPerLine` unidades temporales. Cada unidad representa
+`hoursPerLine` horas.
 
 Cuando una tarea ocupa **menos de un día**, primero se calcula cuántas líneas temporales ocupa:
 
-`timeLines = clamp(ceil(remainingHours / hoursPerLine), 1, timeLinesPerDay)` — **mínimo 1 línea**,
-aunque la tarea dure menos que el paso de una línea.
+`semanticLines = max(1, ceil(durationHours / hoursPerLine))`.
 
 Luego se muestran las filas semánticas desde arriba hasta donde alcance: `head`, `title`, `meta`,
-`state`. Si `timeLines < 4`, las filas semánticas de abajo se ocultan. Si `timeLines > 4`, las 4 filas
-semánticas se muestran y las líneas restantes quedan como espacio temporal en blanco.
+`state`. Si `semanticLines < 4`, las filas semánticas de abajo se ocultan. Si `semanticLines > 4`, las
+4 filas semánticas se muestran en los primeros slots temporales y el resto queda como espacio en
+blanco.
+
+La altura no usa `ceil`: se calcula con unidades reales para que las sumas entre carriles no acumulen
+redondeos por card:
+
+```text
+timeUnits = durationHours / hoursPerLine
+```
 
 La unidad temporal mínima **no es sólo una línea de texto**. En modo `time`, una línea temporal debe
 representar el **footprint completo de un card de 1 fila**: contenido + padding + borde. Esto es
@@ -127,13 +133,13 @@ chicos apilados.
 
 Ejemplos:
 
-- Con `timeLinesPerDay: 4`, 1 día = 4 cards de 1 línea + 3 gaps.
-- Con `timeLinesPerDay: 8`, 1 día = 8 cards de 1 línea + 7 gaps.
+- Con `hoursPerDay: 8` y `hoursPerLine: 2`, 1 día = 4 unidades temporales.
+- Con `hoursPerDay: 8` y `hoursPerLine: 1`, 1 día = 8 unidades temporales.
 
 Fórmula conceptual para modo `time`:
 
 ```text
-timeHeight(lines) = lines * oneLineCardHeight + (lines - 1) * cardGap
+timeHeight(units) = units * (oneLineCardHeight + cardGap) - cardGap
 ```
 
 Donde `oneLineCardHeight` incluye el footprint externo de un card mínimo, no sólo el line-height del
@@ -147,20 +153,20 @@ equivalencia matemática entre carriles.
 Cuando una tarea dura **menos de un día**, las filas semánticas no visibles se ocultan en modo
 `time`; el click al detalle sigue mostrando toda la información.
 
-Cuando `timeLinesPerDay` es mayor que 4, hay más líneas temporales que filas semánticas. En ese caso,
-las primeras líneas pueden mostrar las 4 filas de contenido y las líneas restantes son espacio
-temporal en blanco. Ejemplo: `hoursPerDay: 8` + `timeLinesPerDay: 8` implica 1 hora por línea; una
-tarea de 8 h usa 8 líneas, pero sólo las primeras 4 tienen contenido visible.
+Cuando un día tiene más de 4 unidades temporales, hay más unidades que filas semánticas. En ese caso,
+las primeras unidades pueden mostrar las 4 filas de contenido y las unidades restantes son espacio
+temporal en blanco. Ejemplo: `hoursPerDay: 8` + `hoursPerLine: 1` implica 1 hora por unidad; una
+tarea de 8 h usa 8 unidades, pero sólo las primeras 4 tienen contenido visible.
 
-Para tareas de **más de un día**: por cada día completo, `timeLinesPerDay` líneas temporales +
-divisor de día; la fracción restante se mapea con la fórmula de arriba. La altura total debe ser
+Para tareas de **más de un día**: por cada día completo, `hoursPerDay / hoursPerLine` unidades
+temporales + divisor de día; la fracción restante se mapea con la fórmula de arriba. La altura total debe ser
 aditiva, para que apilar fracciones equivalga a la suma y la escala temporal entre cards/carriles se
 mantenga comparable.
 
 > El costo de precisión/alineación se paga sólo en modo `time`; en modo `order` se compactan los
-> espacios internos y `timeLinesPerDay` no cambia la altura de los cards.
+> espacios internos y `hoursPerLine` no cambia la altura de los cards.
 
-### Ejemplos (`hoursPerDay = 4`, `timeLinesPerDay = 4` → cada línea = 1 h)
+### Ejemplos (`hoursPerDay = 4`, `hoursPerLine = 1`)
 | Duración | Líneas temporales | Altura |
 |---|---|---|
 | 1 h | 1 (id) | ¼ de día |
@@ -169,7 +175,7 @@ mantenga comparable.
 | 6 h | 4 + divisor + 2 en blanco | 1½ días |
 | 8 h | 4 + divisor + 4 | 2 días |
 
-### Ejemplos (`hoursPerDay = 8`, `timeLinesPerDay = 4` → cada línea = 2 h)
+### Ejemplos (`hoursPerDay = 8`, `hoursPerLine = 2`)
 | Duración | Filas visibles |
 |---|---|
 | 1 h o 2 h | 1 (id) |
@@ -177,7 +183,7 @@ mantenga comparable.
 | 6 h | 3 |
 | 8 h | 4 (día completo) |
 
-### Ejemplos (`hoursPerDay = 8`, `timeLinesPerDay = 8` → cada línea = 1 h)
+### Ejemplos (`hoursPerDay = 8`, `hoursPerLine = 1`)
 | Duración | Líneas temporales | Contenido visible |
 |---|---:|---|
 | 1 h | 1 | head |
@@ -195,8 +201,8 @@ La config se persiste con los settings **nativos del plugin** (`this.loadData()`
 `localStorage` (eso era de la web standalone):
 
 - `hoursPerDay` — horas/día (4/6/8/10/12/14). Se configura **sólo en Settings**.
-- `timeLinesPerDay` — precisión temporal del modo `time`. Se configura **sólo en Settings**, debajo
-  de `hoursPerDay`; la UI lo muestra como "horas por línea".
+- `hoursPerLine` — precisión temporal del modo `time`. Se configura **sólo en Settings**, debajo
+  de `hoursPerDay`.
 - `boardMode` — `"time"` / `"order"`. Se controla **sólo desde la toolbar del tablero**, pero se
   persiste igual en `data.json` para recordar la preferencia.
 
@@ -204,7 +210,7 @@ Defaults:
 
 ```ts
 hoursPerDay: 8
-timeLinesPerDay: 4
+hoursPerLine: 2
 boardMode: "time"
 ```
 
@@ -216,26 +222,26 @@ Cambiar cualquiera de estos valores re-renderiza las vistas abiertas.
 2. **Un solo diseño de card:** misma estructura DOM para `time` y `order`; cambian clases/variables.
 3. **Modo `time`:** líneas temporales exactas. El footprint de 1 línea incluye contenido + padding +
    borde; un card de `N` líneas temporales debe alinear con `N` cards de 1 línea + `N - 1` gaps.
-4. **Precisión configurable:** se guarda `timeLinesPerDay`, no `hoursPerLine`; la UI muestra las
-   horas por línea derivadas.
+4. **Precisión configurable:** se guarda `hoursPerLine` directamente.
 5. **Modo `order`:** no aparecen divisores de día ni filas en blanco; todos los cards muestran las
    4 filas y usan espacios internos compactos.
 6. **Contenedores:** sin tratamiento especial. La barra trunca con `overflow:hidden` + ellipsis;
    no importa si con poco alto se ve hasta como una sola letra. En la práctica un contenedor agrupa
    varias tareas (alguna larga), así que su alto crece; y siempre se abre el detalle con click.
-7. **Redondeo:** `ceil`. Suficiente para el objetivo (ver §9): previsión **aproximada** para
-   coordinar carriles, no estimación exacta.
+7. **Redondeo:** la altura usa unidades reales, sin `ceil` por card; `ceil` sólo decide cuántas filas
+   semánticas mostrar.
 
 ## 9. Alcance: previsión aproximada, no estimación exacta
 
 El objetivo es **prever de forma aproximada** cuánto va a tomar una tarea, para **coordinar los
 carriles** y **minimizar el solape y los bloqueos** (pisar trabajo en curso de otro carril). **No**
-es estimación exacta ni *tracking* de horas. Por eso `ceil` y el mapeo a filas alcanzan: comunican
-el **orden de magnitud** temporal. Coherente con VISION §4 (principio 7) y §7.9.
+es estimación exacta ni *tracking* de horas. La altura conserva proporciones reales según
+`hoursPerLine`; el `ceil` sólo decide cuántas filas semánticas visibles entran en cards cortos.
+Coherente con VISION §4 (principio 7) y §7.9.
 
 ## 10. Implementación en el plugin
 
-- La **lógica de conversión** (horas↔días, `hoursPerDay`, `timeLinesPerDay`, cálculo de líneas
+- La **lógica de conversión** (horas↔días, `hoursPerDay`, `hoursPerLine`, cálculo de líneas
   temporales visibles y desglose para display) vive en el **core** (TS), separada del render y
   testeable sin Obsidian.
 - El **render** (clases por `boardMode`, alturas, filas, divisores de día y switch) vive en el
