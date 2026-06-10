@@ -72,7 +72,8 @@ Cada tarea (DT, FT, INFRA, épica…) es **su propio `.md`**, y **el mismo archi
 largo de su vida — no se mueve, no se renombra, no se copia a otro documento:
 
 - **`madurez`** (cuán listo está el *plan*): `nota` → `esqueleto` → `ejecutable`. *(VISION §7.4)*
-- **`estado`** (cuánto avanzó el *trabajo*, sólo hojas): `pendiente` → `hecho`. *(VISION §7.4)*
+- **`estado`** (cuánto avanzó el *trabajo*): `pendiente` → `hecho`. En hojas es el estado real; en
+  COMBOs se valida contra sus hijos. *(VISION §7.4)*
 
 La idea cruda y el plan formal son **el mismo documento** en distinta madurez. Esto es la mejora
 central sobre el índice manual: **fuente única**, sin "mover la nota al plan".
@@ -91,6 +92,7 @@ titulo: El stock no se reajusta al devolver un ítem
 tipo: DT
 madurez: nota            # idea en caliente, sin investigar
 estado: pendiente
+duracion: 8               # horas, sin sufijo
 zonas: [CheckoutService] # aunque sea aproximada: alimenta el cálculo de solape
 ---
 
@@ -119,6 +121,20 @@ ninguna cola de carril) y, por tener `zonas`, **ya participa del cálculo de sol
 `madurez: nota → esqueleto → ejecutable`. El **cuerpo del `.md` es el plan que crece**: en
 `esqueleto` se documenta con decisiones abiertas (no ejecutable aún); en `ejecutable` queda listo
 para agarrar. No se crea un documento aparte.
+
+Si el documento crece y otras tareas empiezan a apuntarlo con `padre`, deja de ser una hoja y pasa a
+ser un **COMBO**. En ese momento se cambia manualmente su frontmatter:
+
+```yaml
+tipo: COMBO
+duracion: 40       # estimación de etapa en horas
+madurez: esqueleto # menor madurez de sus hojas
+estado: pendiente  # hecho sólo cuando todos los hijos están hechos
+```
+
+RL sigue derivando bloqueos, solape, gates y estado visual desde las hojas, pero valida que esos
+campos declarados del COMBO estén sincronizados. La duración del COMBO puede ser mayor que la suma de
+sus hijos si documenta coordinación o trabajo extra propio del documento.
 
 ### 5. Ejecución (asignar a un carril)
 

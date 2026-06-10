@@ -18,14 +18,15 @@ Un **switch** que alterna cómo el tablero representa el tiempo:
 
 Expandir = activar el modo Gantt; contraer = modo orden.
 
-## 2. Modelo de tiempo: días y horas
+## 2. Modelo de tiempo: horas declaradas y días de display
 
-La duración de una tarea se declara en el campo **`duracion`** con **unidad** (ver VISION §7.9):
-- `duracion: 4h` → 4 horas.
-- `duracion: 2d` → 2 días.
+La duración de una tarea se declara en el campo **`duracion`** como número de horas, sin sufijo
+(ver VISION §7.9):
+- `duracion: 4` → 4 horas.
+- `duracion: 16` → 16 horas.
 
-Internamente todo se normaliza a **horas** usando la jornada (un `Nd` = `N × jornada` horas),
-y de ahí se deriva la altura.
+La jornada configurable se usa para convertir esas horas a días de display y de ahí derivar la
+altura.
 
 ## 3. Jornada configurable (cuántas horas = 1 día)
 
@@ -97,7 +98,7 @@ pestaña de *settings* del plugin (`PluginSettingTab`).
 
 ## 6. Decisiones (cerradas)
 
-1. **Campo de duración:** `duracion` con unidad (`4h` / `2d`). Se acepta cualquiera de las dos.
+1. **Campo de duración:** `duracion` en horas numéricas (`4`, `16`). Los sufijos (`4h` / `2d`) son inválidos.
 2. **Filas de altura fija:** sí — las 4 filas miden `M/4` exactas, para que ocultar filas reduzca
    la altura de forma proporcional.
 3. **Contenedores:** sin tratamiento especial. La barra trunca con `overflow:hidden` + ellipsis;
@@ -120,4 +121,4 @@ el **orden de magnitud** temporal. Coherente con VISION §4 (principio 7) y §7.
   y testeable sin Obsidian.
 - El **render** (alturas, filas de `M/4`, divisores de día, el switch) se implementa en el
   `ItemView` del tablero, junto con el resto de la vista portada de la web `v0.2.0`.
-- La duración (`duracion: 5d | 4h`) sale del *frontmatter* vía `metadataCache` (VISION §7.9).
+- La duración (`duracion: 40`) sale del *frontmatter* vía `metadataCache` (VISION §7.9).

@@ -15,7 +15,7 @@ const STRINGS = {
 		summary: "Summary",
 		project: "Project",
 		tasks: "Tasks",
-		containers: "containers",
+		containers: "COMBOs",
 		lanes: "Lanes",
 		overlap: "Lane overlap",
 		gates: "Cross-lane gates",
@@ -60,14 +60,13 @@ const STRINGS = {
 		alertErrorsLabel: "errors",
 		alertWarningsLabel: "warnings",
 		alertInfoLabel: "info",
-		alertFix: "Fix",
 		alertAccept: "Accept",
 		"alert_falta-id": "{archivo}: missing 'id'",
 		"alert_id-duplicado": "duplicate id: {id}",
 		"alert_tipo-invalido": "{id}: invalid type '{valor}'",
 		"alert_madurez-invalida": "{id}: invalid maturity '{valor}'",
 		"alert_estado-invalido": "{id}: invalid status '{valor}' (only pendiente | hecho)",
-		"alert_duracion-invalida": "{id}: invalid duration '{valor}'",
+		"alert_duracion-invalida": "{id}: invalid duration '{valor}' (use hours as a number)",
 		"alert_padre-inexistente": "{id}: parent not found '{ref}'",
 		"alert_depende-inexistente": "{id}: depends_on not found '{ref}'",
 		"alert_absorbe-inexistente": "{id}: absorbs not found '{ref}'",
@@ -75,6 +74,22 @@ const STRINGS = {
 		"alert_doble-carril": "{id}: appears in two lanes ({carrilA} and {carrilB})",
 		"alert_area-desconocida": "{id}: unknown area '{valor}'",
 		"alert_zona-desconocida": "{id}: unknown zone '{valor}'",
+		"alert_combo-tipo-faltante": "{id}: task with children must declare type COMBO",
+		"alert_combo-en-hoja": "{id}: type COMBO only applies to tasks with children",
+		"alert_combo-duracion-imposible":
+			"{id}: declared duration {declarada}h is below physical lower bound {cota}h",
+		"alert_combo-duracion-mayor":
+			"{id}: declared duration {declarada}h is greater than child sum {suma}h",
+		"alert_combo-duracion-faltante": "{id}: COMBO should declare duration (child sum {suma}h)",
+		"alert_combo-madurez-mayor":
+			"{id}: declared maturity '{declarada}' is more mature than children '{derivada}'",
+		"alert_combo-madurez-menor":
+			"{id}: declared maturity '{declarada}' is less mature than children '{derivada}'",
+		"alert_combo-madurez-faltante": "{id}: COMBO should declare maturity '{derivada}'",
+		"alert_combo-estado-deberia-hecho": "{id}: all children are done; should declare status '{esperado}'",
+		"alert_combo-estado-falso-hecho":
+			"{id}: declares status '{declarado}' but has unfinished children",
+		"alert_combo-estado-faltante": "{id}: COMBO should declare status '{esperado}'",
 	},
 	es: {
 		openCommand: "Abrir tablero de carriles",
@@ -90,7 +105,7 @@ const STRINGS = {
 		summary: "Resumen",
 		project: "Proyecto",
 		tasks: "Tareas",
-		containers: "contenedores",
+		containers: "COMBOs",
 		lanes: "Carriles",
 		overlap: "Solape entre carriles",
 		gates: "Gates cruzados",
@@ -135,14 +150,13 @@ const STRINGS = {
 		alertErrorsLabel: "errores",
 		alertWarningsLabel: "avisos",
 		alertInfoLabel: "info",
-		alertFix: "Corregir",
 		alertAccept: "Aceptar",
 		"alert_falta-id": "{archivo}: falta 'id'",
 		"alert_id-duplicado": "id duplicado: {id}",
 		"alert_tipo-invalido": "{id}: tipo inválido '{valor}'",
 		"alert_madurez-invalida": "{id}: madurez inválida '{valor}'",
 		"alert_estado-invalido": "{id}: estado inválido '{valor}' (solo pendiente | hecho)",
-		"alert_duracion-invalida": "{id}: duración inválida '{valor}'",
+		"alert_duracion-invalida": "{id}: duración inválida '{valor}' (usa horas como número)",
 		"alert_padre-inexistente": "{id}: padre inexistente '{ref}'",
 		"alert_depende-inexistente": "{id}: depende_de inexistente '{ref}'",
 		"alert_absorbe-inexistente": "{id}: absorbe inexistente '{ref}'",
@@ -150,6 +164,22 @@ const STRINGS = {
 		"alert_doble-carril": "{id}: aparece en dos carriles ({carrilA} y {carrilB})",
 		"alert_area-desconocida": "{id}: área desconocida '{valor}'",
 		"alert_zona-desconocida": "{id}: zona desconocida '{valor}'",
+		"alert_combo-tipo-faltante": "{id}: una tarea con hijos debe declarar tipo COMBO",
+		"alert_combo-en-hoja": "{id}: tipo COMBO solo aplica a tareas con hijos",
+		"alert_combo-duracion-imposible":
+			"{id}: duración declarada {declarada}h menor que la cota física {cota}h",
+		"alert_combo-duracion-mayor":
+			"{id}: duración declarada {declarada}h mayor que la suma de hijos {suma}h",
+		"alert_combo-duracion-faltante": "{id}: el COMBO debe declarar duración (suma de hijos {suma}h)",
+		"alert_combo-madurez-mayor":
+			"{id}: madurez declarada '{declarada}' más madura que sus hijos '{derivada}'",
+		"alert_combo-madurez-menor":
+			"{id}: madurez declarada '{declarada}' menos madura que sus hijos '{derivada}'",
+		"alert_combo-madurez-faltante": "{id}: el COMBO debe declarar madurez '{derivada}'",
+		"alert_combo-estado-deberia-hecho": "{id}: todos sus hijos están hechos; debe declarar estado '{esperado}'",
+		"alert_combo-estado-falso-hecho":
+			"{id}: declara estado '{declarado}' pero tiene hijos sin terminar",
+		"alert_combo-estado-faltante": "{id}: el COMBO debe declarar estado '{esperado}'",
 	},
 };
 

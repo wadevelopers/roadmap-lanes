@@ -20,6 +20,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	--rl-type-ft: var(--color-blue);
 	--rl-type-dt: var(--color-orange);
 	--rl-type-infra: var(--color-purple);
+	--rl-type-combo: var(--interactive-accent);
 	--rl-solape-0: var(--color-green);
 	--rl-solape-1: var(--color-yellow);
 	--rl-solape-2: var(--color-orange);
@@ -326,7 +327,6 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-alert-btn {
-	--rl-alert-btn-c: var(--text-muted);
 	appearance: none;
 	display: inline-flex;
 	align-items: center;
@@ -338,26 +338,19 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	line-height: 1;
 	margin: 0;
 	padding: 0 7px;
-	border: 1px solid var(--rl-alert-btn-c);
+	border: 1px solid var(--rl-coord-c);
 	border-radius: 5px;
-	background: transparent;
+	background: var(--background-secondary);
 	box-shadow: none;
-	color: var(--rl-alert-btn-c);
+	color: #fff;
 	cursor: pointer;
 	white-space: nowrap;
 }
 
-.roadmap-lanes-view .rl-alert-btn:hover {
-	background: var(--background-modifier-hover);
+.roadmap-lanes-view .rl-alert-btn:hover,
+.roadmap-lanes-view .rl-alert-btn:focus-visible {
+	border-color: var(--interactive-accent);
 	box-shadow: none;
-}
-
-.roadmap-lanes-view .rl-alert-fix {
-	--rl-alert-btn-c: var(--interactive-accent);
-}
-
-.roadmap-lanes-view .rl-alert-accept {
-	--rl-alert-btn-c: var(--rl-state-done);
 }
 
 .roadmap-lanes-view .rl-solape-border-0 {
@@ -523,6 +516,10 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-type-INFRA {
 	background: var(--rl-type-infra);
+}
+
+.roadmap-lanes-view .rl-type-COMBO {
+	background: var(--rl-type-combo);
 }
 
 .roadmap-lanes-view .rl-card-title {

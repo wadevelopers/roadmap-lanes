@@ -125,7 +125,10 @@ async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): P
 		tipo: typeof frontmatter.tipo === "string" ? frontmatter.tipo : undefined,
 		madurez: typeof frontmatter.madurez === "string" ? frontmatter.madurez : undefined,
 		estado: typeof frontmatter.estado === "string" ? frontmatter.estado : undefined,
-		duracion: typeof frontmatter.duracion === "string" ? frontmatter.duracion : undefined,
+		duracion:
+			typeof frontmatter.duracion === "number" || typeof frontmatter.duracion === "string"
+				? frontmatter.duracion
+				: undefined,
 		areas: stringList(frontmatter.areas),
 		zonas: stringList(frontmatter.zonas),
 		padre: relationSingle(cache, "padre", frontmatter.padre),

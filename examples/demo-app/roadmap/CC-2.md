@@ -1,7 +1,10 @@
 ---
 id: CC-2
 titulo: Multimoneda Compras
-# Subcontenedor operativo dentro de CC.
+tipo: COMBO
+madurez: ejecutable
+estado: pendiente
+duracion: 64
 areas: [backend, frontend]
 zonas: [CheckoutService, PaymentGateway]
 padre: "[[CC]]"

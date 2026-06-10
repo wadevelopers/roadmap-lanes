@@ -39,19 +39,23 @@ function normalizePadre(value: unknown): string | null {
 }
 
 export function parseDuracionHoras(
-	duracion: string | undefined,
-	horasPorDia = DEFAULT_HORAS_POR_DIA
-): { horas: number | null; error: string | null } {
-	if (!duracion) return { horas: null, error: null };
-	const match = duracion.trim().match(/^(\d+(?:\.\d+)?)([dh])$/);
-	if (!match) return { horas: null, error: `duracion inválida '${duracion}'` };
-
-	const cantidad = Number(match[1]);
-	if (!Number.isFinite(cantidad) || cantidad < 0) {
-		return { horas: null, error: `duracion inválida '${duracion}'` };
+	duracion: number | string | undefined
+): { horas: number | null; invalida: boolean } {
+	if (duracion === undefined || duracion === "") return { horas: null, invalida: false };
+	if (typeof duracion === "number") {
+		return Number.isFinite(duracion) && duracion >= 0
+			? { horas: duracion, invalida: false }
+			: { horas: null, invalida: true };
 	}
 
-	return { horas: match[2] === "d" ? cantidad * horasPorDia : cantidad, error: null };
+	const trimmed = duracion.trim();
+	if (trimmed.length === 0) return { horas: null, invalida: false };
+	if (!/^\d+(?:\.\d+)?$/.test(trimmed)) return { horas: null, invalida: true };
+
+	const horas = Number(trimmed);
+	return Number.isFinite(horas) && horas >= 0
+		? { horas, invalida: false }
+		: { horas: null, invalida: true };
 }
 
 function createTarea(raw: RawTarea): Tarea | null {
@@ -105,6 +109,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 		alertas.push({ codigo, severidad, params, tareaId });
 	};
 	const porId = new Map<string, Tarea>();
+	const rawPorId = new Map<string, RawTarea>();
 	const horasPorDia = input.horasPorDia ?? DEFAULT_HORAS_POR_DIA;
 	const carriles = normalizeCarriles(input.carriles);
 
@@ -115,7 +120,10 @@ export function buildModel(input: BuildModelInput): Modelo {
 		}
 		if (porId.has(raw.id)) alerta("id-duplicado", "error", { id: raw.id }, raw.id);
 		const tarea = createTarea(raw);
-		if (tarea) porId.set(tarea.id, tarea);
+		if (tarea) {
+			porId.set(tarea.id, tarea);
+			rawPorId.set(tarea.id, raw);
+		}
 	}
 
 	const areasValidas = new Set(Object.keys(input.taxonomia.areas || {}));
@@ -127,7 +135,7 @@ export function buildModel(input: BuildModelInput): Modelo {
 	const existe = (id: string): boolean => porId.has(id);
 
 	for (const t of porId.values()) {
-		const raw = input.tareas.find((item) => item.id === t.id);
+		const raw = rawPorId.get(t.id);
 		if (raw?.tipo && !isTipo(raw.tipo)) alerta("tipo-invalido", "error", { id: t.id, valor: raw.tipo }, t.id);
 		if (raw?.madurez && !isMadurez(raw.madurez)) {
 			alerta("madurez-invalida", "error", { id: t.id, valor: raw.madurez }, t.id);
@@ -148,8 +156,8 @@ export function buildModel(input: BuildModelInput): Modelo {
 			if (!existe(ab)) alerta("absorbe-inexistente", "error", { id: t.id, ref: ab }, t.id);
 		}
 
-		const duracion = parseDuracionHoras(t.duracion, horasPorDia);
-		if (duracion.error) alerta("duracion-invalida", "error", { id: t.id, valor: String(t.duracion) }, t.id);
+		const duracion = parseDuracionHoras(t.duracion);
+		if (duracion.invalida) alerta("duracion-invalida", "error", { id: t.id, valor: String(t.duracion) }, t.id);
 		t.duracionHoras = duracion.horas;
 	}
 
@@ -170,8 +178,8 @@ export function buildModel(input: BuildModelInput): Modelo {
 	for (const t of porId.values()) {
 		t.absorbidaPor = absorbidaPor.get(t.id) || null;
 		t.esContenedor = t.hijos.length > 0;
-		const raw = input.tareas.find((item) => item.id === t.id);
-		if (!t.esContenedor && raw?.estado && !isEstado(raw.estado)) {
+		const raw = rawPorId.get(t.id);
+		if (raw?.estado && !isEstado(raw.estado)) {
 			alerta("estado-invalido", "error", { id: t.id, valor: raw.estado }, t.id);
 		}
 	}
@@ -179,9 +187,9 @@ export function buildModel(input: BuildModelInput): Modelo {
 	const horasEfectivas = (id: string, visto = new Set<string>()): number => {
 		const t = porId.get(id);
 		if (!t) return 0;
-		if (t.duracionHoras != null) return t.duracionHoras;
 		if (visto.has(id)) return 0;
 		visto.add(id);
+		if (!t.esContenedor) return t.duracionHoras ?? 0;
 		return t.hijos.reduce((sum, h) => sum + horasEfectivas(h, visto), 0);
 	};
 	for (const t of porId.values()) t.horasEfectivas = horasEfectivas(t.id);
@@ -268,6 +276,110 @@ export function buildModel(input: BuildModelInput): Modelo {
 				}
 				leaf.carril = carrilId;
 				leaf.posicion = i;
+			}
+		}
+	}
+
+	const minMadurez = (leaves: Tarea[]): MadurezTarea | null => {
+		const values = leaves
+			.map((leaf) => leaf.madurez)
+			.filter((value): value is MadurezTarea => value !== undefined);
+		if (values.length === 0) return null;
+		return values.reduce((min, value) =>
+			MADUREZ.indexOf(value) < MADUREZ.indexOf(min) ? value : min
+		);
+	};
+
+	const duracionCombo = (leaves: Tarea[]): { suma: number; cota: number } => {
+		const suma = leaves.reduce((sum, leaf) => sum + leaf.horasEfectivas, 0);
+		const tareaMasLarga = leaves.reduce(
+			(max, leaf) => Math.max(max, leaf.horasEfectivas),
+			0
+		);
+		const porCarril = new Map<string, number>();
+		for (const leaf of leaves) {
+			if (!leaf.carril) continue;
+			porCarril.set(leaf.carril, (porCarril.get(leaf.carril) ?? 0) + leaf.horasEfectivas);
+		}
+		const carrilMasCargado = [...porCarril.values()].reduce(
+			(max, horas) => Math.max(max, horas),
+			0
+		);
+		return { suma, cota: Math.max(tareaMasLarga, carrilMasCargado) };
+	};
+
+	for (const t of porId.values()) {
+		const raw = rawPorId.get(t.id);
+		if (!t.esContenedor) {
+			if (raw?.tipo === "COMBO") alerta("combo-en-hoja", "warning", { id: t.id }, t.id);
+			continue;
+		}
+
+		const leaves = collectLeaves(t);
+		if (raw?.tipo !== "COMBO") alerta("combo-tipo-faltante", "warning", { id: t.id }, t.id);
+
+		const { suma, cota } = duracionCombo(leaves);
+		if (t.duracionHoras === null) {
+			alerta("combo-duracion-faltante", "warning", { id: t.id, suma }, t.id);
+		} else if (t.duracionHoras < cota) {
+			alerta(
+				"combo-duracion-imposible",
+				"error",
+				{ id: t.id, declarada: t.duracionHoras, cota },
+				t.id
+			);
+		} else if (t.duracionHoras > suma) {
+			alerta(
+				"combo-duracion-mayor",
+				"warning",
+				{ id: t.id, declarada: t.duracionHoras, suma },
+				t.id
+			);
+		}
+
+		const derivadaMadurez = minMadurez(leaves);
+		if (derivadaMadurez) {
+			if (!raw?.madurez) {
+				alerta("combo-madurez-faltante", "info", { id: t.id, derivada: derivadaMadurez }, t.id);
+			} else if (t.madurez) {
+				const declaradaRank = MADUREZ.indexOf(t.madurez);
+				const derivadaRank = MADUREZ.indexOf(derivadaMadurez);
+				if (declaradaRank > derivadaRank) {
+					alerta(
+						"combo-madurez-mayor",
+						"warning",
+						{ id: t.id, declarada: t.madurez, derivada: derivadaMadurez },
+						t.id
+					);
+				} else if (declaradaRank < derivadaRank) {
+					alerta(
+						"combo-madurez-menor",
+						"info",
+						{ id: t.id, declarada: t.madurez, derivada: derivadaMadurez },
+						t.id
+					);
+				}
+			}
+		}
+
+		const esperado = estaHecho(t) ? "hecho" : "pendiente";
+		if (!raw?.estado) {
+			alerta("combo-estado-faltante", "info", { id: t.id, esperado }, t.id);
+		} else if (t.estado) {
+			if (t.estado === "hecho" && esperado !== "hecho") {
+				alerta(
+					"combo-estado-falso-hecho",
+					"warning",
+					{ id: t.id, declarado: t.estado, esperado },
+					t.id
+				);
+			} else if (t.estado !== "hecho" && esperado === "hecho") {
+				alerta(
+					"combo-estado-deberia-hecho",
+					"warning",
+					{ id: t.id, declarado: t.estado, esperado },
+					t.id
+				);
 			}
 		}
 	}

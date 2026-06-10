@@ -1,7 +1,10 @@
 ---
 id: CC-1
 titulo: Saneamiento + fixes
-# Subcontenedor operativo dentro de CC.
+tipo: COMBO
+madurez: esqueleto
+estado: pendiente
+duracion: 40
 areas: [backend, datos]
 zonas: [ProductModel, ProductSchema]
 padre: "[[CC]]"

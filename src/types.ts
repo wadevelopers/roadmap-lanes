@@ -1,4 +1,4 @@
-export const TIPOS = ["FT", "DT", "INFRA"] as const;
+export const TIPOS = ["FT", "DT", "INFRA", "COMBO"] as const;
 export const MADUREZ = ["nota", "esqueleto", "ejecutable"] as const;
 export const ESTADOS = ["pendiente", "hecho"] as const;
 export const ESTADOS_VISUALES = [
@@ -29,14 +29,24 @@ export type CodigoAlerta =
 	| "carril-tarea-inexistente"
 	| "doble-carril"
 	| "area-desconocida"
-	| "zona-desconocida";
+	| "zona-desconocida"
+	| "combo-tipo-faltante"
+	| "combo-en-hoja"
+	| "combo-duracion-imposible"
+	| "combo-duracion-mayor"
+	| "combo-duracion-faltante"
+	| "combo-madurez-mayor"
+	| "combo-madurez-menor"
+	| "combo-madurez-faltante"
+	| "combo-estado-deberia-hecho"
+	| "combo-estado-falso-hecho"
+	| "combo-estado-faltante";
 
 export interface Alerta {
 	codigo: CodigoAlerta;
 	severidad: Severidad;
 	tareaId?: string;
 	params?: Record<string, string | number | boolean>;
-	corregible?: boolean;
 }
 
 export interface RawTarea {
@@ -45,7 +55,7 @@ export interface RawTarea {
 	tipo?: string;
 	madurez?: string;
 	estado?: string;
-	duracion?: string;
+	duracion?: number | string;
 	areas?: string[];
 	zonas?: string[];
 	padre?: string | null;

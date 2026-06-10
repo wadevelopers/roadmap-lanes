@@ -4,7 +4,7 @@ titulo: Producto — migrar los callers al esquema nuevo
 tipo: DT
 madurez: esqueleto
 estado: pendiente
-duracion: 3d
+duracion: 24
 areas:
   - backend
 zonas:

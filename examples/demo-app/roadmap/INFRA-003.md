@@ -4,7 +4,7 @@ titulo: Configurar CI de tests
 tipo: INFRA
 madurez: ejecutable
 estado: pendiente
-duracion: 2d
+duracion: 16
 areas: [infra]
 zonas: [CI]
 padre:

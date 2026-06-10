@@ -1,7 +1,10 @@
 ---
 id: CC
 titulo: Compras Core
-# Contenedor maestro: no declara tipo, madurez, estado ni duracion.
+tipo: COMBO
+madurez: esqueleto
+estado: pendiente
+duracion: 104
 areas: [backend, frontend, datos]
 zonas: [CheckoutService, ProductSchema, PaymentGateway]
 padre:

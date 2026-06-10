@@ -4,7 +4,7 @@ titulo: Cachear assets en el build
 tipo: INFRA
 madurez: ejecutable
 estado: pendiente
-duracion: 2d
+duracion: 16
 areas: [infra]
 zonas: [Build]
 padre:

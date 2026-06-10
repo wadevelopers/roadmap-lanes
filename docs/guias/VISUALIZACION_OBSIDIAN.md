@@ -19,6 +19,7 @@ Muestra notas como nodos y wikilinks como líneas. En `Graph settings → Groups
 [tipo:FT]            # colorear por tipo: features…
 [tipo:DT]            # …deuda técnica…
 [tipo:INFRA]         # …infraestructura
+[tipo:COMBO]         # …agrupadores/etapas con hijos
 [estado:hecho]       # o enfocar por estado
 [madurez:nota]       # o por madurez del plan
 ```

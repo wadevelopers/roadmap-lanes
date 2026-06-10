@@ -1,11 +1,10 @@
 # PLAN — Concepto COMBO + duración en horas
 
-> Estado: **propuesto — pendiente de aprobación**. No ejecutado.
+> Estado: **implementado**.
 > Cambio estructural: toca el contrato del frontmatter y ~17 archivos (código + ejemplos + docs).
 > Depende de `02_ALERTAS_SEVERIDAD.md` (contrato de alertas con severidad): las validaciones del COMBO
 > se emiten como `alertas` estructuradas, no `errores: string[]`.
-> Este documento es la fuente de verdad de la tarea hasta que se complete; al cerrar se vuelca lo
-> relevante a `VISION.md` y `NOTES.md` y este plan se elimina o archiva.
+> Lo estable del modelo ya fue volcado a `VISION.md`, `NOTES.md` y las guías correspondientes.
 
 ---
 
@@ -46,7 +45,7 @@ paralelo entre carriles, o **más** por coordinación / trabajo extra que solo v
   `tipo` declarado. El `tipo: COMBO` es informativo/validado, no el mecanismo.
 - **Sincronización manual, tablero read-only.** El tablero **no edita** el frontmatter; **valida** y
   **alerta** cuando los campos del COMBO se desvían de lo derivado (§6). La corrección la hace el
-  usuario. (Futuro: botón "Fix model" explícito — §11.)
+  usuario.
 
 ---
 
@@ -251,7 +250,7 @@ COMBOs (jerarquía `CC → {CC-1 → DT-010 → [ETAPA-A, ETAPA-B]}, {CC-2 → E
 |---|---|
 | `VISION.md` | Concepto COMBO en §7.3 (4º valor de `tipo`; cómo una tarea se vuelve COMBO), §7.4 (madurez/estado del COMBO), §7.5 (el COMBO declara y se valida, el sistema deriva), §7.9 (`duracion` = número de horas y por qué; gráfico vs texto). Ejemplo de frontmatter (§7.2) con `duracion` numérica. Sección nueva: reglas de validación del COMBO. |
 | `guias/FLUJO_DE_TRABAJO.md` | Flujo **manual** de conversión a COMBO (cambiar `tipo`, fijar `duracion`/`madurez`/`estado`), tablero read-only que **valida y alerta**, el cuerpo del COMBO documenta la coordinación. |
-| `NOTES.md` | Entrada de decisión (COMBO + horas). § Pendientes: botón "Fix model" futuro. |
+| `NOTES.md` | Entrada de decisión (COMBO + horas). |
 | `planes/04_EXPANDIR_CONTRAER_TIEMPO.md` | `duracion` con unidad → número de horas (§2, §6.1, §8); "contenedor" → COMBO (§6.3). La jornada sigue mapeando horas→altura. |
 | `planes/01_PORT_CORE.md` | Corregir menciones a `duracion` con unidad y "contenedor". |
 | `guias/VISUALIZACION_OBSIDIAN.md` | Agregar `[tipo:COMBO]` al ejemplo de colorear por tipo (§1). |
@@ -263,9 +262,6 @@ DRY: la definición del modelo vive en `VISION.md`; el resto referencia, no dupl
 ## 11. Fuera de alcance (se señala, no se hace)
 
 - **Edición/escritura automática** del frontmatter del COMBO desde el tablero. Sigue read-only.
-- **Botón "Fix model"**: acción **explícita** del usuario que sincronizaría `tipo`/`duracion`/
-  `madurez`/`estado` del COMBO con sus hijos. **Nunca** silencioso: el COMBO puede tener tiempo o
-  tareas extra que solo viven en su documento. Queda registrado en `NOTES.md` § Pendientes.
 - **Chip de filtro COMBO** en el tablero (no aplica a tarjetas).
 - Renombre de identificadores internos (`esContenedor`, clases CSS `rl-container-*`).
 

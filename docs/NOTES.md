@@ -25,6 +25,11 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 - **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
   backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
   no reemplazan el tablero de RL. Ver `guias/VISUALIZACION_OBSIDIAN.md`.
+- **COMBO + duración en horas — ADOPTADO** (jun 2026). Una tarea con hijos se modela como
+  `tipo: COMBO` y declara `duracion`, `madurez` y `estado` para Obsidian/Bases/grafo; RL sigue
+  derivando los cálculos funcionales desde las hojas y alerta si esos campos se desincronizan.
+  `duracion` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
+  según la jornada configurada.
 
 ## Pendientes
 
@@ -40,8 +45,8 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   estados, filtros y comportamiento en ventanas angostas.
 - **Preparación para publicación.** Revisar `manifest.json`, versionado, README público, instrucciones
   de uso, archivos de release y checklist para comunidad de Obsidian.
-- **Cobertura adicional.** Agregar tests para duración en horas/fracciones, datasource con wikilinks
-  y casos de regresión del modelo.
+- **Cobertura adicional.** Agregar tests para datasource con wikilinks y casos de regresión del
+  modelo.
 - **Aplicación a documentación real.** Planificar cómo adaptar/crear tareas para
   `/mnt/minis_forum/wadev/doc/roadmap-pending`. Ese repo se usa como fuente de lectura salvo
   autorización explícita para escribir ahí.

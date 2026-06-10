@@ -15,14 +15,21 @@ function datosBase(): BuildModelInput {
 				id: "T1",
 				tipo: "FT",
 				estado: "hecho",
-				duracion: "2d",
+				duracion: 16,
 				areas: ["back"],
 				zonas: ["Z1"],
 			},
-			{ id: "T2", tipo: "FT", estado: "pendiente", duracion: "3d", depende_de: ["T1"] },
-			{ id: "T3", tipo: "DT", estado: "pendiente", duracion: "4h", depende_de: ["T2"] },
-			{ id: "E", tipo: "FT" },
-			{ id: "H1", tipo: "FT", estado: "pendiente", duracion: "2d", padre: "E" },
+			{ id: "T2", tipo: "FT", estado: "pendiente", duracion: 24, depende_de: ["T1"] },
+			{ id: "T3", tipo: "DT", estado: "pendiente", duracion: 4, depende_de: ["T2"] },
+			{ id: "E", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 },
+			{
+				id: "H1",
+				tipo: "FT",
+				estado: "pendiente",
+				madurez: "ejecutable",
+				duracion: 16,
+				padre: "E",
+			},
 		],
 		horasPorDia: 8,
 	};
@@ -154,17 +161,24 @@ describe("buildModel", () => {
 		const datos = datosBase();
 		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
 		if (h1) h1.estado = "hecho";
-		datos.tareas.push({ id: "H2", tipo: "FT", estado: "pendiente", duracion: "1d", padre: "E" });
+		datos.tareas.push({
+			id: "H2",
+			tipo: "FT",
+			estado: "pendiente",
+			madurez: "ejecutable",
+			duracion: 8,
+			padre: "E",
+		});
 		const m = buildModel(datos);
 		expect(m.tareas.get("E")?.estadoVisual).toBe("en-curso");
 	});
 
 	test("en-curso se propaga por combos anidados", () => {
 		const datos = datosBase();
-		datos.tareas.push({ id: "GC" });
-		datos.tareas.push({ id: "MID", padre: "GC" });
-		datos.tareas.push({ id: "L1", tipo: "FT", estado: "hecho", duracion: "1d", padre: "MID" });
-		datos.tareas.push({ id: "L2", tipo: "FT", estado: "pendiente", duracion: "1d", padre: "MID" });
+		datos.tareas.push({ id: "GC", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 });
+		datos.tareas.push({ id: "MID", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "GC" });
+		datos.tareas.push({ id: "L1", tipo: "FT", estado: "hecho", madurez: "ejecutable", duracion: 8, padre: "MID" });
+		datos.tareas.push({ id: "L2", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 8, padre: "MID" });
 		const m = buildModel(datos);
 		expect(m.tareas.get("MID")?.estadoVisual).toBe("en-curso");
 		expect(m.tareas.get("GC")?.estadoVisual).toBe("en-curso");
@@ -173,9 +187,9 @@ describe("buildModel", () => {
 	test("una dependencia contra contenedor espera a que todos sus hijos estén hechos", () => {
 		const datos = datosBase();
 		datos.carriles.A.cola = ["T4"];
-		datos.tareas.push({ id: "T4", tipo: "FT", estado: "pendiente", duracion: "1d", depende_de: ["E"] });
-		datos.tareas.push({ id: "C2", depende_de: ["E"] });
-		datos.tareas.push({ id: "C2-H1", tipo: "DT", estado: "pendiente", duracion: "1d", padre: "C2" });
+		datos.tareas.push({ id: "T4", tipo: "FT", estado: "pendiente", duracion: 8, depende_de: ["E"] });
+		datos.tareas.push({ id: "C2", tipo: "COMBO", estado: "pendiente", duracion: 8, depende_de: ["E"] });
+		datos.tareas.push({ id: "C2-H1", tipo: "DT", estado: "pendiente", duracion: 8, padre: "C2" });
 		let m = buildModel(datos);
 		expect(m.tareas.get("T4")?.bloqueado).toBe(true);
 		expect(m.tareas.get("T4")?.esperaIds).toEqual(["E"]);
@@ -201,12 +215,14 @@ describe("buildModel", () => {
 		).toBe(true);
 	});
 
-	test("rechaza duracion sin unidad", () => {
+	test("acepta duracion numérica y rechaza con sufijo", () => {
 		const datos = datosBase();
-		datos.tareas.push({ id: "X", tipo: "FT", estado: "pendiente", duracion: "2" });
+		datos.tareas.push({ id: "X", tipo: "FT", estado: "pendiente", duracion: 16 });
+		datos.tareas.push({ id: "Y", tipo: "FT", estado: "pendiente", duracion: "2d" });
 		const m = buildModel(datos);
+		expect(m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.id === "X")).toBe(false);
 		expect(
-			m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.valor === "2")
+			m.alertas.some((a) => a.codigo === "duracion-invalida" && a.params?.valor === "2d")
 		).toBe(true);
 	});
 
@@ -216,7 +232,7 @@ describe("buildModel", () => {
 			id: "X",
 			tipo: "FT",
 			estado: "pendiente",
-			duracion: "1d",
+			duracion: 8,
 			padre: "FANTASMA",
 			areas: ["inexistente"],
 			zonas: ["ZX"],
@@ -226,6 +242,68 @@ describe("buildModel", () => {
 		expect(sev("padre-inexistente")).toBe("error");
 		expect(sev("area-desconocida")).toBe("warning");
 		expect(sev("zona-desconocida")).toBe("warning");
+	});
+
+	test("valida contrato COMBO básico", () => {
+		const datos = datosBase();
+		const e = datos.tareas.find((tarea) => tarea.id === "E");
+		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
+		if (e) e.tipo = "FT";
+		if (h1) h1.tipo = "COMBO";
+		const m = buildModel(datos);
+
+		expect(m.alertas.some((a) => a.codigo === "combo-tipo-faltante" && a.tareaId === "E")).toBe(true);
+		expect(m.alertas.some((a) => a.codigo === "combo-en-hoja" && a.tareaId === "H1")).toBe(true);
+	});
+
+	test("valida duración de COMBO con cota física y paralelismo", () => {
+		const imposible = datosBase();
+		const e = imposible.tareas.find((tarea) => tarea.id === "E");
+		if (e) e.duracion = 8;
+		let m = buildModel(imposible);
+		expect(
+			m.alertas.some((a) => a.codigo === "combo-duracion-imposible" && a.severidad === "error")
+		).toBe(true);
+
+		const mayor = datosBase();
+		const eMayor = mayor.tareas.find((tarea) => tarea.id === "E");
+		if (eMayor) eMayor.duracion = 24;
+		m = buildModel(mayor);
+		expect(
+			m.alertas.some((a) => a.codigo === "combo-duracion-mayor" && a.severidad === "warning")
+		).toBe(true);
+
+		const paralelo: BuildModelInput = {
+			taxonomia: { areas: {} },
+			carriles: { A: { cola: ["L1"] }, B: { cola: ["L2"] } },
+			tareas: [
+				{ id: "C", tipo: "COMBO", estado: "pendiente", madurez: "ejecutable", duracion: 16 },
+				{ id: "L1", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "C" },
+				{ id: "L2", tipo: "FT", estado: "pendiente", madurez: "ejecutable", duracion: 16, padre: "C" },
+			],
+		};
+		m = buildModel(paralelo);
+		expect(m.alertas.some((a) => a.codigo === "combo-duracion-imposible")).toBe(false);
+		expect(m.alertas.some((a) => a.codigo === "combo-duracion-mayor")).toBe(false);
+	});
+
+	test("valida madurez y estado declarados en COMBO", () => {
+		const datos = datosBase();
+		const h1 = datos.tareas.find((tarea) => tarea.id === "H1");
+		if (h1) h1.madurez = "nota";
+		let m = buildModel(datos);
+		expect(
+			m.alertas.some((a) => a.codigo === "combo-madurez-mayor" && a.params?.derivada === "nota")
+		).toBe(true);
+
+		if (h1) {
+			h1.madurez = "ejecutable";
+			h1.estado = "hecho";
+		}
+		m = buildModel(datos);
+		expect(
+			m.alertas.some((a) => a.codigo === "combo-estado-deberia-hecho" && a.params?.esperado === "hecho")
+		).toBe(true);
 	});
 
 	test("fixture demo-app: válido y con derivaciones esperadas", () => {

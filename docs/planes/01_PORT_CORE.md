@@ -24,7 +24,7 @@ El core de la web `v0.2.0` se parte en dos responsabilidades que ya estaban sepa
 La lógica de `buildModel` (indexar por id, validar enums/áreas/zonas/relaciones, derivar `hijos`,
 `desbloquea`, `absorbidaPor`, `esContenedor`, `horasEfectivas`, estados visuales,
 `solapeCarriles`, `gatesCruzados`) se porta a TypeScript y se adapta al contrato del plugin:
-`duracion` con unidad (`5d`, `4h`) reemplaza al `dias` de la web.
+`duracion` en horas numéricas reemplaza al `dias` de la web.
 
 ## Decisiones técnicas aplicadas
 
@@ -78,7 +78,7 @@ derivaciones. **Sin cambios de comportamiento** — es un port, no un rediseño.
 - Devolver `{ tareas, taxonomia, carriles }`.
 
 ### 4. Adaptar el `demo-app` a wikilinks (decisión 3)
-Editar los `.md` del demo: relaciones a `"[[id]]"` y `duracion` con unidad. Verificar en Obsidian
+Editar los `.md` del demo: relaciones a `"[[id]]"` y `duracion` en horas. Verificar en Obsidian
 que el grafo/backlinks reconocen los wikilinks (cierra de paso la verificación de formato).
 
 ### 5. Tests (`buildModel.test.ts`)

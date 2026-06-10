@@ -90,10 +90,10 @@ Una tarea tiene **dimensiones independientes**. El error a evitar es meter varia
 ---
 id: FT-002
 titulo: Pasarela de pago en el checkout
-tipo: FT                        # FT | DT | INFRA            (§7.3)
+tipo: FT                        # FT | DT | INFRA | COMBO     (§7.3)
 madurez: ejecutable             # nota | esqueleto | ejecutable  (§7.4)
 estado: pendiente               # pendiente | hecho          (§7.4; el resto se deriva)
-duracion: 5d                    # 5d (días) o 4h (horas)     (§7.9)
+duracion: 40                    # horas, sin sufijo           (§7.9)
 areas: [backend, pagos]         # taxonomía cerrada          (§7.6)
 zonas: [CheckoutService, PaymentGateway]
 padre: "[[EPIC-100]]"           # wikilink → jerarquía       (§7.5, §8)
@@ -106,31 +106,43 @@ depende_de: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
 
 **Las relaciones (`padre`, `depende_de`, `absorbe`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
 
-### 7.3 `tipo` — lista cerrada (3), árbol de decisión
+### 7.3 `tipo` — lista cerrada (4)
 
-Se evalúa de arriba hacia abajo; gana el primero que da "sí":
+`COMBO` es un valor estructural especial: una tarea que tiene hijos. No es una tarjeta ejecutable ni
+participa del filtro de tipo del tablero.
+
+Para tareas **hoja**, se evalúa de arriba hacia abajo; gana el primero que da "sí":
 
 1. ¿Es plomería de desarrollo o documentación que el usuario final no ve (deps, build, scripts, config, migración, docs)? → **INFRA**
 2. ¿Agrega una **capacidad nueva**? → **FT** (feature)
 3. Si no: arreglar/mejorar algo que **ya existe**, roto (bug) o subóptimo (deuda) → **DT**
 
-Es **MECE**: cada tarea cae en exactamente una. Los **contenedores** (tareas con hijos) **no declaran `tipo`** — el tipo es de cada hoja.
+Las hojas son **MECE**: cada una cae en exactamente una de `FT`, `DT` o `INFRA`. Los **COMBOs**
+(tareas con hijos) declaran `tipo: COMBO` para que Obsidian, Bases y el grafo puedan identificarlos
+directamente, pero RL los reconoce por tener hijos (`padre`), no por ese campo.
 
 ### 7.4 Madurez vs. estado — dos ejes del ciclo de vida
 
 - **`madurez`** — cuán listo está el *plan*: `nota` (idea en caliente) → `esqueleto` (documentado, con decisiones abiertas, **no ejecutable**) → `ejecutable` (listo).
-- **`estado`** — cuánto avanzó el *trabajo*, **sólo en las hojas**: `pendiente` → `hecho`. No hay estado intermedio escrito: *"en progreso"* se representa por **estar en la cola de un carril**.
+- **`estado`** — cuánto avanzó el *trabajo*: `pendiente` → `hecho`. En hojas es el estado real; en
+  COMBOs es metadata declarada para Obsidian y se valida contra los hijos. No hay estado intermedio
+  escrito: *"en progreso"* se deriva.
 - **Estados visuales derivados (no se escriben):**
   - `fuera de turno` = tiene `depende_de` sin cerrar.
   - `próximo` = la primera tarea libre del carril.
   - `en espera` = pendiente sin turno.
-  - `en curso` = **reservado a contenedores**: algunos hijos hechos, no todos (el estado del contenedor sale de sus hijos).
-  - `hecho` (contenedor) = todos los hijos hechos.
+  - `en curso` = **reservado a COMBOs**: algunos hijos hechos, no todos.
+  - `hecho` (COMBO) = todos los hijos hechos.
 
 ### 7.5 Jerarquía (`padre`) y absorción (`absorbe`)
 
-- **`padre`** — relación estructural (una etapa apunta a su tarea grande; una tarea de una épica apunta a la épica). Un **contenedor** (tarea con hijos) es un agrupador: **no declara `tipo`, `estado`, `madurez` ni `duracion`** — se **derivan** de los hijos. "Épica" no es un tipo: es una tarea **que tiene hijos**.
+- **`padre`** — relación estructural (una etapa apunta a su tarea grande; una tarea de una épica apunta a la épica). Un **COMBO** (tarea con hijos) es un agrupador: declara `tipo: COMBO`, `estado`, `madurez` y `duracion` para las herramientas de Obsidian, pero RL deriva orden, bloqueos, gates, solape, estado visual y alturas desde las hojas. "Épica" no es un tipo aparte: es una tarea **que tiene hijos**.
 - **`absorbe`** — decisión de ejecución: una tarea consume otra registrada por separado (`FT-002 absorbe [[DT-005]]`). La absorbida no aparece como tarjeta suelta: se muestra como sub-ítem de quien la absorbe.
+
+RL valida los COMBOs sin bloquear el render: alerta si falta `tipo: COMBO`, si una hoja declara
+`COMBO`, si la duración declarada es físicamente imposible, si falta duración/madurez/estado o si
+esos campos se desvían de lo derivado. La duración mayor que la suma de hijos puede ser legítima
+(coordinación extra) y se puede aceptar.
 
 ### 7.6 Áreas y zonas — taxonomía cerrada, no rutas
 
@@ -157,9 +169,17 @@ lanes:
 - **Gates (semáforos cruzados):** una `depende_de` entre tareas de **carriles distintos**. RL la dibuja como semáforo. No es un campo aparte.
 - **`desbloquea`:** es `depende_de` invertido. RL lo deriva del grafo. **Un solo lado es editable** (`depende_de`), para que las dos puntas no se desincronicen.
 
-### 7.9 Tiempo — `duracion` con unidad
+### 7.9 Tiempo — `duracion` en horas
 
-`duracion` se declara con **unidad**: `5d` (días) o `4h` (horas). Se normaliza a horas con una **jornada configurable** (cuántas horas = un día). La **altura** de la tarjeta representa ese tiempo, con un switch **expandir/contraer** (modo Gantt ↔ modo orden). El detalle de la conversión y el render está en `docs/planes/04_EXPANDIR_CONTRAER_TIEMPO.md`. El objetivo es **previsión aproximada** (principio §4.7), no exactitud.
+`duracion` se declara como **número de horas sin sufijo**: `40`, `8`, `4`. El display convierte esas
+horas a días usando la jornada configurada (`40` → `5d` con jornada de 8 h), pero el frontmatter
+queda numérico para Bases, grafo extendido y validaciones. Valores con letras (`5d`, `4h`) son
+alertas de duración inválida.
+
+En una hoja, `duracion` alimenta la altura de la tarjeta. En un COMBO, `duracion` es la estimación de
+la etapa completa y se muestra igual en la barra y el detalle; la altura del bloque sigue saliendo de
+las hojas visibles en cada columna. El objetivo es **previsión aproximada** (principio §4.7), no
+tracking exacto.
 
 ---
 

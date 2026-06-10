@@ -19,7 +19,6 @@ interface RenderContext {
 	setDetailPanelWidth?: (width: number) => void;
 	isAlertAccepted?: (alerta: Alerta) => boolean;
 	acceptAlert?: (alerta: Alerta) => void | Promise<void>;
-	fixAlert?: (alerta: Alerta) => void | Promise<void>;
 }
 
 export interface RenderModelOptions {
@@ -27,7 +26,6 @@ export interface RenderModelOptions {
 	setDetailPanelWidth?: (width: number) => void;
 	isAlertAccepted?: (alerta: Alerta) => boolean;
 	acceptAlert?: (alerta: Alerta) => void | Promise<void>;
-	fixAlert?: (alerta: Alerta) => void | Promise<void>;
 }
 
 interface EstadoPresentacion {
@@ -130,7 +128,7 @@ function formatDurationFromHours(hours: number, modelo: Modelo): string {
 }
 
 function formatDuration(task: Tarea, modelo: Modelo): string {
-	return formatDurationFromHours(task.horasEfectivas, modelo);
+	return formatDurationFromHours(task.duracionHoras ?? task.horasEfectivas, modelo);
 }
 
 function estadoVisual(task: Tarea, t: Translator): EstadoPresentacion {
@@ -188,7 +186,7 @@ function solapeDe(modelo: Modelo, task: Tarea): { tareas: Tarea[]; pct: number }
 function renderCardIcon(parent: HTMLElement, icon: CardIcon, cls: string, title: string): void {
 	const span = parent.createEl("span", {
 		cls: `rl-meta-icon ${cls}`,
-		attr: { title, "aria-label": title },
+		attr: { "aria-label": title },
 	});
 	span.innerHTML = CARD_ICONS[icon];
 }
@@ -370,7 +368,11 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Tarea, filtro
 	card.style.height = `${alturaCard(task, ctx.modelo)}px`;
 
 	const head = card.createEl("div", { cls: "rl-card-head" });
-	head.createEl("span", { cls: "rl-task-id", text: task.id });
+	head.createEl("span", {
+		cls: "rl-task-id",
+		text: task.id,
+		attr: { "aria-label": task.titulo, "aria-label-position": "top" },
+	});
 	if (task.tipo) head.createEl("span", { cls: `rl-type rl-type-${task.tipo}`, text: task.tipo });
 	head.createEl("span", { cls: "rl-duration", text: formatDuration(task, ctx.modelo) });
 
@@ -424,10 +426,7 @@ function renderContainerBlock(
 		attr: { "data-visible": visibleItems.length > 0 ? "true" : "false" },
 	});
 	const estado = estadoVisual(cont, ctx.t);
-	const label = `${cont.id} · ${cont.titulo} · ${formatDurationFromHours(
-		paths.reduce((sum, path) => sum + path.task.horasEfectivas, 0),
-		ctx.modelo
-	)}`;
+	const label = `${cont.id} · ${cont.titulo} · ${formatDuration(cont, ctx.modelo)}`;
 	const bar = block.createEl("button", {
 		cls: `rl-container-bar rl-state-${estado.clase}`,
 		attr: { type: "button", title: label },
@@ -481,8 +480,11 @@ function renderColumn(
 			"data-visible": filtros.columnas.has(id) ? "true" : "false",
 		},
 	});
-	if (tooltip) column.setAttribute("title", tooltip);
 	const head = column.createEl("header", { cls: "rl-column-head" });
+	if (tooltip) {
+		head.setAttribute("aria-label", tooltip);
+		head.setAttribute("aria-label-position", "top");
+	}
 	head.createEl("h3", { text: title });
 	head.createEl("span", { text: meta });
 
@@ -760,31 +762,18 @@ function renderAlertas(ctx: RenderContext, parent: HTMLElement): void {
 			cls: `rl-coord-item rl-alert-item rl-alert-${alerta.severidad}`,
 		});
 		item.createEl("span", { cls: "rl-alert-text", text: formatAlerta(alerta, ctx.t) });
-		const canFix = alerta.corregible === true && ctx.fixAlert !== undefined;
 		const canAccept = alerta.severidad !== "error" && ctx.acceptAlert !== undefined;
-		if (canFix || canAccept) {
+		if (canAccept) {
 			const actions = item.createEl("div", { cls: "rl-alert-actions" });
-			if (canFix) {
-				const fix = actions.createEl("button", {
-					cls: "rl-alert-btn rl-alert-fix",
-					text: ctx.t("alertFix"),
-					attr: { type: "button" },
-				});
-				fix.addEventListener("click", () => {
-					void ctx.fixAlert?.(alerta);
-				});
-			}
-			if (canAccept) {
-				const accept = actions.createEl("button", {
-					cls: "rl-alert-btn rl-alert-accept",
-					text: ctx.t("alertAccept"),
-					attr: { type: "button" },
-				});
-				accept.addEventListener("click", () => {
-					accept.disabled = true;
-					void ctx.acceptAlert?.(alerta);
-				});
-			}
+			const accept = actions.createEl("button", {
+				cls: "rl-alert-btn",
+				text: ctx.t("alertAccept"),
+				attr: { type: "button" },
+			});
+			accept.addEventListener("click", () => {
+				accept.disabled = true;
+				void ctx.acceptAlert?.(alerta);
+			});
 		}
 	}
 }
@@ -960,10 +949,8 @@ async function openDetail(
 		meta.createEl("dt", { text: label });
 		meta.createEl("dd", { text: value });
 	};
-	if (!task.esContenedor) {
-		addMeta(ctx.t("status"), task.estado || "-");
-		addMeta(ctx.t("maturity"), task.madurez || "-");
-	}
+	addMeta(ctx.t("status"), task.estado || "-");
+	addMeta(ctx.t("maturity"), task.madurez || "-");
 	addMeta(ctx.t("duration"), formatDuration(task, ctx.modelo));
 	addMeta(ctx.t("lane"), task.carril || ctx.t("backlog"));
 	addMeta(ctx.t("areas"), task.areas.join(", ") || "-");
@@ -1032,7 +1019,6 @@ export function renderModel(
 		setDetailPanelWidth: options.setDetailPanelWidth,
 		isAlertAccepted: options.isAlertAccepted,
 		acceptAlert: options.acceptAlert,
-		fixAlert: options.fixAlert,
 	};
 	const columnasOrden = columnOrder(modelo);
 	const filtros: Filtros = {

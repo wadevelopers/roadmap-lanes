@@ -1,8 +1,7 @@
 # PLAN — Niveles de severidad en las alertas del modelo
 
-> Estado: **primera entrega implementada** (commit `7e41b51`). También está implementado **Aceptar**
-> con persistencia local en `data.json`. Pendiente: validaciones combo-* (con [`03_COMBO.md`](03_COMBO.md))
-> y botón **Corregir** para alertas corregibles.
+> Estado: **implementado**. Incluye severidades base, **Aceptar** con persistencia local en `data.json`
+> y validaciones combo-* integradas desde [`03_COMBO.md`](03_COMBO.md).
 > Detalle en **"Estado de implementación"** (abajo). Cambio de contrato interno
 > (`modelo.errores: string[]` → alertas estructuradas).
 
@@ -18,9 +17,8 @@
 - §6 — persistencia del botón **Aceptar** en `data.json`; la huella incluye `codigo`, `severidad`,
   `tareaId` y `params`, así que la alerta reaparece si cambian los valores.
 
-**⏳ Pendiente:**
-- §3.2 — validaciones **combo-*** (no implementadas; llegan con [`03_COMBO.md`](03_COMBO.md)).
-- §5 — botón **Corregir**: falta la lógica (`vault.modify`) para alertas marcadas como `corregible`.
+**✅ Hecho con `03_COMBO.md`:**
+- §3.2 — validaciones **combo-*** implementadas con alertas estructuradas y severidad.
 
 ---
 
@@ -32,8 +30,8 @@ en rojo** (`renderErrors` en `render.ts`, sección "Errores del modelo"). No dis
 intencional** (la duración declarada de un COMBO es mayor que la suma de sus hijos por tiempo de
 coordinación extra).
 
-Este plan introduce **niveles de severidad** con colores distintos y deja el terreno preparado para
-las acciones futuras **"Corregir"** y **"Aceptar"** (§7).
+Este plan introduce **niveles de severidad** con colores distintos y permite **Aceptar** alertas no
+críticas (§7).
 
 **Principio rector de severidad:**
 
@@ -58,7 +56,6 @@ interface Alerta {
   severidad: Severidad;
   tareaId?: string;       // a qué tarea/carril aplica (para enlazar y para "Aceptar")
   params?: Record<string, string | number | boolean>;  // valores del mensaje y de la huella
-  corregible?: boolean;   // si existe un fix determinista (futuro botón "Corregir")
 }
 ```
 
@@ -72,7 +69,7 @@ interface Alerta {
   valores cambian. No hace falta un `fingerprintParts` aparte.
 
 > Por qué estructurado y sin texto: el color, el agrupado, el conteo, la traducción, el "Aceptar"
-> persistente y el "Corregir" necesitan saber **qué** validación es y **con qué valores**, no un
+> persistente necesita saber **qué** validación es y **con qué valores**, no un
 > string ya formateado. Dejar `mensaje: string` obligaría a internacionalizar en otro refactor y a
 > parsear texto para el fingerprint.
 
@@ -100,15 +97,14 @@ interface Alerta {
 
 ### 3.2 Validaciones nuevas del COMBO (de `03_COMBO.md` §6, ahora con severidad)
 
-> ⏳ **Pendiente** — estas validaciones se implementan con [`03_COMBO.md`](03_COMBO.md), **no** en la
-> primera entrega. Acá quedan clasificadas para que combo las emita con la severidad ya definida.
+> ✅ Implementado con [`03_COMBO.md`](03_COMBO.md).
 
 | Código | Validación | Severidad | Por qué |
 |---|---|---|---|
 | `combo-tipo-faltante` | tarea con hijos y `tipo` ≠ COMBO | **warning** | Falta la conversión manual; el sistema deriva igual. |
 | `combo-en-hoja` | hoja con `tipo: COMBO` | **warning** | COMBO sin hijos es un malentendido; no rompe nada. |
 | `combo-duracion-imposible` | `duracion` declarada **<** cota inferior física (la tarea más larga, o el carril del COMBO más cargado) | **error** | Ni con el paralelismo actual la etapa puede durar menos: una tarea sola, o un carril en secuencia, ya no entra. |
-| `combo-duracion-mayor` | `duracion` declarada **>** suma de hijos | **warning** | **Válido**: tiempo de coordinación/tarea extra que solo vive en el COMBO. **Aceptable, no corregible** (auto-corregir borraría ese tiempo extra). |
+| `combo-duracion-mayor` | `duracion` declarada **>** suma de hijos | **warning** | **Válido**: tiempo de coordinación/tarea extra que solo vive en el COMBO. Aceptable. |
 | `combo-duracion-faltante` | COMBO sin `duracion` | **warning** | Recordatorio de declararla. |
 | `combo-madurez-mayor` | `madurez` declarada **más madura** que la menor de los hijos | **warning** | Sobreestima la preparación; debería ser la menor. |
 | `combo-madurez-menor` | `madurez` declarada **menos madura** que la menor de los hijos | **info** | Conservador; inofensivo pero desincronizado. |
@@ -128,11 +124,6 @@ interface Alerta {
 > con su `horasEfectivas`; se agrupan por `carril` y se toma la **carga máxima** de un carril; una hoja
 > **sin carril** (backlog) solo aporta a "tarea más larga", **no** a la carga de carril. **Se evalúa
 > DESPUÉS de asignar carriles** en `buildModel` (calcularla antes daría mal).
-
-**`corregible`** (habilita el botón Corregir): solo las de **sync determinístico** al valor derivado —
-`combo-tipo-faltante`, `combo-madurez-mayor`/`-menor`/`-faltante`, `combo-estado-*`, `combo-duracion-faltante`.
-**No** corregibles: `combo-duracion-mayor` (el tiempo extra es legítimo) ni `combo-duracion-imposible`
-(es imposible; el usuario decide qué dato está mal). Coherente con `03_COMBO.md` D7.
 
 **`params` por alerta** (alimentan el mensaje i18n **y** la huella del "Aceptar" — si cambian, la alerta
 reaparece):
@@ -163,24 +154,17 @@ reaparece):
 
 ---
 
-## 5. Acciones por alerta — "Corregir" y "Aceptar"
+## 5. Acción por alerta — "Aceptar"
 
-> ✅ **Aceptar implementado.** ⏳ **Corregir pendiente.** El render ya oculta alertas aceptadas y guarda
-> la aceptación con la persistencia de §6. `Corregir` queda pendiente hasta que existan validaciones
-> `combo-*` marcadas como `corregible`.
+> ✅ **Aceptar implementado.** El render oculta alertas aceptadas y guarda la aceptación con la
+> persistencia de §6.
 
-Cada **warning/info aceptable** muestra **Aceptar**. Si además la alerta viene marcada como
-`corregible`, muestra también **Corregir**.
+Cada **warning/info aceptable** muestra **Aceptar**.
 
-- **Corregir** (*fix*): sincroniza el campo del COMBO con lo derivado de los hijos (p. ej. fija
-  `duracion` = suma de hijos, `madurez` = menor, `estado` = hecho). **Requiere escritura**
-  (`vault.modify`) — hoy el plugin es read-only. Es la materialización del botón "Fix model" que ya
-  estaba anotado como pendiente.
 - **Aceptar** (*accept*): silencia **esa** alerta para que no vuelva a aparecer mientras su huella no
   cambie. Usa la **persistencia** de §6.
 
-Los **errores** (rojo) no ofrecen "Aceptar" (no se pueden aceptar datos imposibles); a lo sumo
-"Corregir" si hay fix determinista.
+Los **errores** (rojo) no ofrecen "Aceptar" porque no se pueden aceptar datos imposibles.
 
 ---
 
@@ -210,8 +194,7 @@ este chequeo").
 - Botón **Aceptar** para warning/info + persistencia en `data.json` (§6).
 
 **⏳ Futuro:**
-- Validaciones **combo-*** (§3.2) — llegan con `03_COMBO.md`.
-- Botón **Corregir** (requiere salir del read-only: `vault.modify`).
+- Sin pendientes propios de este plan.
 
 ---
 
