@@ -1,6 +1,6 @@
-# PLAN — Expandir/Contraer tiempo (modo Gantt ↔ orden) + jornada configurable
+# PLAN — Expandir/Contraer tiempo (`boardMode: time` ↔ `order`) + jornada configurable
 
-> Estado: **listo para ejecutar** (spec cerrada). **Pendiente de implementar** en este plugin.
+> Estado: **listo para ejecutar** (spec cerrada y actualizada tras frontmatter en inglés). **Pendiente de implementar** en este plugin.
 > La feature es render-pesada: el render (alturas, filas, divisores, switch) vive en el `ItemView`;
 > la *lógica de conversión* (horas↔días según jornada) va en el **core** reutilizable (TS, testeable
 > sin Obsidian).
@@ -9,21 +9,21 @@
 
 Un **switch** que alterna cómo el tablero representa el tiempo:
 
-- **Modo tiempo (Gantt) — ON:** la **altura** de cada card representa su duración, con soporte de
+- **Modo `time` (Gantt):** la **altura** de cada card representa su duración, con soporte de
   **horas** (no sólo días) y una **jornada configurable**. Ventaja: se ve la escala temporal real.
   Costo: tareas cortas ocultan filas del card, y tareas largas alargan mucho la página.
-- **Modo orden (contraído) — OFF:** **todos los cards miden lo mismo** (las 4 filas completas,
+- **Modo `order` (contraído):** **todos los cards miden lo mismo** (las 4 filas completas,
   altura mínima `M`). **No** representa tiempo, sólo el **orden** de las tareas dentro del carril.
   Ventaja: toda la información visible en todos los cards; página compacta.
 
-Expandir = activar el modo Gantt; contraer = modo orden.
+Expandir = `boardMode: "time"`; contraer = `boardMode: "order"`.
 
 ## 2. Modelo de tiempo: horas declaradas y días de display
 
-La duración de una tarea se declara en el campo **`duracion`** como número de horas, sin sufijo
+La duración de una tarea se declara en el campo **`duration`** como número de horas, sin sufijo
 (ver VISION §7.9):
-- `duracion: 4` → 4 horas.
-- `duracion: 16` → 16 horas.
+- `duration: 4` → 4 horas.
+- `duration: 16` → 16 horas.
 
 La jornada configurable se usa para convertir esas horas a días de display y de ahí derivar la
 altura.
@@ -32,40 +32,136 @@ altura.
 
 El usuario define **cuántas horas de trabajo equivalen a un día** (depende de cuántas horas
 trabaja por día). Es **configuración del usuario**, no de la tarea: se guarda en los **settings
-del plugin** (`loadData`/`saveData`, ver §5), se puede cambiar en cualquier momento y la vista
+del plugin** (`loadData`/`saveData`, ver §6), se puede cambiar en cualquier momento y la vista
 se re-renderiza con el nuevo valor.
 
 - Opciones **preestablecidas**: **4, 6, 8, 10, 12, 14** horas/día (no es campo libre).
-- Conversión: `dias_efectivos = horas_tarea / jornada`.
+- Setting interno: `hoursPerDay`.
+- UI: **solo en la pestaña de settings del plugin**. No va en la toolbar del tablero porque no es un
+  ajuste operativo que se cambie a cada rato.
+- Conversión: `effectiveDays = taskHours / hoursPerDay`.
   - Jornada 4 h, tarea de 8 h → **2 días**.
   - Jornada 8 h, tarea de 8 h → **1 día**.
 
-## 4. Mapeo tiempo → filas/altura del card (modo Gantt)
+## 4. Precisión temporal: horas por línea
 
-Un **día completo** = altura mínima `M` = las **4 filas** del card. Cada fila representa
-`jornada / 4` horas. Las filas, de arriba hacia abajo:
+El usuario también puede definir cuánta precisión quiere en modo `time`: **cuántas horas representa
+cada línea temporal del card**. Esto es configuración de usuario y se muestra debajo de
+`hoursPerDay` en la pestaña de settings.
+
+Importante: internamente conviene guardar **líneas temporales por día** (`timeLinesPerDay`) en vez de
+guardar directamente `hoursPerLine`. Así se evitan errores de redondeo con valores como `14 / 12 =
+1.1666…`. La UI muestra "horas por línea", pero el dato persistido es entero:
+
+```ts
+hoursPerLine = hoursPerDay / timeLinesPerDay
+```
+
+`timeLinesPerDay: 4` preserva el comportamiento previsto originalmente: un día completo = 4 líneas.
+Valores mayores aumentan precisión a costa de cards más altos.
+
+Opciones permitidas:
+
+| `hoursPerDay` | `timeLinesPerDay` disponibles | UI "horas por línea" |
+|---|---:|---|
+| 4 | 4 | 1 |
+| 6 | 4 | 1.5 |
+| 8 | 8, 4 | 1, 2 |
+| 10 | 8, 4 | 1.25, 2.5 |
+| 12 | 12, 6, 4 | 1, 2, 3 |
+| 14 | 12, 6, 4 | 1.17, 2.33, 3.5 |
+
+Regla al cambiar `hoursPerDay`: si el `timeLinesPerDay` actual sigue siendo válido para la nueva
+jornada, se conserva; si no, se vuelve al default `4`. Ejemplos:
+
+- `hoursPerDay: 8`, `timeLinesPerDay: 8` → cambiar a `10` conserva `8`.
+- `hoursPerDay: 12`, `timeLinesPerDay: 12` → cambiar a `8` vuelve a `4`.
+
+## 5. Estructura única del card
+
+Hay **una sola estructura DOM y un solo diseño base de card**. No se mantienen dos diseños distintos.
+El modo cambia clases/variables CSS y la altura calculada:
+
+- `boardMode: "time"`: usa escala temporal exacta, oculta filas de abajo cuando la tarea dura menos
+  de un día y ajusta el espacio interno para alinear bordes entre carriles.
+- `boardMode: "order"`: usa la misma estructura, muestra las 4 filas, ignora la escala temporal y
+  reduce los espacios internos para quedar compacto, visualmente parecido al diseño actual.
+
+Las filas semánticas del card, de arriba hacia abajo:
 
 1. **head** — id + chip de tipo + duración
 2. **título**
 3. **meta** — madurez + absorbe + solape
 4. **estado**
 
-Cuando una tarea ocupa **menos de un día**, se muestran sólo las filas de arriba y se **ocultan
-las de abajo**, bajando la altura proporcionalmente:
+## 6. Mapeo tiempo → líneas/altura del card (modo `time`)
 
-`filas = clamp(ceil( horas_fracción / (jornada/4) ), 1, 4)` — **mínimo 1 fila** (sólo `head`),
-aunque la tarea dure menos que el paso de una fila.
+Un **día completo** = `timeLinesPerDay` líneas temporales. Cada línea representa
+`hoursPerDay / timeLinesPerDay` horas.
 
-Para tareas de **más de un día**: por cada día completo, las 4 filas + **línea divisoria de día**;
-la fracción restante se mapea con la fórmula de arriba (filas + filas en blanco hasta el medio día
-correspondiente). La altura total es **aditiva** (apilar fracciones equivale a la suma), para que
-la escala temporal entre cards/carriles se mantenga comparable.
+Cuando una tarea ocupa **menos de un día**, primero se calcula cuántas líneas temporales ocupa:
 
-> Las 4 filas se diseñan con **altura fija** (`M/4` cada una) para que ocultar filas reduzca la
-> altura de forma exacta.
+`timeLines = clamp(ceil(remainingHours / hoursPerLine), 1, timeLinesPerDay)` — **mínimo 1 línea**,
+aunque la tarea dure menos que el paso de una línea.
 
-### Ejemplos (jornada = 4 h → cada fila = 1 h)
-| Duración | Filas visibles | Altura |
+Luego se muestran las filas semánticas desde arriba hasta donde alcance: `head`, `title`, `meta`,
+`state`. Si `timeLines < 4`, las filas semánticas de abajo se ocultan. Si `timeLines > 4`, las 4 filas
+semánticas se muestran y las líneas restantes quedan como espacio temporal en blanco.
+
+La unidad temporal mínima **no es sólo una línea de texto**. En modo `time`, una línea temporal debe
+representar el **footprint completo de un card de 1 fila**: contenido + padding + borde. Esto es
+necesario para que los carriles alineen correctamente.
+
+Regla de alineación general:
+
+```text
+height(N líneas temporales)
+=
+N cards de 1 línea + (N - 1) gaps entre cards
+```
+
+En otras palabras: el borde inferior de un card de `N` líneas temporales debe coincidir con el borde
+inferior de `N` cards de 1 línea en el carril de al lado. Para lograrlo, el espacio interno entre
+líneas del card más alto absorbe el equivalente del gap/padding/borde que tendrían varios cards
+chicos apilados.
+
+Ejemplos:
+
+- Con `timeLinesPerDay: 4`, 1 día = 4 cards de 1 línea + 3 gaps.
+- Con `timeLinesPerDay: 8`, 1 día = 8 cards de 1 línea + 7 gaps.
+
+Fórmula conceptual para modo `time`:
+
+```text
+timeHeight(lines) = lines * oneLineCardHeight + (lines - 1) * cardGap
+```
+
+Donde `oneLineCardHeight` incluye el footprint externo de un card mínimo, no sólo el line-height del
+texto.
+
+El render debe usar una estructura controlada (grid/flex con variables explícitas) donde las 4 filas
+semánticas se monten sobre slots temporales exactos. No alcanza con el `flex` actual, porque hoy `gap`,
+`padding`, `min-height` y `margin-top:auto` hacen que la altura se vea bien, pero no garantizan la
+equivalencia matemática entre carriles.
+
+Cuando una tarea dura **menos de un día**, las filas semánticas no visibles se ocultan en modo
+`time`; el click al detalle sigue mostrando toda la información.
+
+Cuando `timeLinesPerDay` es mayor que 4, hay más líneas temporales que filas semánticas. En ese caso,
+las primeras líneas pueden mostrar las 4 filas de contenido y las líneas restantes son espacio
+temporal en blanco. Ejemplo: `hoursPerDay: 8` + `timeLinesPerDay: 8` implica 1 hora por línea; una
+tarea de 8 h usa 8 líneas, pero sólo las primeras 4 tienen contenido visible.
+
+Para tareas de **más de un día**: por cada día completo, `timeLinesPerDay` líneas temporales +
+divisor de día; la fracción restante se mapea con la fórmula de arriba. La altura total debe ser
+aditiva, para que apilar fracciones equivalga a la suma y la escala temporal entre cards/carriles se
+mantenga comparable.
+
+> El costo de precisión/alineación se paga sólo en modo `time`; en modo `order` se compactan los
+> espacios internos y `timeLinesPerDay` no cambia la altura de los cards.
+
+### Ejemplos (`hoursPerDay = 4`, `timeLinesPerDay = 4` → cada línea = 1 h)
+| Duración | Líneas temporales | Altura |
 |---|---|---|
 | 1 h | 1 (id) | ¼ de día |
 | 2 h | 2 (id, título) | ½ día |
@@ -73,7 +169,7 @@ la escala temporal entre cards/carriles se mantenga comparable.
 | 6 h | 4 + divisor + 2 en blanco | 1½ días |
 | 8 h | 4 + divisor + 4 | 2 días |
 
-### Ejemplos (jornada = 8 h → cada fila = 2 h; mínimo 2 h = 1 fila)
+### Ejemplos (`hoursPerDay = 8`, `timeLinesPerDay = 4` → cada línea = 2 h)
 | Duración | Filas visibles |
 |---|---|
 | 1 h o 2 h | 1 (id) |
@@ -81,56 +177,82 @@ la escala temporal entre cards/carriles se mantenga comparable.
 | 6 h | 3 |
 | 8 h | 4 (día completo) |
 
+### Ejemplos (`hoursPerDay = 8`, `timeLinesPerDay = 8` → cada línea = 1 h)
+| Duración | Líneas temporales | Contenido visible |
+|---|---:|---|
+| 1 h | 1 | head |
+| 2 h | 2 | head + título |
+| 4 h | 4 | 4 filas semánticas |
+| 8 h | 8 | 4 filas semánticas + 4 líneas en blanco |
+
 Nota: no importa que se oculte información en cards cortos — **siempre se abre el detalle con
 click**. Lo importante es preservar la **escala de tiempo**.
 
-## 5. Configuración (settings del plugin)
+## 7. Configuración (settings del plugin)
 
 La config se persiste con los settings **nativos del plugin** (`this.loadData()` /
 `this.saveData()`, guardados en el `data.json` del plugin dentro del vault) — **no** en
 `localStorage` (eso era de la web standalone):
 
-- `jornada` — horas/día (4/6/8/10/12/14). Cambiarla re-renderiza el tablero.
-- `modoTiempo` — switch Gantt (ON) / orden (OFF).
+- `hoursPerDay` — horas/día (4/6/8/10/12/14). Se configura **sólo en Settings**.
+- `timeLinesPerDay` — precisión temporal del modo `time`. Se configura **sólo en Settings**, debajo
+  de `hoursPerDay`; la UI lo muestra como "horas por línea".
+- `boardMode` — `"time"` / `"order"`. Se controla **sólo desde la toolbar del tablero**, pero se
+  persiste igual en `data.json` para recordar la preferencia.
 
-UI: un selector de jornada + el switch de modo en la barra de controles del tablero, y/o en la
-pestaña de *settings* del plugin (`PluginSettingTab`).
+Defaults:
 
-## 6. Decisiones (cerradas)
+```ts
+hoursPerDay: 8
+timeLinesPerDay: 4
+boardMode: "time"
+```
 
-1. **Campo de duración:** `duracion` en horas numéricas (`4`, `16`). Los sufijos (`4h` / `2d`) son inválidos.
-2. **Filas de altura fija:** sí — las 4 filas miden `M/4` exactas, para que ocultar filas reduzca
-   la altura de forma proporcional.
-3. **Contenedores:** sin tratamiento especial. La barra trunca con `overflow:hidden` + ellipsis;
+Cambiar cualquiera de estos valores re-renderiza las vistas abiertas.
+
+## 8. Decisiones (cerradas)
+
+1. **Campo de duración:** `duration` en horas numéricas (`4`, `16`). Los sufijos (`4h` / `2d`) son inválidos.
+2. **Un solo diseño de card:** misma estructura DOM para `time` y `order`; cambian clases/variables.
+3. **Modo `time`:** líneas temporales exactas. El footprint de 1 línea incluye contenido + padding +
+   borde; un card de `N` líneas temporales debe alinear con `N` cards de 1 línea + `N - 1` gaps.
+4. **Precisión configurable:** se guarda `timeLinesPerDay`, no `hoursPerLine`; la UI muestra las
+   horas por línea derivadas.
+5. **Modo `order`:** no aparecen divisores de día ni filas en blanco; todos los cards muestran las
+   4 filas y usan espacios internos compactos.
+6. **Contenedores:** sin tratamiento especial. La barra trunca con `overflow:hidden` + ellipsis;
    no importa si con poco alto se ve hasta como una sola letra. En la práctica un contenedor agrupa
    varias tareas (alguna larga), así que su alto crece; y siempre se abre el detalle con click.
-4. **Redondeo:** `ceil`. Suficiente para el objetivo (ver §7): previsión **aproximada** para
+7. **Redondeo:** `ceil`. Suficiente para el objetivo (ver §9): previsión **aproximada** para
    coordinar carriles, no estimación exacta.
-5. **Modo orden (OFF):** no aparecen divisor de día ni filas en blanco; todos los cards = 4 filas planas.
 
-## 7. Alcance: previsión aproximada, no estimación exacta
+## 9. Alcance: previsión aproximada, no estimación exacta
 
 El objetivo es **prever de forma aproximada** cuánto va a tomar una tarea, para **coordinar los
 carriles** y **minimizar el solape y los bloqueos** (pisar trabajo en curso de otro carril). **No**
 es estimación exacta ni *tracking* de horas. Por eso `ceil` y el mapeo a filas alcanzan: comunican
 el **orden de magnitud** temporal. Coherente con VISION §4 (principio 7) y §7.9.
 
-## 8. Implementación en el plugin
+## 10. Implementación en el plugin
 
-- La **lógica de conversión** (horas↔días, jornada) vive en el **core** (TS), separada del render
-  y testeable sin Obsidian.
-- El **render** (alturas, filas de `M/4`, divisores de día, el switch) se implementa en el
-  `ItemView` del tablero, junto con el resto de la vista portada de la web `v0.2.0`.
+- La **lógica de conversión** (horas↔días, `hoursPerDay`, `timeLinesPerDay`, cálculo de líneas
+  temporales visibles y desglose para display) vive en el **core** (TS), separada del render y
+  testeable sin Obsidian.
+- El **render** (clases por `boardMode`, alturas, filas, divisores de día y switch) vive en el
+  `ItemView` del tablero.
 - La duración (`duration: 40`) sale del *frontmatter* vía `metadataCache` (VISION §7.9).
+- El helper actual de altura (`cardHeight`) no debe crecer como lógica suelta del render: conviene
+  extraerlo a helpers puros y cubrirlo con tests unitarios, incluyendo el caso de alineación
+  `N líneas temporales = N cards de 1 línea + (N - 1) gaps`.
 
-## 9. Display del texto de duración: días vs. horas
+## 11. Display del texto de duración: días vs. horas
 
 > No es problema hoy (jornada fija = default), pero **sí** cuando la jornada sea configurable (este
 > plan): el texto puede mostrar días aunque la nota esté en horas, y confundir. `duration` se anota
 > **siempre en horas**; el display la convierte a días según `hoursPerDay`. Reglas para que no engañe:
 
 1. **Badge del card** (texto `Nd`/`Nh` visible): mostrar **días** (`"Nd"`) **solo si**
-   `horas % hoursPerDay == 0` (días exactos); si no, mostrar **horas** (`"Nh"`). Evita tener que meter
+   `hours % hoursPerDay == 0` (días exactos); si no, mostrar **horas** (`"Nh"`). Evita tener que meter
    un `+ Xh` en el espacio reducido del card.
    - Ejemplos (jornada 8 h): `16` → `2d`; `24` → `3d`; `12` → `12h`; `4` → `4h`.
 2. **Tooltip de la duración en el card**: el desglose real (días + horas), ya que la nota está en horas.
@@ -142,5 +264,5 @@ el **orden de magnitud** temporal. Coherente con VISION §4 (principio 7) y §7.
    - días + resto: `1d + 4h (12 h)`.
    - menos de un día: solo `4 h` (sin paréntesis — sería información duplicada).
 
-La conversión horas↔días vive en el **core** (§8, separada del render); el badge, el tooltip y el detalle
+La conversión horas↔días vive en el **core** (§10, separada del render); el badge, el tooltip y el detalle
 la consumen.
