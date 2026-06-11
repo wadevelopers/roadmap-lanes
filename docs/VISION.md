@@ -207,7 +207,8 @@ La configuración práctica del grafo (nativo y con Extended Graph) y de Bases e
 - **Izquierda:** backlog (toda tarea fuera de las colas).
 - **Medio:** un carril por columna, con su cola ordenada de arriba hacia abajo.
 - **Derecha:** hecho.
-- Altura de la tarjeta = tiempo; colores = estado; solape e iconografía como en `v0.2.0`.
+- Altura de la tarjeta = tiempo; colores = estado; solape e iconografía como en `v0.2.0`. Qué significa
+  cada color, ícono y señal: [`guias/LEYENDA_DEL_TABLERO.md`](guias/LEYENDA_DEL_TABLERO.md).
 
 **b) Panel de detalle** — al clickear una tarjeta: datos, relaciones, solape y el **cuerpo del `.md` renderizado con `MarkdownRenderer`** nativo.
 

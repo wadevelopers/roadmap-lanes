@@ -2,7 +2,8 @@
 
 > Cómo descubrir, documentar y ejecutar el trabajo de un proyecto con RL, **sin un índice
 > maestro mantenido a mano**. Asume el modelo de datos de [`VISION.md`](../VISION.md) (tipos,
-> madurez, estado, carriles, solape, gates).
+> madurez, estado, carriles, solape, gates). Para leer los **colores y símbolos** del tablero, ver
+> [`LEYENDA_DEL_TABLERO.md`](LEYENDA_DEL_TABLERO.md).
 
 ## El anti-patrón que RL reemplaza
 
