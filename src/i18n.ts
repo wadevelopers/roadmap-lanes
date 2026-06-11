@@ -9,6 +9,9 @@ const STRINGS = {
 		roadmapFolderSetting: "Roadmap folder",
 		roadmapFolderDesc:
 			"Folder inside the vault where Roadmap Lanes stores lanes.yaml, taxonomy.yaml and task notes.",
+		compactTypesSetting: "Compact type labels",
+		compactTypesDesc:
+			"Show the task type as a color dot instead of a labeled chip — saves width when columns get narrow.",
 		hoursPerDaySetting: "Workday duration",
 		hoursPerDayDesc: "Working hours represented by one day in time mode.",
 		hoursPerLineSetting: "Hours per line",
@@ -104,6 +107,9 @@ const STRINGS = {
 		roadmapFolderSetting: "Carpeta del roadmap",
 		roadmapFolderDesc:
 			"Carpeta dentro del vault donde Roadmap Lanes guarda lanes.yaml, taxonomy.yaml y las notas de tareas.",
+		compactTypesSetting: "Tipos compactos",
+		compactTypesDesc:
+			"Muestra el tipo como un punto de color en vez de un chip con texto — ahorra ancho cuando las columnas se angostan.",
 		hoursPerDaySetting: "Duración de la jornada",
 		hoursPerDayDesc: "Horas de trabajo que representa un día en modo tiempo.",
 		hoursPerLineSetting: "Horas por línea",

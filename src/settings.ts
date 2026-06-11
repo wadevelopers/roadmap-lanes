@@ -15,6 +15,7 @@ export interface RoadmapLanesSettings {
 	hoursPerDay: HoursPerDay;
 	hoursPerLine: number;
 	boardMode: BoardMode;
+	compactTypes: boolean;
 }
 
 export const DEFAULT_SETTINGS: RoadmapLanesSettings = {
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS: RoadmapLanesSettings = {
 	hoursPerDay: DEFAULT_HOURS_PER_DAY,
 	hoursPerLine: DEFAULT_HOURS_PER_LINE,
 	boardMode: DEFAULT_BOARD_MODE,
+	compactTypes: false,
 };
 
 export const DETAIL_PANEL_MIN_WIDTH = 360;
@@ -48,6 +50,7 @@ export function normalizeSettings(value: unknown): RoadmapLanesSettings {
 		hoursPerDay,
 		hoursPerLine: normalizeHoursPerLine(raw.hoursPerLine, hoursPerDay),
 		boardMode: normalizeBoardMode(raw.boardMode),
+		compactTypes: raw.compactTypes === true,
 	};
 }
 

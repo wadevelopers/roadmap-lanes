@@ -40,6 +40,7 @@ export interface RenderModelOptions {
 	detailPanelWidth?: number;
 	boardMode?: BoardMode;
 	hoursPerLine?: number;
+	compactTypes?: boolean;
 	filterState?: FilterState;
 	setDetailPanelWidth?: (width: number) => void;
 	setBoardMode?: (mode: BoardMode) => void;
@@ -1210,6 +1211,7 @@ export function renderModel(
 ): void {
 	root.empty();
 	root.addClass("roadmap-lanes-view");
+	root.toggleClass("rl-compact-types", options.compactTypes === true);
 	root.dataset.visibleLabel = t("visible");
 	root.dataset.modelReady = "true";
 	const boardMode = options.boardMode ?? DEFAULT_BOARD_MODE;

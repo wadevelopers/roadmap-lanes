@@ -94,6 +94,7 @@ class RoadmapLanesView extends ItemView {
 			detailPanelWidth: this.plugin.settings.detailPanelWidth,
 			boardMode: this.plugin.settings.boardMode,
 			hoursPerLine: this.plugin.settings.hoursPerLine,
+			compactTypes: this.plugin.settings.compactTypes,
 			filterState: this.filterState,
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
@@ -143,6 +144,18 @@ class RoadmapLanesSettingTab extends PluginSettingTab {
 						event.preventDefault();
 						void commit();
 					}
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(this.plugin.translate("compactTypesSetting"))
+			.setDesc(this.plugin.translate("compactTypesDesc"))
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.compactTypes);
+				toggle.onChange(async (value) => {
+					this.plugin.settings.compactTypes = value;
+					await this.plugin.saveSettings();
+					this.plugin.refreshOpenViews();
 				});
 			});
 

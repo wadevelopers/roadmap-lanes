@@ -725,6 +725,16 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	background: var(--rl-type-combo);
 }
 
+/* Tipos compactos: el chip del card pasa a un punto de color (el detalle no se toca). */
+.roadmap-lanes-view.rl-compact-types .rl-id-group .rl-type {
+	width: 9px;
+	min-width: 9px;
+	height: 9px;
+	padding: 0;
+	font-size: 0;
+	overflow: hidden;
+}
+
 .roadmap-lanes-view .rl-card-title {
 	grid-row: 2;
 	font-size: 13px;
