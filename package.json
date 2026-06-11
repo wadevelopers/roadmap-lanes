@@ -15,7 +15,7 @@
 		"gantt",
 		"carriles"
 	],
-	"author": "Martincho",
+	"author": "Martin Wasmosy",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/js-yaml": "^4.0.9",
