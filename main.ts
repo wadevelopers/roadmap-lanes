@@ -95,6 +95,7 @@ class RoadmapLanesView extends ItemView {
 			boardMode: this.plugin.settings.boardMode,
 			hoursPerLine: this.plugin.settings.hoursPerLine,
 			compactTypes: this.plugin.settings.compactTypes,
+			highlightWaiting: this.plugin.settings.highlightWaiting,
 			filterState: this.filterState,
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
@@ -154,6 +155,18 @@ class RoadmapLanesSettingTab extends PluginSettingTab {
 				toggle.setValue(this.plugin.settings.compactTypes);
 				toggle.onChange(async (value) => {
 					this.plugin.settings.compactTypes = value;
+					await this.plugin.saveSettings();
+					this.plugin.refreshOpenViews();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(this.plugin.translate("highlightWaitingSetting"))
+			.setDesc(this.plugin.translate("highlightWaitingDesc"))
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.highlightWaiting);
+				toggle.onChange(async (value) => {
+					this.plugin.settings.highlightWaiting = value;
 					await this.plugin.saveSettings();
 					this.plugin.refreshOpenViews();
 				});

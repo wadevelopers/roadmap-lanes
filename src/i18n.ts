@@ -12,6 +12,9 @@ const STRINGS = {
 		compactTypesSetting: "Compact type labels",
 		compactTypesDesc:
 			"Show the task type as a color dot instead of a labeled chip — saves width when columns get narrow.",
+		highlightWaitingSetting: "Highlight waiting tasks",
+		highlightWaitingDesc:
+			"Dim the left border of every task except those waiting on another; the waiting ones (border and status text) use the theme accent color.",
 		hoursPerDaySetting: "Workday duration",
 		hoursPerDayDesc: "Working hours represented by one day in time mode.",
 		hoursPerLineSetting: "Hours per line",
@@ -110,6 +113,9 @@ const STRINGS = {
 		compactTypesSetting: "Tipos compactos",
 		compactTypesDesc:
 			"Muestra el tipo como un punto de color en vez de un chip con texto — ahorra ancho cuando las columnas se angostan.",
+		highlightWaitingSetting: "Resaltar tareas en espera",
+		highlightWaitingDesc:
+			"Atenúa el borde izquierdo de todas las tareas salvo las que esperan a otra; estas (borde y texto de estado) usan el color primario del tema.",
 		hoursPerDaySetting: "Duración de la jornada",
 		hoursPerDayDesc: "Horas de trabajo que representa un día en modo tiempo.",
 		hoursPerLineSetting: "Horas por línea",

@@ -848,6 +848,22 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	color: var(--rl-state-blocked);
 }
 
+/* Resaltar tareas en espera: atenúa el borde de todo salvo los blocked,
+   que van al color primario (borde + texto de estado). */
+.roadmap-lanes-view.rl-highlight-waiting .rl-card:not(.rl-state-blocked),
+.roadmap-lanes-view.rl-highlight-waiting .rl-container-bar:not(.rl-state-blocked) {
+	border-left-color: var(--background-modifier-border);
+}
+
+.roadmap-lanes-view.rl-highlight-waiting .rl-card.rl-state-blocked,
+.roadmap-lanes-view.rl-highlight-waiting .rl-container-bar.rl-state-blocked {
+	border-left-color: var(--interactive-accent);
+}
+
+.roadmap-lanes-view.rl-highlight-waiting .rl-card-state.rl-state-blocked {
+	color: var(--interactive-accent);
+}
+
 .roadmap-lanes-view .rl-card-state.rl-state-free {
 	color: var(--rl-state-waiting);
 }
