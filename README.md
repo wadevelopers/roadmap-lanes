@@ -1,41 +1,86 @@
-# Roadmap Lanes — plugin de Obsidian
+# Roadmap Lanes
 
-Tablero de **carriles de trabajo en paralelo** sobre tus notas markdown: usa el
-**tiempo estimado como altura** de cada tarjeta (Gantt vertical) y muestra el
-**solape** entre tareas de carriles distintos. Lee el *frontmatter* de las notas
-vía el índice nativo de Obsidian — **sin build ni base de datos**.
+> 🇬🇧 English · [🇪🇸 Español](README.es.md)
 
-Es la migración de la web standalone `roadmap-lanes` (congelada en `v0.2.0`) a un
-plugin. La visión y las especificaciones se portan al `docs/` de este repo.
+A roadmap board for Obsidian. Each task is a markdown note; the board draws them as **parallel
+work-lanes**, using each task's **estimated time as its height** (a vertical Gantt) and showing where
+lanes **overlap**. State is a *field*, not a folder. No build, no database — it reads your notes'
+frontmatter through Obsidian's native index, so the board updates as you edit.
 
-## Estado
+![Roadmap Lanes board](docs/assets/screenshot.png)
 
-Plugin funcional en desarrollo: carga datos desde `app.metadataCache`, lee
-`roadmap/lanes.yaml` y `roadmap/taxonomy.yaml`, renderiza el tablero, el panel de
-detalle, alertas del modelo, solape entre carriles y gates cruzados.
+## What it does
 
-## Desarrollo
+- A task = one `.md` note with a small frontmatter (`type`, `maturity`, `status`, `duration`, `zones`,
+  `depends_on`, …).
+- The board **derives** everything: lane order, time-as-height, **lane overlap** (tasks of different
+  lanes touching the same zone), **cross-lane gates** (dependencies between lanes) and **model alerts**
+  (data inconsistencies).
+- Nothing to keep in sync by hand: add or edit a note and the board reflects it.
 
-Requisitos: Node 18+.
+## Install
 
-    npm install
-    npm run dev        # compila main.ts -> main.js en modo watch
+In Obsidian: **Settings → Community plugins → Browse → "Roadmap Lanes" → Install → Enable**.
 
-Para probarlo, el plugin debe vivir en la carpeta de plugins de un vault de prueba:
+Manual: copy `main.js`, `manifest.json` and `styles.css` into
+`<vault>/.obsidian/plugins/roadmap-lanes/`.
 
-    <vault>/.obsidian/plugins/roadmap-lanes/
+## Quick start
 
-con `main.js`, `manifest.json` y `styles.css` (podés enlazar este repo ahí con un
-symlink). Activalo en *Ajustes → Plugins de la comunidad* y abrí el tablero con el
-comando **"Abrir tablero de carriles"** o el icono de la barra lateral.
+1. The plugin creates a `roadmap/` folder in your vault (with `lanes.yaml` and `taxonomy.yaml`).
+2. Add a task note inside `roadmap/`:
+   ```yaml
+   ---
+   id: FT-001
+   title: Checkout page
+   type: feat
+   maturity: ready
+   status: pending
+   duration: 8        # hours
+   zones: [checkout]
+   ---
+   ```
+3. Open the board: command **"Open roadmap lanes board"** or the ribbon icon.
+4. To put tasks in a lane, list their `id` in `roadmap/lanes.yaml`.
 
-`npm run build` genera la versión de producción (sin sourcemaps, minificada).
+Full process in the [workflow guide](docs/guides/WORKFLOW.md).
 
-## Estructura
+## Features
 
-- `main.ts` — entry del plugin + la vista (`ItemView`).
-- `manifest.json` / `versions.json` — metadata del plugin.
-- `esbuild.config.mjs` — bundler.
-- `styles.css` — estilos (deben usar las variables de tema de Obsidian).
-- `src/` — core del modelo, lectura de datos, render e i18n.
-- `docs/` — visión, guías y planes de evolución.
+- **Time-as-height (Gantt) ↔ order mode** — a switch: height = duration, or all cards equal to read just
+  the order.
+- **Lane overlap** and **cross-lane gates**, colored by severity.
+- **Model alerts** (broken refs, duplicate ids, invalid values…), dismissable.
+- **Detail panel**, **filters** (text / type / maturity / columns) and **collapsible** coordination
+  sections.
+- Works alongside the native **graph** and **Bases** over the same frontmatter.
+
+## Settings
+
+| Setting | What it does |
+|---|---|
+| **Roadmap folder** | Folder where RL keeps `lanes.yaml`, `taxonomy.yaml` and task notes. |
+| **Workday duration** | Hours per day; converts `duration` (hours) to days for display and card height. |
+| **Compact type labels** | Show a task's type as a small color dot instead of a labeled chip — saves width in narrow columns. |
+| **Highlight waiting tasks** | Dim every task's left border except those waiting on another, shown in the accent color. |
+
+## Guides
+
+- [Workflow](docs/guides/WORKFLOW.md) — how to discover, document and run work with RL.
+- [Board legend](docs/guides/BOARD_LEGEND.md) — what every color, icon and signal means.
+- [Visualization](docs/guides/VISUALIZATION.md) — the native graph and Bases over the same data.
+
+## Design
+
+The data model and the reasoning behind it live in [`docs/VISION.es.md`](docs/VISION.es.md) — for the curious
+and for contributors.
+
+## Development
+
+```sh
+npm install
+npm run dev     # build main.ts -> main.js in watch mode
+npm run build   # production build
+```
+
+Symlink the repo into `<vault>/.obsidian/plugins/roadmap-lanes/` to test live in a vault.

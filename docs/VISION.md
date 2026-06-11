@@ -1,221 +1,207 @@
-# Visión — Roadmap Lanes (RL), plugin de Obsidian
+# Vision — Roadmap Lanes (RL), an Obsidian plugin
 
-> Producto: **Roadmap Lanes** (abreviado **RL**). Un **plugin de Obsidian** que muestra una carpeta de roadmap como un **tablero de carriles de trabajo en paralelo**, con el tiempo estimado como **altura** de cada tarjeta y el **solape** entre tareas resaltado.
+> 🇬🇧 English · [🇪🇸 Español](VISION.es.md)
+
+> Product: **Roadmap Lanes** (short: **RL**). An **Obsidian plugin** that shows a roadmap folder as a **board of parallel work-lanes**, with the estimated time as each card's **height** and the **overlap** between tasks highlighted.
 >
-> Viene de una web standalone (repo `roadmap-lanes`, congelada en `v0.2.0`) que probó el modelo y el render. Esta versión lo reescribe como plugin para leer del índice nativo de Obsidian y aprovechar su ecosistema.
+> It comes from a standalone web app (repo `roadmap-lanes`, frozen at `v0.2.0`) that proved the model and the rendering. This version rewrites it as a plugin to read from Obsidian's native index and leverage its ecosystem.
 
 ---
 
-## 1. El problema
+## 1. The problem
 
-- **El estado vive en la *ubicación* del archivo, no en un *dato*.** Cuando una tarea se termina hay que **mover** su carpeta de `pending` a `done`, **renombrarla** y **reparar las rutas** que la mencionaban. Lento, frágil, repetitivo.
-- **El paralelismo no se ve.** No hay forma visual de saber qué línea de trabajo termina antes que otra, ni cuánto se **pisan** dos tareas si se ejecutan a la vez (worktrees + agentes de IA en paralelo).
-- **Lo que el mercado no tiene.** "Tareas en markdown" ya está lleno (Obsidian + Dataview, Logseq, Foam…). Lo que casi nadie ofrece es la **orquestación de paralelismo**: varios carriles, cálculo de solape, y un Gantt vertical por carril. Ese es el ángulo de RL.
+- **State lives in the file's *location*, not in a *field*.** When a task is finished you have to **move** its folder from `pending` to `done`, **rename** it and **fix the paths** that mentioned it. Slow, fragile, repetitive.
+- **Parallelism is invisible.** There's no visual way to know which line of work finishes before another, or how much two tasks **collide** if run at the same time (worktrees + parallel AI agents).
+- **What the market lacks.** "Tasks in markdown" is already crowded (Obsidian + Dataview, Logseq, Foam…). What almost nobody offers is the **orchestration of parallelism**: several lanes, overlap calculation, and a vertical Gantt per lane. That's RL's angle.
 
-## 2. La idea, en una frase
+## 2. The idea, in one sentence
 
-> Cada tarea es un archivo `.md` con unos datos arriba (*frontmatter*). RL lee el *vault* y lo dibuja como un tablero de **carriles**, usando el **tiempo estimado como altura** de cada tarjeta y mostrando el **solape** entre tareas de carriles distintos. El estado es un **campo**, no la **ubicación** del archivo.
+> Each task is a `.md` file with some data on top (*frontmatter*). RL reads the *vault* and draws it as a board of **lanes**, using the **estimated time as the height** of each card and showing the **overlap** between tasks of different lanes. State is a **field**, not the file's **location**.
 
-## 3. Por qué un plugin de Obsidian (y no la web)
+## 3. Why an Obsidian plugin (and not the web)
 
-La web standalone funcionaba, pero tenía dos límites que el plugin elimina y un beneficio que sólo el plugin desbloquea:
+The standalone web worked, but had two limits the plugin removes and one benefit only the plugin unlocks:
 
-1. **Sin build ni `datos.js`.** La web precompilaba un `datos.js` gigante; editar un `.md` obligaba a `npm run build` + recargar. El plugin lee el **`metadataCache`** de Obsidian — un índice del *frontmatter* de todo el vault que se mantiene **solo** y se actualiza al guardar. Editar → listo.
-2. **Render markdown nativo.** El cuerpo de cada tarea se muestra con `MarkdownRenderer` de Obsidian: tablas, listas, callouts, `[[wikilinks]]`, todo — no el render casero limitado de la web.
-3. **El ecosistema, gratis.** Como los datos son *frontmatter* estándar con **wikilinks**, los **mismos datos** quedan disponibles para el grafo nativo, los backlinks y **Bases** (y plugins como **Extended Graph**), sin trabajo extra (§8).
+1. **No build, no `data.js`.** The web precompiled a giant `data.js`; editing a `.md` forced `npm run build` + reload. The plugin reads Obsidian's **`metadataCache`** — an index of the *frontmatter* of the whole vault that maintains **itself** and updates on save. Edit → done.
+2. **Native markdown rendering.** Each task's body is shown with Obsidian's `MarkdownRenderer`: tables, lists, callouts, `[[wikilinks]]`, everything — not the web's limited homemade rendering.
+3. **The ecosystem, for free.** Since the data is standard *frontmatter* with **wikilinks**, the **same data** is available to the native graph, backlinks and **Bases** (and plugins like **Extended Graph**), with no extra work (§8).
 
-## 4. Principios de diseño (los no-negociables)
+## 4. Design principles (the non-negotiables)
 
-1. **Markdown-first.** La verdad son archivos `.md` con *frontmatter*. Sin base de datos, sin nube.
-2. **Fuente única.** Cada dato vive en **un solo lugar**. El estado es un campo (`status: done`), no la ubicación. Nada se duplica para "sincronizar".
-3. **Una tarea = un archivo.** Cada DT, FT, etapa o épica es su propio `.md`.
-4. **El vault *es* la base.** RL usa una carpeta de roadmap configurable dentro del *vault*; por defecto `roadmap/`.
-5. **Dos vistas sobre la misma fuente.** El tablero de RL y las vistas nativas de Obsidian (grafo, Bases) miran los **mismos** `.md`.
-6. **El sistema asiste, no impone.** Ni el orden ni el solape se deciden solos: RL **muestra y alerta**; las decisiones las toma el usuario.
-7. **Previsión aproximada, no estimación exacta.** El tiempo sirve para **coordinar carriles** y **minimizar solape/bloqueos**, no para *tracking* de horas (§7.9).
+1. **Markdown-first.** The truth is `.md` files with *frontmatter*. No database, no cloud.
+2. **Single source.** Each piece of data lives in **one place**. State is a field (`status: done`), not the location. Nothing is duplicated to "sync".
+3. **One task = one file.** Each DT, FT, stage or epic is its own `.md`.
+4. **The vault *is* the database.** RL uses a configurable roadmap folder inside the *vault*; `roadmap/` by default.
+5. **Two views over the same source.** The RL board and Obsidian's native views (graph, Bases) look at the **same** `.md` files.
+6. **The system assists, it doesn't impose.** Neither the order nor the overlap is decided automatically: RL **shows and alerts**; the decisions are the user's.
+7. **Rough foresight, not exact estimation.** Time serves to **coordinate lanes** and **minimize overlap/blocks**, not for hour *tracking* (§7.9).
 
-## 5. Arquitectura
+## 5. Architecture
 
 ```
-  Vault de Obsidian                         Plugin Roadmap Lanes
+  Obsidian vault                            Roadmap Lanes plugin
   ┌───────────────────────────┐             ┌────────────────────────────────────┐
-  │ roadmap/**/*.md            │  índice     │ lee app.metadataCache               │
-  │ roadmap/lanes.yaml         │ ──nativo──► │   + lanes.yaml / taxonomy.yaml      │
-  │ roadmap/taxonomy.yaml      │             │       (vault.adapter.read)          │
-  └───────────────────────────┘             │            │                         │
-            ▲                                │            ▼                         │
-            │ editar un .md                  │   core: derivación de estados,       │
-            │ (Obsidian reindexa solo)       │   solape, gates  (portado del repo   │
-            └─────── evento ◄────────────────┤   roadmap-lanes, v0.2.0)             │
-                                             │            │                         │
-                                             │            ▼                         │
-                                             │   render en un ItemView (tablero)    │
-                                             │   + MarkdownRenderer (panel detalle) │
+  │ roadmap/**/*.md            │  native     │ reads app.metadataCache            │
+  │ roadmap/lanes.yaml         │ ──index──►  │   + lanes.yaml / taxonomy.yaml     │
+  │ roadmap/taxonomy.yaml      │             │       (vault.adapter.read)         │
+  └───────────────────────────┘             │            │                        │
+            ▲                                │            ▼                        │
+            │ edit a .md                     │   core: deriving states,           │
+            │ (Obsidian reindexes itself)    │   overlap, gates  (ported from     │
+            └─────── event ◄─────────────────┤   the roadmap-lanes repo, v0.2.0)  │
+                                             │            │                        │
+                                             │            ▼                        │
+                                             │   render in an ItemView (board)    │
+                                             │   + MarkdownRenderer (detail panel)│
                                              └────────────────────────────────────┘
 ```
 
-- **Fuente de datos:** el *frontmatter* de las tareas sale de `app.metadataCache` (sin parsear archivos a mano). `lanes.yaml` y `taxonomy.yaml` no son notas: se leen con `vault.adapter.read` y se cachean.
-- **Reactividad:** el plugin se suscribe a `metadataCache.on("changed", …)` y `vault.on("modify", …)`; al cambiar un `.md` o un `.yaml`, re-renderiza. No hay paso de build.
-- **Core reutilizado:** la lógica del modelo (estados derivados, cálculo de solape, gates) se porta tal cual desde la web `v0.2.0`; lo que se reescribe es **de dónde salen los datos** y **dónde se pinta**.
+- **Data source:** the tasks' *frontmatter* comes from `app.metadataCache` (no parsing files by hand). `lanes.yaml` and `taxonomy.yaml` are not notes: they're read with `vault.adapter.read` and cached.
+- **Reactivity:** the plugin subscribes to `metadataCache.on("changed", …)` and `vault.on("modify", …)`; when a `.md` or `.yaml` changes, it re-renders. There's no build step.
+- **Reused core:** the model logic (derived states, overlap calculation, gates) is ported as-is from the web `v0.2.0`; what's rewritten is **where the data comes from** and **where it's painted**.
 
-## 6. Qué lee RL
+## 6. What RL reads
 
-1. Las **tareas** — cualquier `.md` dentro de la carpeta de roadmap, con *frontmatter* (§7.2).
-2. El **archivo de carriles** — `lanes.yaml`: qué carril y en qué orden (§7.7).
-3. El **doc de taxonomía** — `taxonomy.yaml`: áreas y zonas válidas (§7.6).
+1. The **tasks** — any `.md` inside the roadmap folder, with *frontmatter* (§7.2).
+2. The **lanes file** — `lanes.yaml`: which lane and in what order (§7.7).
+3. The **taxonomy doc** — `taxonomy.yaml`: valid areas and zones (§7.6).
 
 ---
 
-## 7. El modelo de datos
+## 7. The data model
 
-### 7.1 Los ejes (por qué hay tantos campos y no se mezclan)
+### 7.1 The axes (why there are so many fields and they don't mix)
 
-Una tarea tiene **dimensiones independientes**. El error a evitar es meter varias en un mismo campo. Cada eje es su propio campo o relación:
+A task has **independent dimensions**. The mistake to avoid is cramming several into one field. Each axis is its own field or relationship:
 
-| Eje | Pregunta | Dónde vive |
+| Axis | Question | Where it lives |
 |---|---|---|
-| **Naturaleza** | ¿Qué clase de trabajo es? | `type` |
-| **Jerarquía** | ¿Es parte de algo más grande? | `parent` (wikilink) |
-| **Absorción** | ¿Resuelve otras tareas al ejecutarse? | `absorbs` (wikilinks) |
-| **Madurez** | ¿Cuán listo está el *plan*? | `maturity` |
-| **Estado** | ¿Cuánto avanzó el *trabajo*? | `status` |
-| **Clasificación** | ¿Qué parte del sistema toca? | `areas`, `zones` |
-| **Tiempo** | ¿Cuánto dura? | `duration` |
-| **Dependencias** | ¿Qué necesita antes? | `depends_on` (wikilinks) |
-| **Orden y carril** | ¿En qué carril y posición? | el **archivo de carriles** |
+| **Nature** | What kind of work is it? | `type` |
+| **Hierarchy** | Is it part of something bigger? | `parent` (wikilink) |
+| **Absorption** | Does it resolve other tasks when run? | `absorbs` (wikilinks) |
+| **Maturity** | How ready is the *plan*? | `maturity` |
+| **Status** | How far has the *work* gone? | `status` |
+| **Classification** | What part of the system does it touch? | `areas`, `zones` |
+| **Time** | How long does it take? | `duration` |
+| **Dependencies** | What does it need first? | `depends_on` (wikilinks) |
+| **Order and lane** | In which lane and position? | the **lanes file** |
 
-### 7.2 La ficha de la tarea (frontmatter)
+### 7.2 The task record (frontmatter)
 
 ```yaml
 ---
 id: FT-002
-title: Pasarela de pago en el checkout
-type: feat                        # feat | maint | infra | combo     (§7.3)
-maturity: ready             # raw | draft | ready  (§7.4)
-status: pending               # pending | done          (§7.4; el resto se deriva)
-duration: 40                    # horas, sin sufijo           (§7.9)
-areas: [backend, pagos]         # taxonomía cerrada          (§7.6)
+title: Payment gateway at checkout
+type: feat                      # feat | maint | infra | combo     (§7.3)
+maturity: ready                 # raw | draft | ready  (§7.4)
+status: pending                 # pending | done       (§7.4; the rest is derived)
+duration: 40                    # hours, no suffix     (§7.9)
+areas: [backend, payments]      # closed taxonomy      (§7.6)
 zones: [CheckoutService, PaymentGateway]
-parent: "[[EPIC-100]]"           # wikilink → jerarquía       (§7.5, §8)
-absorbs: []                     # wikilinks → tareas que resuelve  (§7.5)
-depends_on: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
+parent: "[[EPIC-100]]"          # wikilink → hierarchy (§7.5, §8)
+absorbs: []                     # wikilinks → tasks it resolves  (§7.5)
+depends_on: ["[[FT-001]]"]      # wikilinks → dependencies  (§7.8, §8)
 ---
 
-(el cuerpo del archivo es el plan completo en markdown)
+(the file body is the full plan in markdown)
 ```
 
-**Las relaciones (`parent`, `depends_on`, `absorbs`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
+**The relationships (`parent`, `depends_on`, `absorbs`) are quoted wikilinks.** It's the plugin's central format decision (§8): they serve equally for RL and for the native graph and backlinks. The identifiers are stable ids (`FT-002`); the rest of the fields are plain values.
 
-### 7.3 `type` — lista cerrada (4)
+### 7.3 `type` — closed list (4)
 
-`combo` es un valor estructural especial: una tarea que tiene hijos. No es una tarjeta ejecutable ni
-participa del filtro de tipo del tablero.
+`combo` is a special structural value: a task that has children. It's not an executable card and doesn't take part in the board's type filter.
 
-Para tareas **hoja**, se evalúa de arriba hacia abajo; gana el primero que da "sí":
+For **leaf** tasks, evaluate top to bottom; the first "yes" wins:
 
-1. ¿Es plomería de desarrollo o documentación que el usuario final no ve (deps, build, scripts, config, migración, docs)? → `infra`
-2. ¿Agrega una **capacidad nueva**? → `feat`
-3. Si no: arreglar/mejorar algo que **ya existe**, roto (bug) o subóptimo (deuda) → `maint`
+1. Is it development plumbing or documentation the end user doesn't see (deps, build, scripts, config, migration, docs)? → `infra`
+2. Does it add a **new capability**? → `feat`
+3. Otherwise: fix/improve something that **already exists**, broken (bug) or suboptimal (debt) → `maint`
 
-Las hojas son **MECE**: cada una cae en exactamente una de `feat`, `maint` o `infra`. Los **COMBOs**
-(tareas con hijos) declaran `type: combo` para que Obsidian, Bases y el grafo puedan identificarlos
-directamente, pero RL los reconoce por tener hijos (`parent`), no por ese campo.
+Leaves are **MECE**: each falls into exactly one of `feat`, `maint` or `infra`. **COMBOs** (tasks with children) declare `type: combo` so that Obsidian, Bases and the graph can identify them directly, but RL recognizes them by having children (`parent`), not by that field.
 
-### 7.4 Madurez vs. estado — dos ejes del ciclo de vida
+### 7.4 Maturity vs. status — two axes of the lifecycle
 
-- **`maturity`** — cuán listo está el *plan*: `raw` (idea en caliente) → `draft` (documentado, con decisiones abiertas, **no ejecutable**) → `ready` (listo).
-- **`status`** — cuánto avanzó el *trabajo*: `pending` → `done`. En hojas es el estado real; en
-  COMBOs es metadata declarada para Obsidian y se valida contra los hijos. No hay estado intermedio
-  escrito: *"en progreso"* se deriva.
-- **Estados visuales derivados (no se escriben):**
-  - `out-of-turn` = tiene `depends_on` sin cerrar.
-  - `next` = la primera tarea libre del carril.
-  - `waiting` = pendiente sin turno.
-  - `in-progress` = **reservado a COMBOs**: algunos hijos hechos, no todos.
-  - `done` (COMBO) = todos los hijos hechos.
+- **`maturity`** — how ready the *plan* is: `raw` (hot idea) → `draft` (documented, with open decisions, **not executable**) → `ready` (ready).
+- **`status`** — how far the *work* has gone: `pending` → `done`. On leaves it's the real state; on COMBOs it's declared metadata for Obsidian and is validated against the children. There's no intermediate written state: *"in progress"* is derived.
+- **Derived visual states (not written):**
+  - `out-of-turn` = has an unfinished `depends_on`.
+  - `next` = the first free task in the lane.
+  - `waiting` = pending without a turn.
+  - `in-progress` = **reserved for COMBOs**: some children done, not all.
+  - `done` (COMBO) = all children done.
 
-### 7.5 Jerarquía (`parent`) y absorción (`absorbs`)
+### 7.5 Hierarchy (`parent`) and absorption (`absorbs`)
 
-- **`parent`** — relación estructural (una etapa apunta a su tarea grande; una tarea de una épica apunta a la épica). Un **COMBO** (tarea con hijos) es un agrupador: declara `type: combo`, `status`, `maturity` y `duration` para las herramientas de Obsidian, pero RL deriva orden, bloqueos, gates, solape, estado visual y alturas desde las hojas. "Épica" no es un tipo aparte: es una tarea **que tiene hijos**.
-- **`absorbs`** — decisión de ejecución: una tarea consume otra registrada por separado (`FT-002 absorbe [[DT-005]]`). La absorbida no aparece como tarjeta suelta: se muestra como sub-ítem de quien la absorbe.
+- **`parent`** — structural relationship (a stage points to its big task; a task of an epic points to the epic). A **COMBO** (task with children) is a group: it declares `type: combo`, `status`, `maturity` and `duration` for Obsidian's tools, but RL derives order, blocks, gates, overlap, visual state and heights from the leaves. "Epic" is not a separate type: it's a task **that has children**.
+- **`absorbs`** — an execution decision: a task consumes another separately recorded one (`FT-002 absorbs [[DT-005]]`). The absorbed one doesn't appear as a loose card: it's shown as a sub-item of the one absorbing it.
 
-RL valida los COMBOs sin bloquear el render: alerta si falta `type: combo`, si una hoja declara
-`combo`, si la `duration` declarada es físicamente imposible, si falta `duration`/`maturity`/`status` o si
-esos campos se desvían de lo derivado. La duración mayor que la suma de hijos puede ser legítima
-(coordinación extra) y se puede aceptar.
+RL validates COMBOs without blocking the render: it alerts if `type: combo` is missing, if a leaf declares `combo`, if the declared `duration` is physically impossible, if `duration`/`maturity`/`status` is missing or if those fields deviate from what's derived. A duration greater than the sum of children can be legitimate (extra coordination) and can be accepted.
 
-### 7.6 Áreas y zonas — taxonomía cerrada, no rutas
+### 7.6 Areas and zones — closed taxonomy, not paths
 
-- **`areas`** — clasificación **gruesa**, lista cerrada definida en `taxonomy.yaml`. Filtro y agrupación.
-- **`zones`** — segundo nivel (subdivisión de las áreas). **No son rutas de archivos.** Son **las que "chocan"**: el **solape** entre dos tareas = intersección de sus `zones`.
-- **Cerrada pero extensible:** una tarea sólo usa valores que **ya existen** en `taxonomy.yaml`; el doc se amplía editándolo a propósito.
-- `areas`/`zones` se dejan como **arrays planos** en el frontmatter (no wikilinks): Bases los consulta igual, y no aportan al grafo de dependencias.
+- **`areas`** — **coarse** classification, a closed list defined in `taxonomy.yaml`. Filter and grouping.
+- **`zones`** — second level (subdivision of the areas). **They are not file paths.** They are **what "clashes"**: the **overlap** between two tasks = intersection of their `zones`.
+- **Closed but extensible:** a task only uses values that **already exist** in `taxonomy.yaml`; the doc is widened by editing it on purpose.
+- `areas`/`zones` are left as **plain arrays** in the frontmatter (not wikilinks): Bases queries them anyway, and they add nothing to the dependency graph.
 
-### 7.7 El archivo de carriles — orden y pertenencia
+### 7.7 The lanes file — order and membership
 
-El orden y el carril **no viven en la tarea**: viven en `lanes.yaml`, fuente única de "qué tarea, en qué carril, en qué orden". Reordenar = mover líneas acá.
+Order and lane **don't live in the task**: they live in `lanes.yaml`, the single source of "which task, in which lane, in what order". Reordering = moving lines here.
 
 ```yaml
 lanes:
-  A: { focus: Checkout y pagos,       worktree: main-app, queue: [FT-001, FT-002] }
-  B: { focus: Mejoras independientes, worktree: wt-side,  queue: [DT-011, INFRA-003, DT-020] }
-# Toda tarea que NO esté en ninguna lista `queue` = backlog. N carriles; la UI arranca con 2.
+  A: { focus: Checkout and payments,    worktree: main-app, queue: [FT-001, FT-002] }
+  B: { focus: Independent improvements,  worktree: wt-side,  queue: [DT-011, INFRA-003, DT-020] }
+# Every task NOT in any `queue` list = backlog. N lanes; the UI starts with 2.
 ```
 
-**Regla de orden (la lista manda; las dependencias sólo alertan):** RL **nunca reordena solo**. Si la lista pone una tarea antes que algo de lo que depende (sin cerrar), la marca **"fuera de turno"** y explica por qué. *"Lo próximo agarrable"* = la primera de la cola que esté **libre**.
+**Order rule (the list rules; dependencies only alert):** RL **never reorders on its own**. If the list puts a task before something it depends on (unfinished), it marks it **"out of turn"** and explains why. *"The next pickable"* = the first in the queue that is **free**.
 
-### 7.8 Relaciones derivadas — gates y `unlocks` no son campos
+### 7.8 Derived relationships — gates and `unlocks` are not fields
 
-- **Gates (semáforos cruzados):** una `depends_on` entre tareas de **carriles distintos**. RL la dibuja como semáforo. No es un campo aparte.
-- **`unlocks`:** es `depends_on` invertido. RL lo deriva del grafo. **Un solo lado es editable** (`depends_on`), para que las dos puntas no se desincronicen.
+- **Gates (cross-lane signals):** a `depends_on` between tasks of **different lanes**. RL draws it as a signal. It's not a separate field.
+- **`unlocks`:** it's `depends_on` inverted. RL derives it from the graph. **Only one side is editable** (`depends_on`), so the two ends don't go out of sync.
 
-### 7.9 Tiempo — `duration` en horas
+### 7.9 Time — `duration` in hours
 
-`duration` se declara como **número de horas sin sufijo**: `40`, `8`, `4`. El display convierte esas
-horas a días usando la jornada configurada (`40` → `5d` con jornada de 8 h), pero el frontmatter
-queda numérico para Bases, grafo extendido y validaciones. Valores con letras (`5d`, `4h`) son
-alertas de duración inválida.
+`duration` is declared as a **number of hours with no suffix**: `40`, `8`, `4`. The display converts those hours to days using the configured workday (`40` → `5d` with an 8 h workday), but the frontmatter stays numeric for Bases, extended graph and validations. Values with letters (`5d`, `4h`) are invalid-duration alerts.
 
-En una hoja, `duration` alimenta la altura de la tarjeta. En un COMBO, `duration` es la estimación de
-la etapa completa y se muestra igual en la barra y el detalle; la altura del bloque sigue saliendo de
-las hojas visibles en cada columna. El objetivo es **previsión aproximada** (principio §4.7), no
-tracking exacto.
+On a leaf, `duration` feeds the card's height. On a COMBO, `duration` is the estimate of the whole stage and is shown the same in the bar and the detail; the block's height still comes from the leaves visible in each column. The goal is **rough foresight** (principle §4.7), not exact tracking.
 
 ---
 
-## 8. Integración con Obsidian (lo que se gana por el formato)
+## 8. Integration with Obsidian (what the format buys you)
 
-Como las relaciones son **wikilinks en frontmatter** (`parent: "[[EPIC-100]]"`, `depends_on: ["[[FT-001]]"]`) y la clasificación son **propiedades** (`type`, `status`, `maturity`, `areas`, `zones`), los **mismos datos** que usa RL alimentan, sin trabajo extra:
+Since the relationships are **wikilinks in frontmatter** (`parent: "[[EPIC-100]]"`, `depends_on: ["[[FT-001]]"]`) and the classification are **properties** (`type`, `status`, `maturity`, `areas`, `zones`), the **same data** RL uses feeds, with no extra work:
 
-| Herramienta | Qué da |
+| Tool | What it gives |
 |---|---|
-| **Grafo nativo** | Jerarquía (`parent`) y dependencias (`depends_on`) como grafo, coloreable por `type`/`status`/`maturity`. |
-| **Backlinks** | "¿Qué depende de esta tarea?" aparece solo (es `depends_on` invertido). |
-| **Bases** (nativo) | Tablas y consultas del frontmatter (`type`, `status`, `areas`…), sin configuración de datos extra. |
-| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`parent`/`depends_on`/`absorbs`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duration`**. |
+| **Native graph** | Hierarchy (`parent`) and dependencies (`depends_on`) as a graph, colorable by `type`/`status`/`maturity`. |
+| **Backlinks** | "What depends on this task?" appears on its own (it's `depends_on` inverted). |
+| **Bases** (native) | Tables and queries over the frontmatter (`type`, `status`, `areas`…), with no extra data setup. |
+| **Extended Graph** (plugin) | Colors/filters by **link type** (`parent`/`depends_on`/`absorbs`), shows several properties as arcs, saved views with a selector and **node size = `duration`**. |
 
-> Verificado (jun 2026): desde Obsidian 1.4, los wikilinks **entrecomillados** en frontmatter se parsean (`frontmatterLinks`), aparecen en el grafo y los backlinks y se actualizan al renombrar. Por eso **no se duplican campos** ni hace falta un script de sincronización: un único formato sirve para todo. El plugin normaliza wikilink→id en **un solo punto** (al leer del `metadataCache`, que ya entrega el destino resuelto).
+> Verified (Jun 2026): since Obsidian 1.4, **quoted** wikilinks in frontmatter are parsed (`frontmatterLinks`), appear in the graph and backlinks and update on rename. That's why **fields aren't duplicated** and no sync script is needed: a single format serves everything. The plugin normalizes wikilink→id in **one single point** (when reading from the `metadataCache`, which already returns the resolved target).
 
-Esto reescribe la antigua nota "wikilinks diferidos" de la web: en el plugin, **adoptarlos es la decisión correcta**, no deuda.
+This rewrites the web's old "deferred wikilinks" note: in the plugin, **adopting them is the right call**, not debt.
 
-La configuración práctica del grafo (nativo y con Extended Graph) y de Bases está en
-[`VISUALIZACION_OBSIDIAN.md`](guias/VISUALIZACION_OBSIDIAN.md).
+The practical configuration of the graph (native and with Extended Graph) and of Bases is in [`VISUALIZATION.md`](guides/VISUALIZATION.md).
 
-## 9. Las vistas
+## 9. The views
 
-**a) Tablero de carriles (la principal, el `ItemView` de RL).**
-- **Izquierda:** backlog (toda tarea fuera de las colas).
-- **Medio:** un carril por columna, con su cola ordenada de arriba hacia abajo.
-- **Derecha:** hecho.
-- Altura de la tarjeta = tiempo; colores = estado; solape e iconografía como en `v0.2.0`. Qué significa
-  cada color, ícono y señal: [`guias/LEYENDA_DEL_TABLERO.md`](guias/LEYENDA_DEL_TABLERO.md).
+**a) Lanes board (the main one, RL's `ItemView`).**
+- **Left:** backlog (every task outside the queues).
+- **Middle:** one lane per column, with its queue ordered top to bottom.
+- **Right:** done.
+- Card height = time; colors = state; overlap and iconography as in `v0.2.0`. What each color, icon and signal means: [`guides/BOARD_LEGEND.md`](guides/BOARD_LEGEND.md).
 
-**b) Panel de detalle** — al clickear una tarjeta: datos, relaciones, solape y el **cuerpo del `.md` renderizado con `MarkdownRenderer`** nativo.
+**b) Detail panel** — on clicking a card: data, relationships, overlap and the **`.md` body rendered with** the native `MarkdownRenderer`.
 
-**c) Vistas del ecosistema** (§8) — grafo (nativo + Extended Graph) y Bases: las da Obsidian sobre los mismos datos.
+**c) Ecosystem views** (§8) — graph (native + Extended Graph) and Bases: Obsidian provides them over the same data.
 
-## 10. Alcance y no-objetivos
+## 10. Scope and non-goals
 
-- **Lectura + edición mínima.** El MVP del plugin renderiza; la edición de campos desde el tablero puede venir después (en el plugin es viable vía `vault.modify`, a diferencia de la web).
-- **No** es tracking de horas ni un Gantt de gestión de proyectos clásico: es coordinación de **paralelismo** entre carriles.
-- **No** reimplementa lo que Obsidian ya da (grafo, consultas): lo **aprovecha**.
+- **Reading + minimal editing.** The plugin's MVP renders; editing fields from the board may come later (in the plugin it's feasible via `vault.modify`, unlike the web).
+- It is **not** hour tracking or a classic project-management Gantt: it's coordination of **parallelism** between lanes.
+- It does **not** reimplement what Obsidian already gives (graph, queries): it **leverages** it.

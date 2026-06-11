@@ -1,5 +1,7 @@
 # Visualizar el roadmap con el grafo de Obsidian
 
+> [🇬🇧 English](../guides/VISUALIZATION.md) · 🇪🇸 Español
+
 El tablero de Roadmap Lanes (RL) es la vista principal. El **grafo** de Obsidian es una vista
 **complementaria** para explorar las **relaciones** entre tareas (jerarquía y dependencias) y para
 colorear el roadmap por sus distintos ejes.
@@ -100,7 +102,7 @@ una base sobre la carpeta del roadmap da tablas y consultas sin configuración d
 ## 4. Por qué el formato alimenta todo esto sin duplicar datos
 
 Que los wikilinks en frontmatter sirvan **a la vez** para RL, el grafo, los backlinks y Bases es una
-decisión de diseño explicada en [`VISION.md` §8](../VISION.md). Esta guía solo baja eso a la
+decisión de diseño explicada en [`VISION.md` §8](../VISION.es.md). Esta guía solo baja eso a la
 configuración práctica del grafo.
 
 ---

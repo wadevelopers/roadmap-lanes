@@ -1,8 +1,10 @@
 # Leyenda del tablero (cómo leer Roadmap Lanes)
 
+> [🇬🇧 English](../guides/BOARD_LEGEND.md) · 🇪🇸 Español
+
 Referencia de qué significa cada **color**, **ícono** y **señal** del tablero. El tablero **deriva**
 todo del frontmatter de las notas (ver [`FLUJO_DE_TRABAJO.md`](FLUJO_DE_TRABAJO.md) y
-[`VISION.md`](../VISION.md)); acá se explica cómo **leerlo**.
+[`VISION.md`](../VISION.es.md)); acá se explica cómo **leerlo**.
 
 ---
 
@@ -16,7 +18,7 @@ Una tarjeta = una tarea. De arriba hacia abajo, sus filas:
 4. **Estado** (abajo).
 
 La **altura** de la tarjeta representa el **tiempo**: más alta = más horas (modo Gantt). (Ver
-[`planes/05_EXPANDIR_CONTRAER_TIEMPO.md`](../planes/05_EXPANDIR_CONTRAER_TIEMPO.md).)
+[`planes/05_EXPANDIR_CONTRAER_TIEMPO.md`](../internal/planes/05_EXPANDIR_CONTRAER_TIEMPO.md).)
 
 ### Tipo (chip de color)
 
@@ -30,17 +32,17 @@ La **altura** de la tarjeta representa el **tiempo**: más alta = más horas (mo
 ### Madurez (ícono) — cuán listo está el *plan*
 
 | Ícono | Valor (`maturity`) | Significado |
-|---|---|---|
-| **nota** | `raw` | Capturado crudo (idea, problema detectado, TODO), sin analizar. |
-| **calavera / esqueleto** | `draft` | Documentado con decisiones abiertas; **aún no ejecutable**. |
-| **estrella** | `ready` | Listo para ejecutar. |
+|:---:|---|---|
+| ![nota](../assets/note.svg) | `raw` | Capturado crudo (idea, problema detectado, TODO), sin analizar. |
+| ![calavera](../assets/skull.svg) | `draft` | Documentado con decisiones abiertas; **aún no ejecutable**. |
+| ![estrella](../assets/star-fat.svg) | `ready` | Listo para ejecutar. |
 
 ### Otros íconos (fila meta)
 
 | Ícono | Significado |
-|---|---|
-| **pacman** | La tarea **absorbe** a otra: la resuelve adentro suyo; la absorbida no aparece como tarjeta suelta. |
-| **dos círculos** que se pisan | La tarea **se pisa** (solapa) con otra de otro carril en una zona común. El **id de esa tarea** sale coloreado según el nivel (§3). |
+|:---:|---|
+| ![pacman](../assets/pacman.svg) | La tarea **absorbe** a otra: la resuelve adentro suyo; la absorbida no aparece como tarjeta suelta. |
+| ![círculos solapados](../assets/photo-filter.svg) | La tarea **se pisa** (solapa) con otra de otro carril en una zona común. El **id de esa tarea** sale coloreado según el nivel (§3). |
 
 ### Estado — cuánto avanzó el *trabajo*
 
@@ -108,7 +110,7 @@ Inconsistencias en los datos del roadmap, agrupadas por **severidad**:
 | **Info** | azul | Recordatorio suave, no implica error. |
 
 Las warnings/info traen un botón **Aceptar** para silenciar esa alerta puntual; reaparece si los valores
-cambian. (Ver [`planes/02_ALERTAS_SEVERIDAD.md`](../planes/02_ALERTAS_SEVERIDAD.md).)
+cambian. (Ver [`planes/02_ALERTAS_SEVERIDAD.md`](../internal/planes/02_ALERTAS_SEVERIDAD.md).)
 
 ---
 
@@ -123,4 +125,16 @@ El mismo color significa cosas distintas según **dónde** aparece:
 | **Naranja** | — | nivel 2 | en espera (ambas pendientes) | warning |
 | **Rojo** | fuera de turno | nivel 3 | fuera de orden (A hecha, B pendiente) | error |
 | **Azul** | en curso | — | — | info |
-| **Púrpura** | — | — | — | — (chip `infra`) |
+
+---
+
+## 7. Controles y ajustes del tablero
+
+- **Modo tiempo ↔ orden**: en *tiempo*, la altura del card = duración; en *orden*, todos miden igual y
+  solo cuenta la posición en la cola del carril.
+- **Filtros**: por texto, tipo, madurez y columnas.
+- **Colapsar coordinación**: cada bloque (solape / gates / alertas) tiene un toggle `▲/▼`; el contador
+  por color del header queda visible al colapsar.
+- **Tipos compactos** (ajuste): el chip de tipo se muestra como un punto de color, para ahorrar ancho.
+- **Resaltar tareas en espera** (ajuste): atenúa el borde de todas las tareas salvo las que están en
+  *waiting for*, que pasan al color primario del tema.

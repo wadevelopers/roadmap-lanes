@@ -1,7 +1,9 @@
 # Flujo de trabajo con Roadmap Lanes
 
+> [🇬🇧 English](../guides/WORKFLOW.md) · 🇪🇸 Español
+
 > Cómo descubrir, documentar y ejecutar el trabajo de un proyecto con RL, **sin un índice
-> maestro mantenido a mano**. Asume el modelo de datos de [`VISION.md`](../VISION.md) (tipos,
+> maestro mantenido a mano**. Asume el modelo de datos de [`VISION.md`](../VISION.es.md) (tipos,
 > madurez, estado, carriles, solape, gates). Para leer los **colores y símbolos** del tablero, ver
 > [`LEYENDA_DEL_TABLERO.md`](LEYENDA_DEL_TABLERO.md).
 
