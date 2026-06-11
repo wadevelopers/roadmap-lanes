@@ -2,11 +2,11 @@
 id: TIME-02
 title: Prueba visual de dos horas
 type: feat
-maturity: ready
+maturity: draft
 status: pending
 duration: 2
-areas: []
-zones: []
+areas: [platform]
+zones: [api]
 parent: "[[COMBO-SHORT-LOW]]"
 absorbs: []
 depends_on: []

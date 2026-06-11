@@ -1,4 +1,8 @@
 # Taxonomy for DemoApp.
-# The time fixture intentionally leaves tasks without zones so lane overlap stays empty.
+# The time fixture includes real zones to exercise overlap and gate summaries.
 
-areas: {}
+areas:
+  product:
+    zones: [checkout, billing, reporting, search]
+  platform:
+    zones: [api, auth, worker]

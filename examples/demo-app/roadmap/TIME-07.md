@@ -2,11 +2,11 @@
 id: TIME-07
 title: Prueba visual de siete horas
 type: feat
-maturity: ready
+maturity: raw
 status: pending
 duration: 7
-areas: []
-zones: []
+areas: [platform]
+zones: [auth]
 parent:
 absorbs: []
 depends_on: []

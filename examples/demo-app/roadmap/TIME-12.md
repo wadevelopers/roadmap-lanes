@@ -5,8 +5,8 @@ type: maint
 maturity: ready
 status: pending
 duration: 12
-areas: []
-zones: []
+areas: [product]
+zones: [checkout, billing, reporting, search]
 parent: "[[COMBO-BACKLOG]]"
 absorbs: []
 depends_on: []

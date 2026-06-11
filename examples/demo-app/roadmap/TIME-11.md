@@ -2,11 +2,11 @@
 id: TIME-11
 title: Prueba visual de once horas
 type: maint
-maturity: ready
+maturity: draft
 status: pending
 duration: 11
-areas: []
-zones: []
+areas: [product]
+zones: [billing]
 parent: "[[COMBO-BACKLOG]]"
 absorbs: []
 depends_on: []

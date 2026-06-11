@@ -5,8 +5,8 @@ type: feat
 maturity: ready
 status: pending
 duration: 5
-areas: []
-zones: []
+areas: [platform]
+zones: [api]
 parent: "[[COMBO-SHORT]]"
 absorbs: []
 depends_on: []

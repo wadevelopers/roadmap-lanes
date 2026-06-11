@@ -3,10 +3,10 @@ id: TIME-14
 title: Prueba visual de catorce horas
 type: infra
 maturity: ready
-status: pending
+status: done
 duration: 14
-areas: []
-zones: []
+areas: [product]
+zones: [checkout]
 parent: "[[COMBO-BACKLOG]]"
 absorbs: []
 depends_on: []

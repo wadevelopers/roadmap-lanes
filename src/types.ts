@@ -113,12 +113,14 @@ export interface LaneOverlap {
 	pct: number;
 }
 
+export type GateState = "waiting" | "ready" | "rework";
+
 export interface CrossLaneGate {
 	from: string;
 	fromLane: string;
 	to: string;
 	toLane: string;
-	open: boolean;
+	state: GateState;
 }
 
 export interface BuildModelInput {

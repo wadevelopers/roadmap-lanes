@@ -11,13 +11,18 @@ Proyecto ficticio que sirve de **fixture visual** para desarrollar y probar Road
 | Stack corto contra tarea media | `TIME-01` ... `TIME-03` vs. `TIME-06` |
 | Stack medio contra tarea hecha | `TIME-06` + `TIME-10` vs. `TIME-16` |
 | Combos anidados | `COMBO-SHORT` -> `COMBO-SHORT-LOW` -> `TIME-01` ... `TIME-03` |
-| Backlog sin carril | `TIME-07`, `TIME-08`, `TIME-09`, `COMBO-BACKLOG` |
+| Backlog sin carril | `TIME-09`, `TIME-11`, `TIME-12`, `COMBO-BACKLOG` |
+| Gates cruzados abiertos y cerrados | `TIME-06`, `TIME-08`, `TIME-10`, `TIME-13` |
+| Solape entre carriles | 25%, 50%, 75% y 100% entre carriles A/B/C/D |
+| Absorciones | `TIME-15 -> TIME-09`, `TIME-08 -> TIME-11` |
+| Madurez mixta | `raw`, `draft`, `ready` en tareas y combos |
+| Tareas hechas | `TIME-14`, `TIME-16` |
 | Duraciones no múltiplo de día | `TIME-09`, `TIME-10`, `TIME-11`, `TIME-13`, `TIME-14`, `TIME-15` |
 | Modo compacto por orden | cualquier carril en modo `order` |
 | Modo tiempo con distintas precisiones | settings `hoursPerDay` + `hoursPerLine` |
 
 ## Estructura
 
-- `roadmap/taxonomy.yaml` — áreas y zonas válidas del proyecto. En este fixture está vacío a propósito.
+- `roadmap/taxonomy.yaml` — áreas y zonas válidas del proyecto.
 - `roadmap/lanes.yaml` — carriles y el orden de cada `queue`. Lo que no está en ninguna `queue` = backlog.
 - `roadmap/*.md` — una tarea por archivo `.md` con frontmatter. El plugin también lee subcarpetas dentro de `roadmap/`.

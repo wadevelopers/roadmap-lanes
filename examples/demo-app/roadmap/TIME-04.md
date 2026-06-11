@@ -2,11 +2,11 @@
 id: TIME-04
 title: Prueba visual de cuatro horas
 type: feat
-maturity: ready
+maturity: draft
 status: pending
 duration: 4
-areas: []
-zones: []
+areas: [platform]
+zones: [worker]
 parent: "[[COMBO-SHORT]]"
 absorbs: []
 depends_on: []

@@ -12,7 +12,7 @@ import { alertFingerprint } from "./src/alerts";
 import { buildModel } from "./src/buildModel";
 import { ensureRoadmapStructure, isRoadmapSourcePath, loadRoadmapData } from "./src/dataSource";
 import { createTranslator, type Translator } from "./src/i18n";
-import { renderLoading, renderModel } from "./src/render";
+import { createDefaultFilterState, renderLoading, renderModel, type FilterState } from "./src/render";
 import {
 	DEFAULT_SETTINGS,
 	normalizeDetailPanelWidth,
@@ -45,6 +45,7 @@ function normalizeAcceptedAlertFingerprints(value: unknown): Set<string> {
 class RoadmapLanesView extends ItemView {
 	private readonly plugin: RoadmapLanesPlugin;
 	private renderRequest: number | null = null;
+	private readonly filterState: FilterState = createDefaultFilterState();
 
 	constructor(leaf: WorkspaceLeaf, plugin: RoadmapLanesPlugin) {
 		super(leaf);
@@ -93,6 +94,7 @@ class RoadmapLanesView extends ItemView {
 			detailPanelWidth: this.plugin.settings.detailPanelWidth,
 			boardMode: this.plugin.settings.boardMode,
 			hoursPerLine: this.plugin.settings.hoursPerLine,
+			filterState: this.filterState,
 			setDetailPanelWidth: (width) => {
 				void this.plugin.setDetailPanelWidth(width);
 			},

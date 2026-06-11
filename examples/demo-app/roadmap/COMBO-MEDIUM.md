@@ -2,7 +2,7 @@
 id: COMBO-MEDIUM
 title: Stack medio 6h + 10h
 type: combo
-maturity: ready
+maturity: draft
 status: pending
 duration: 16
 areas: []

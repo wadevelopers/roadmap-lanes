@@ -2,7 +2,7 @@
 id: COMBO-BACKLOG
 title: Backlog de tareas largas
 type: combo
-maturity: ready
+maturity: draft
 status: pending
 duration: 50
 areas: []

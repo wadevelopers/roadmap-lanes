@@ -5,11 +5,11 @@ type: infra
 maturity: ready
 status: pending
 duration: 13
-areas: []
-zones: []
+areas: [product]
+zones: [reporting, search]
 parent: "[[COMBO-BACKLOG]]"
 absorbs: []
-depends_on: []
+depends_on: ["[[TIME-05]]"]
 ---
 
 Tarea de prueba para validar alturas cercanas a dos días.

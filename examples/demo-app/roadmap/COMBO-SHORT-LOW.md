@@ -2,7 +2,7 @@
 id: COMBO-SHORT-LOW
 title: Stack corto 1h a 3h
 type: combo
-maturity: ready
+maturity: raw
 status: pending
 duration: 6
 areas: []

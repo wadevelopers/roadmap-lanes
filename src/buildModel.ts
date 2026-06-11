@@ -487,12 +487,15 @@ export function buildModel(input: BuildModelInput): Model {
 		for (const dependency of task.depends_on) {
 			const dep = byId.get(dependency);
 			if (dep && task.lane && dep.lane && task.lane !== dep.lane) {
+				const fromDone = isDone(task);
+				const toDone = isDone(dep);
+				if (fromDone && toDone) continue;
 				crossLaneGates.push({
 					from: task.id,
 					fromLane: task.lane,
 					to: dependency,
 					toLane: dep.lane,
-					open: !isDone(dep),
+					state: fromDone ? "rework" : toDone ? "ready" : "waiting",
 				});
 			}
 		}

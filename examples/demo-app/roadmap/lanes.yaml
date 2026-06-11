@@ -9,8 +9,12 @@ lanes:
   B:
     focus: Tareas cortas apiladas
     worktree: short
-    queue: [TIME-01, TIME-02, TIME-03, TIME-04, TIME-05, TIME-08]
+    queue: [TIME-01, TIME-02, TIME-03, TIME-04, TIME-05, TIME-08, TIME-14]
   C:
     focus: Tareas medias y largas
     worktree: medium
     queue: [TIME-06, TIME-10, TIME-07]
+  D:
+    focus: Tarea larga para probar solapes completos
+    worktree: overlap
+    queue: [TIME-12, TIME-16]

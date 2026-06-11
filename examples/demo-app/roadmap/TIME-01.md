@@ -2,11 +2,11 @@
 id: TIME-01
 title: Prueba visual de una hora
 type: feat
-maturity: ready
+maturity: raw
 status: pending
 duration: 1
-areas: []
-zones: []
+areas: [product]
+zones: [checkout]
 parent: "[[COMBO-SHORT-LOW]]"
 absorbs: []
 depends_on: []

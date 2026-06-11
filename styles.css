@@ -436,12 +436,16 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-overlap-border-3,
-.roadmap-lanes-view .rl-gate-open {
+.roadmap-lanes-view .rl-gate-rework {
 	--rl-coord-c: var(--rl-state-blocked);
 }
 
-.roadmap-lanes-view .rl-gate-closed {
+.roadmap-lanes-view .rl-gate-ready {
 	--rl-coord-c: var(--rl-state-done);
+}
+
+.roadmap-lanes-view .rl-gate-waiting {
+	--rl-coord-c: var(--color-orange);
 }
 
 .roadmap-lanes-view .rl-board {

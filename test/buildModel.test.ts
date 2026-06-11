@@ -322,23 +322,58 @@ describe("buildModel", () => {
 			.sort((a, b) => (a ?? 0) - (b ?? 0));
 		expect(durations).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 		expect(m.lanes.A.queue).toEqual(["TIME-15", "TIME-13"]);
-		expect(m.lanes.B.queue).toEqual(["TIME-01", "TIME-02", "TIME-03", "TIME-04", "TIME-05", "TIME-08"]);
+		expect(m.lanes.B.queue).toEqual([
+			"TIME-01",
+			"TIME-02",
+			"TIME-03",
+			"TIME-04",
+			"TIME-05",
+			"TIME-08",
+			"TIME-14",
+		]);
 		expect(m.lanes.C.queue).toEqual(["TIME-06", "TIME-10", "TIME-07"]);
+		expect(m.lanes.D.queue).toEqual(["TIME-12", "TIME-16"]);
+		expect(m.tasks.get("TIME-14")?.status).toBe("done");
 		expect(m.tasks.get("TIME-16")?.status).toBe("done");
 		expect(m.lanes.A.next).toBe("TIME-15");
 		expect(m.lanes.B.next).toBe("TIME-01");
 		expect(m.lanes.C.next).toBe("TIME-06");
+		expect(m.lanes.D.next).toBe("TIME-12");
 		expect(m.tasks.get("COMBO-SHORT")?.children).toEqual(["COMBO-SHORT-LOW", "TIME-04", "TIME-05"]);
 		expect(m.tasks.get("COMBO-SHORT-LOW")?.children).toEqual(["TIME-01", "TIME-02", "TIME-03"]);
 		expect(m.tasks.get("COMBO-BACKLOG")?.children).toEqual(["TIME-11", "TIME-12", "TIME-13", "TIME-14"]);
 		expect(m.tasks.get("COMBO-SHORT")?.effectiveHours).toBe(15);
 		expect(m.tasks.get("COMBO-MEDIUM")?.effectiveHours).toBe(16);
+		expect(m.tasks.get("COMBO-SHORT")?.maturity).toBe("raw");
+		expect(m.tasks.get("COMBO-MEDIUM")?.maturity).toBe("draft");
+		expect(m.tasks.get("COMBO-BACKLOG")?.maturity).toBe("draft");
+		expect(m.tasks.get("TIME-15")?.absorbs).toEqual(["TIME-09"]);
+		expect(m.tasks.get("TIME-09")?.absorbedBy).toBe("TIME-15");
+		expect(m.tasks.get("TIME-08")?.absorbs).toEqual(["TIME-11"]);
+		expect(m.tasks.get("TIME-11")?.absorbedBy).toBe("TIME-08");
 	});
 
-	test("fixture demo-app: sin gates ni solapes para aislar pruebas de tiempo", () => {
+	test("fixture demo-app: gates, solapes y absorciones variados", () => {
 		const m = buildModel(loadDemo());
-		expect(m.crossLaneGates).toEqual([]);
-		expect(m.laneOverlaps).toHaveLength(3);
-		expect(m.laneOverlaps.every((item) => item.common.length === 0 && item.pct === 0)).toBe(true);
+		expect(m.crossLaneGates).toEqual([
+			{ from: "TIME-06", fromLane: "C", to: "TIME-14", toLane: "B", state: "ready" },
+			{ from: "TIME-08", fromLane: "B", to: "TIME-15", toLane: "A", state: "waiting" },
+			{ from: "TIME-10", fromLane: "C", to: "TIME-05", toLane: "B", state: "waiting" },
+			{ from: "TIME-13", fromLane: "A", to: "TIME-05", toLane: "B", state: "waiting" },
+			{ from: "TIME-16", fromLane: "D", to: "TIME-10", toLane: "C", state: "rework" },
+		]);
+		// TIME-16 -> TIME-14 (ambos done) queda oculto
+		expect(
+			m.crossLaneGates.some((gate) => gate.from === "TIME-16" && gate.to === "TIME-14")
+		).toBe(false);
+		expect(m.laneOverlaps).toHaveLength(6);
+		expect(m.laneOverlaps).toEqual([
+			{ a: "A", b: "B", common: ["checkout"], pct: 25 },
+			{ a: "A", b: "C", common: ["checkout", "reporting"], pct: 50 },
+			{ a: "A", b: "D", common: ["checkout", "billing", "reporting", "search"], pct: 100 },
+			{ a: "B", b: "C", common: ["checkout", "api", "auth"], pct: 75 },
+			{ a: "B", b: "D", common: ["checkout"], pct: 25 },
+			{ a: "C", b: "D", common: ["checkout", "reporting"], pct: 50 },
+		]);
 	});
 });

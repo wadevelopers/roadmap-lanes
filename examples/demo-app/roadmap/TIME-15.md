@@ -5,10 +5,14 @@ type: infra
 maturity: ready
 status: pending
 duration: 15
-areas: []
-zones: []
+areas:
+  - product
+zones:
+  - checkout
+  - billing
 parent:
-absorbs: []
+absorbs:
+  - "[[TIME-09]]"
 depends_on: []
 ---
 

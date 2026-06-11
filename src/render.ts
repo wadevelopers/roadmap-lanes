@@ -40,10 +40,18 @@ export interface RenderModelOptions {
 	detailPanelWidth?: number;
 	boardMode?: BoardMode;
 	hoursPerLine?: number;
+	filterState?: FilterState;
 	setDetailPanelWidth?: (width: number) => void;
 	setBoardMode?: (mode: BoardMode) => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
 	acceptAlert?: (alert: Alert) => void | Promise<void>;
+}
+
+export interface FilterState {
+	text: string;
+	types: Set<string>;
+	maturity: Set<string>;
+	columns: Set<string>;
 }
 
 interface VisualStatePresentation {
@@ -164,7 +172,7 @@ function laneOverlapPct(model: Model, a: string | null, b: string | null): numbe
 }
 
 function collisionsFor(model: Model, task: Task): Task[] {
-	if (!task.lane || task.zones.length === 0) return [];
+	if (!task.lane || task.status === "done" || task.zones.length === 0) return [];
 	const zones = new Set(task.zones);
 	return [...model.tasks.values()].filter(
 		(other) =>
@@ -236,6 +244,29 @@ function isVisibleTask(task: Task, filters: Filters): boolean {
 
 function columnOrder(model: Model): string[] {
 	return ["backlog", ...Object.keys(model.lanes), "done"];
+}
+
+export function createDefaultFilterState(columnIds: string[] = []): FilterState {
+	return {
+		text: "",
+		types: new Set(),
+		maturity: new Set(MATURITIES),
+		columns: new Set(columnIds),
+	};
+}
+
+function filterStateForColumns(state: FilterState | undefined, columnIds: string[]): FilterState {
+	const fallback = createDefaultFilterState(columnIds);
+	if (!state) return fallback;
+	const available = new Set(columnIds);
+	const validTypes = new Set<string>(FILTERABLE_TYPES);
+	const validMaturity = new Set<string>(MATURITIES);
+	state.types = new Set([...state.types].filter((type) => validTypes.has(type)));
+	state.maturity = new Set([...state.maturity].filter((item) => validMaturity.has(item)));
+	if (state.maturity.size === 0) state.maturity = new Set(MATURITIES);
+	state.columns = new Set([...state.columns].filter((column) => available.has(column)));
+	if (state.columns.size === 0) state.columns = new Set(columnIds);
+	return state;
 }
 
 function columnLabel(id: string, ctx: RenderContext): string {
@@ -574,11 +605,15 @@ function renderCoordination(ctx: RenderContext, parent: HTMLElement): void {
 		gates.createEl("p", { cls: "rl-muted", text: ctx.t("noGates") });
 	} else {
 		for (const gate of ctx.model.crossLaneGates) {
+			const label =
+				gate.state === "rework"
+					? ctx.t("gateRework")
+					: gate.state === "ready"
+						? ctx.t("gateReady")
+						: ctx.t("gateWaiting");
 			gates.createEl("div", {
-				cls: `rl-coord-item ${gate.open ? "rl-gate-open" : "rl-gate-closed"}`,
-				text: `${gate.from} (${gate.fromLane}) -> ${gate.to} (${gate.toLane}) · ${
-					gate.open ? ctx.t("open") : ctx.t("closed")
-				}`,
+				cls: `rl-coord-item rl-gate-${gate.state}`,
+				text: `${gate.from} (${gate.fromLane}) -> ${gate.to} (${gate.toLane}) · ${label}`,
 			});
 		}
 	}
@@ -753,6 +788,7 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filters: Filters
 			placeholder: ctx.t("searchPlaceholder"),
 		},
 	});
+	search.value = filters.text;
 	search.addEventListener("input", () => {
 		filters.text = search.value.toLowerCase().trim();
 		applyFilters(ctx.root, filters);
@@ -762,7 +798,7 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filters: Filters
 
 	const typeGroup = bar.createEl("div", { cls: "rl-filter-group" });
 	for (const type of FILTERABLE_TYPES) {
-		const button = renderFilterButton(typeGroup, type.toUpperCase(), type, false);
+		const button = renderFilterButton(typeGroup, type.toUpperCase(), type, filters.types.has(type));
 		button.classList.add(`rl-filter-type-${type}`);
 		button.addEventListener("click", () => {
 			if (filters.types.has(type)) filters.types.delete(type);
@@ -1120,11 +1156,12 @@ export function renderModel(
 		acceptAlert: options.acceptAlert,
 	};
 	const columnOrderIds = columnOrder(model);
+	const filterState = filterStateForColumns(options.filterState, columnOrderIds);
 	const filters: Filters = {
-		text: "",
-		types: new Set(),
-		maturity: new Set(MATURITIES),
-		columns: new Set(columnOrderIds),
+		text: filterState.text,
+		types: filterState.types,
+		maturity: filterState.maturity,
+		columns: filterState.columns,
 		columnOrderIds,
 		columnCapacity: columnOrderIds.length,
 	};
