@@ -35,23 +35,3 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   derivando los cálculos funcionales desde las hojas y alerta si esos campos se desincronizan.
   `duration` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
   según la jornada configurada.
-
-## Pendientes
-
-### Roadmap operativo post-port del core/tablero
-
-- **Settings adicionales del plugin.** Ya existe `PluginSettingTab` y persistencia con
-  `loadData`/`saveData` para `roadmapFolder`. Falta agregar horas por día y modo tiempo/orden.
-- **Modo expandir/contraer tiempo.** Implementar el switch Gantt/orden y la jornada configurable
-  según `planes/05_EXPANDIR_CONTRAER_TIEMPO.md`.
-- **Panel de detalle.** Mejorar acciones y navegación: abrir la nota original, resolver/abrir links
-  internos, y pulir el layout de relaciones.
-- **Render/UX fino.** Revisar iconos de madurez/absorción/solape, tratamiento visual de gates,
-  estados, filtros y comportamiento en ventanas angostas.
-- **Preparación para publicación.** Revisar `manifest.json`, versionado, README público, instrucciones
-  de uso, archivos de release y checklist para comunidad de Obsidian.
-- **Cobertura adicional.** Agregar tests para datasource con wikilinks y casos de regresión del
-  modelo.
-- **Aplicación a documentación real.** Planificar cómo adaptar/crear tareas para
-  `/mnt/minis_forum/wadev/doc/roadmap-pending`. Ese repo se usa como fuente de lectura salvo
-  autorización explícita para escribir ahí.

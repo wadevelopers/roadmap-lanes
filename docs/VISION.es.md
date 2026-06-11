@@ -40,20 +40,20 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 
 ```
   Vault de Obsidian                         Plugin Roadmap Lanes
-  ┌───────────────────────────┐             ┌────────────────────────────────────┐
-  │ roadmap/**/*.md            │  índice     │ lee app.metadataCache               │
-  │ roadmap/lanes.yaml         │ ──nativo──► │   + lanes.yaml / taxonomy.yaml      │
-  │ roadmap/taxonomy.yaml      │             │       (vault.adapter.read)          │
+  ┌───────────────────────────┐             ┌──────────────────────────────────────┐
+  │ roadmap/**/*.md           │  índice     │ lee app.metadataCache                │
+  │ roadmap/lanes.yaml        │ ──nativo──► │   + lanes.yaml / taxonomy.yaml       │
+  │ roadmap/taxonomy.yaml     │             │       (vault.adapter.read)           │
   └───────────────────────────┘             │            │                         │
-            ▲                                │            ▼                         │
-            │ editar un .md                  │   core: derivación de estados,       │
-            │ (Obsidian reindexa solo)       │   solape, gates  (portado del repo   │
-            └─────── evento ◄────────────────┤   roadmap-lanes, v0.2.0)             │
-                                             │            │                         │
-                                             │            ▼                         │
-                                             │   render en un ItemView (tablero)    │
-                                             │   + MarkdownRenderer (panel detalle) │
-                                             └────────────────────────────────────┘
+            ▲                               │            ▼                         │
+            │ editar un .md                 │   core: derivación de estados,       │
+            │ (Obsidian reindexa solo)      │   solape, gates  (portado del repo   │
+            └─────── evento ◄───────────────┤   roadmap-lanes, v0.2.0)             │
+                                            │            │                         │
+                                            │            ▼                         │
+                                            │   render en un ItemView (tablero)    │
+                                            │   + MarkdownRenderer (panel detalle) │
+                                            └──────────────────────────────────────┘
 ```
 
 - **Fuente de datos:** el *frontmatter* de las tareas sale de `app.metadataCache` (sin parsear archivos a mano). `lanes.yaml` y `taxonomy.yaml` no son notas: se leen con `vault.adapter.read` y se cachean.

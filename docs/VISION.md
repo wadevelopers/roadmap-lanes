@@ -40,20 +40,20 @@ The standalone web worked, but had two limits the plugin removes and one benefit
 
 ```
   Obsidian vault                            Roadmap Lanes plugin
-  ┌───────────────────────────┐             ┌────────────────────────────────────┐
-  │ roadmap/**/*.md            │  native     │ reads app.metadataCache            │
-  │ roadmap/lanes.yaml         │ ──index──►  │   + lanes.yaml / taxonomy.yaml     │
-  │ roadmap/taxonomy.yaml      │             │       (vault.adapter.read)         │
+  ┌───────────────────────────┐             ┌─────────────────────────────────────┐
+  │ roadmap/**/*.md           │  native     │ reads app.metadataCache             │
+  │ roadmap/lanes.yaml        │ ──index──►  │   + lanes.yaml / taxonomy.yaml      │
+  │ roadmap/taxonomy.yaml     │             │       (vault.adapter.read)          │
   └───────────────────────────┘             │            │                        │
-            ▲                                │            ▼                        │
-            │ edit a .md                     │   core: deriving states,           │
-            │ (Obsidian reindexes itself)    │   overlap, gates  (ported from     │
-            └─────── event ◄─────────────────┤   the roadmap-lanes repo, v0.2.0)  │
-                                             │            │                        │
-                                             │            ▼                        │
-                                             │   render in an ItemView (board)    │
-                                             │   + MarkdownRenderer (detail panel)│
-                                             └────────────────────────────────────┘
+            ▲                               │            ▼                        │
+            │ edit a .md                    │   core: deriving states,            │
+            │ (Obsidian reindexes itself)   │   overlap, gates  (ported from      │
+            └─────── event ◄────────────────┤   the roadmap-lanes repo, v0.2.0)   │
+                                            │            │                        │
+                                            │            ▼                        │
+                                            │   render in an ItemView (board)     │
+                                            │   + MarkdownRenderer (detail panel) │
+                                            └─────────────────────────────────────┘
 ```
 
 - **Data source:** the tasks' *frontmatter* comes from `app.metadataCache` (no parsing files by hand). `lanes.yaml` and `taxonomy.yaml` are not notes: they're read with `vault.adapter.read` and cached.
