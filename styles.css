@@ -326,10 +326,13 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-coord-block h3 {
-	margin: 0 0 8px;
+	margin: 0;
 	font-size: 12px;
 	text-transform: uppercase;
 	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .roadmap-lanes-view .rl-coord-item {
@@ -351,20 +354,80 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	font-variant-numeric: tabular-nums;
 }
 
-.roadmap-lanes-view .rl-alerts-head {
+.roadmap-lanes-view .rl-coord-head {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
 	margin-bottom: 8px;
 }
 
-.roadmap-lanes-view .rl-alerts-head h3 {
-	margin: 0;
+.roadmap-lanes-view .rl-coord-head-right {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
 }
 
-.roadmap-lanes-view .rl-alerts-count {
-	font-size: 11px;
+.roadmap-lanes-view .rl-coord-count {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.roadmap-lanes-view .rl-coord-count-sep {
+	color: var(--text-faint);
+}
+
+.roadmap-lanes-view .rl-count-red {
+	color: var(--color-red);
+}
+.roadmap-lanes-view .rl-count-orange {
+	color: var(--color-orange);
+}
+.roadmap-lanes-view .rl-count-yellow {
+	color: var(--color-yellow);
+}
+.roadmap-lanes-view .rl-count-green {
+	color: var(--color-green);
+}
+.roadmap-lanes-view .rl-count-blue {
+	color: var(--color-blue);
+}
+
+.roadmap-lanes-view .rl-coord-toggle {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	margin: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: 10px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-coord-toggle:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.roadmap-lanes-view .rl-coord-block--collapsed .rl-coord-body {
+	display: none;
+}
+
+.roadmap-lanes-view .rl-coord-block--collapsed .rl-coord-head {
+	margin-bottom: 0;
 }
 
 .roadmap-lanes-view .rl-alert-error {

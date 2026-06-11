@@ -52,6 +52,7 @@ export interface FilterState {
 	types: Set<string>;
 	maturity: Set<string>;
 	columns: Set<string>;
+	coordCollapsed: Set<string>;
 }
 
 interface VisualStatePresentation {
@@ -252,6 +253,7 @@ export function createDefaultFilterState(columnIds: string[] = []): FilterState 
 		types: new Set(),
 		maturity: new Set(MATURITIES),
 		columns: new Set(columnIds),
+		coordCollapsed: new Set(),
 	};
 }
 
@@ -266,6 +268,7 @@ function filterStateForColumns(state: FilterState | undefined, columnIds: string
 	if (state.maturity.size === 0) state.maturity = new Set(MATURITIES);
 	state.columns = new Set([...state.columns].filter((column) => available.has(column)));
 	if (state.columns.size === 0) state.columns = new Set(columnIds);
+	if (!state.coordCollapsed) state.coordCollapsed = new Set();
 	return state;
 }
 
@@ -581,44 +584,142 @@ function renderColumn(
 	if (paths.length === 0) body.createEl("p", { cls: "rl-empty-column", text: ctx.t("noCards") });
 }
 
-function renderCoordination(ctx: RenderContext, parent: HTMLElement): void {
+type CoordCount = { n: number; color: string };
+
+function coordCounts(pairs: Array<[number, string]>): CoordCount[] {
+	return pairs.filter(([n]) => n > 0).map(([n, color]) => ({ n, color }));
+}
+
+function renderCoordBlock(
+	ctx: RenderContext,
+	section: HTMLElement,
+	key: string,
+	title: string,
+	extraClass: string,
+	counts: CoordCount[],
+	collapsed: Set<string>,
+	renderItems: (body: HTMLElement) => void
+): void {
+	const block = section.createEl("div", {
+		cls: `rl-coord-block${extraClass ? ` ${extraClass}` : ""}`,
+	});
+	block.classList.toggle("rl-coord-block--collapsed", collapsed.has(key));
+
+	const head = block.createEl("div", { cls: "rl-coord-head" });
+	head.createEl("h3", { text: title });
+	const right = head.createEl("div", { cls: "rl-coord-head-right" });
+	if (counts.length > 0) {
+		const counter = right.createEl("span", { cls: "rl-coord-count" });
+		counts.forEach((count, index) => {
+			if (index > 0) counter.createEl("span", { cls: "rl-coord-count-sep", text: "·" });
+			counter.createEl("span", { cls: `rl-count-${count.color}`, text: String(count.n) });
+		});
+	}
+	const toggle = right.createEl("button", {
+		cls: "rl-coord-toggle",
+		text: collapsed.has(key) ? "▼" : "▲",
+		attr: { type: "button", "aria-label": ctx.t("toggleSection") },
+	});
+
+	renderItems(block.createEl("div", { cls: "rl-coord-body" }));
+
+	toggle.addEventListener("click", () => {
+		const next = !block.classList.contains("rl-coord-block--collapsed");
+		block.classList.toggle("rl-coord-block--collapsed", next);
+		toggle.textContent = next ? "▼" : "▲";
+		if (next) collapsed.add(key);
+		else collapsed.delete(key);
+	});
+}
+
+function renderCoordination(ctx: RenderContext, parent: HTMLElement, collapsed: Set<string>): void {
 	const section = parent.createEl("section", { cls: "rl-coordination" });
-	const overlap = section.createEl("div", { cls: "rl-coord-block" });
-	overlap.createEl("h3", { text: ctx.t("overlap") });
-	const visibleOverlaps = ctx.model.laneOverlaps.filter((item) => item.pct > 0 && item.common.length > 0);
-	if (visibleOverlaps.length === 0) {
-		overlap.createEl("p", { cls: "rl-muted", text: ctx.t("noOverlap") });
-	} else {
-		for (const item of visibleOverlaps) {
-			const row = overlap.createEl("div", {
-				cls: `rl-coord-item rl-overlap-border-${overlapLevel(item.pct)}`,
-			});
-			row.createEl("span", { text: `${item.a} <-> ${item.b}` });
-			row.createEl("strong", { text: `${item.pct}%` });
-			row.createEl("span", { text: item.common.join(", ") || "-" });
-		}
-	}
 
-	const gates = section.createEl("div", { cls: "rl-coord-block" });
-	gates.createEl("h3", { text: ctx.t("gates") });
-	if (ctx.model.crossLaneGates.length === 0) {
-		gates.createEl("p", { cls: "rl-muted", text: ctx.t("noGates") });
-	} else {
-		for (const gate of ctx.model.crossLaneGates) {
-			const label =
-				gate.state === "rework"
-					? ctx.t("gateRework")
-					: gate.state === "ready"
-						? ctx.t("gateReady")
-						: ctx.t("gateWaiting");
-			gates.createEl("div", {
-				cls: `rl-coord-item rl-gate-${gate.state}`,
-				text: `${gate.from} (${gate.fromLane}) -> ${gate.to} (${gate.toLane}) · ${label}`,
-			});
+	const overlaps = ctx.model.laneOverlaps.filter((item) => item.pct > 0 && item.common.length > 0);
+	const overlapLevels = [0, 0, 0, 0];
+	for (const item of overlaps) overlapLevels[overlapLevel(item.pct)] += 1;
+	renderCoordBlock(
+		ctx,
+		section,
+		"overlap",
+		ctx.t("overlap"),
+		"",
+		coordCounts([
+			[overlapLevels[3], "red"],
+			[overlapLevels[2], "orange"],
+			[overlapLevels[1], "yellow"],
+			[overlapLevels[0], "green"],
+		]),
+		collapsed,
+		(body) => {
+			if (overlaps.length === 0) {
+				body.createEl("p", { cls: "rl-muted", text: ctx.t("noOverlap") });
+				return;
+			}
+			for (const item of overlaps) {
+				const row = body.createEl("div", {
+					cls: `rl-coord-item rl-overlap-border-${overlapLevel(item.pct)}`,
+				});
+				row.createEl("span", { text: `${item.a} <-> ${item.b}` });
+				row.createEl("strong", { text: `${item.pct}%` });
+				row.createEl("span", { text: item.common.join(", ") || "-" });
+			}
 		}
-	}
+	);
 
-	renderAlerts(ctx, section);
+	const gates = ctx.model.crossLaneGates;
+	const gateStates = { rework: 0, waiting: 0, ready: 0 };
+	for (const gate of gates) gateStates[gate.state] += 1;
+	renderCoordBlock(
+		ctx,
+		section,
+		"gates",
+		ctx.t("gates"),
+		"",
+		coordCounts([
+			[gateStates.rework, "red"],
+			[gateStates.waiting, "orange"],
+			[gateStates.ready, "green"],
+		]),
+		collapsed,
+		(body) => {
+			if (gates.length === 0) {
+				body.createEl("p", { cls: "rl-muted", text: ctx.t("noGates") });
+				return;
+			}
+			for (const gate of gates) {
+				const label =
+					gate.state === "rework"
+						? ctx.t("gateRework")
+						: gate.state === "ready"
+							? ctx.t("gateReady")
+							: ctx.t("gateWaiting");
+				body.createEl("div", {
+					cls: `rl-coord-item rl-gate-${gate.state}`,
+					text: `${gate.from} (${gate.fromLane}) -> ${gate.to} (${gate.toLane}) · ${label}`,
+				});
+			}
+		}
+	);
+
+	const alerts = ctx.model.alerts.filter(
+		(alert) => alert.severity === "error" || !ctx.isAlertAccepted?.(alert)
+	);
+	const severity = countBySeverity(alerts);
+	renderCoordBlock(
+		ctx,
+		section,
+		"alerts",
+		ctx.t("alertsTitle"),
+		"rl-alerts",
+		coordCounts([
+			[severity.error, "red"],
+			[severity.warning, "orange"],
+			[severity.info, "blue"],
+		]),
+		collapsed,
+		(body) => renderAlertItems(ctx, body, alerts)
+	);
 }
 
 function applyFilters(root: HTMLElement, filters: Filters): void {
@@ -852,33 +953,17 @@ function countBySeverity(alerts: Alert[]): Record<Severity, number> {
 	return counts;
 }
 
-function renderAlerts(ctx: RenderContext, parent: HTMLElement): void {
-	const section = parent.createEl("div", { cls: "rl-coord-block rl-alerts" });
-	const head = section.createEl("div", { cls: "rl-alerts-head" });
-	head.createEl("h3", { text: ctx.t("alertsTitle") });
-	const alerts = ctx.model.alerts.filter(
-		(alert) => alert.severity === "error" || !ctx.isAlertAccepted?.(alert)
-	);
+function renderAlertItems(ctx: RenderContext, body: HTMLElement, alerts: Alert[]): void {
 	if (alerts.length === 0) {
-		section.createEl("p", { cls: "rl-muted", text: ctx.t("noAlerts") });
+		body.createEl("p", { cls: "rl-muted", text: ctx.t("noAlerts") });
 		return;
 	}
-	const counts = countBySeverity(alerts);
-	const summary = [
-		counts.error ? `${counts.error} ${ctx.t("alertErrorsLabel")}` : null,
-		counts.warning ? `${counts.warning} ${ctx.t("alertWarningsLabel")}` : null,
-		counts.info ? `${counts.info} ${ctx.t("alertInfoLabel")}` : null,
-	]
-		.filter((part): part is string => part !== null)
-		.join(" · ");
-	head.createEl("span", { cls: "rl-muted rl-alerts-count", text: summary });
-
 	const order: Severity[] = ["error", "warning", "info"];
 	const sorted = [...alerts].sort(
 		(a, b) => order.indexOf(a.severity) - order.indexOf(b.severity)
 	);
 	for (const alert of sorted) {
-		const item = section.createEl("div", {
+		const item = body.createEl("div", {
 			cls: `rl-coord-item rl-alert-item rl-alert-${alert.severity}`,
 		});
 		item.createEl("span", { cls: "rl-alert-text", text: formatAlert(alert, ctx.t) });
@@ -1179,7 +1264,7 @@ export function renderModel(
 	});
 
 	renderFilters(ctx, root, filters);
-	renderCoordination(ctx, root);
+	renderCoordination(ctx, root, filterState.coordCollapsed);
 	renderBoard(ctx, root, filters);
 	setupResponsiveColumns(ctx, filters);
 	applyFilters(root, filters);
