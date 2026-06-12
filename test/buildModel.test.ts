@@ -84,6 +84,7 @@ function loadDemo(): BuildModelInput {
 				parent: normalizeRelation(data.parent)[0] || null,
 				absorbs: normalizeRelation(data.absorbs),
 				depends_on: normalizeRelation(data.depends_on),
+				part_of: normalizeRelation(data.part_of)[0] || null,
 				body,
 				_file: `roadmap/${file}`,
 			};
@@ -626,6 +627,19 @@ describe("buildModel", () => {
 		expect(m.tasks.get("TIME-09")?.absorbedBy).toBe("TIME-15");
 		expect(m.tasks.get("TIME-08")?.absorbs).toEqual(["TIME-11"]);
 		expect(m.tasks.get("TIME-11")?.absorbedBy).toBe("TIME-08");
+	});
+
+	test("fixture demo-app: partes fuera del tablero, navegables por sus tareas", () => {
+		const m = buildModel(loadDemo());
+		expect(m.docs.size).toBe(3);
+		expect(m.tasks.get("TIME-06")?.parts).toEqual(["roadmap/TIME-06/DESIGN.md"]);
+		expect(m.tasks.get("TIME-15")?.parts).toEqual([
+			"roadmap/TIME-15/AUDIT.md",
+			"roadmap/TIME-15/DESIGN.md",
+		]);
+		expect(m.docs.get("roadmap/TIME-15/DESIGN.md")?.title).toBe("Diseño técnico");
+		expect(m.docs.get("roadmap/TIME-06/DESIGN.md")?.basename).toBe("DESIGN");
+		expect([...m.tasks.values()].filter((task) => !task.isContainer)).toHaveLength(16);
 	});
 
 	test("fixture demo-app: gates, solapes y absorciones variados", () => {
