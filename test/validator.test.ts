@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "vitest";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -133,6 +133,36 @@ describe("CLI validator", () => {
 		await writeFile(join(dir, "accepted-alerts.yaml"), serializeAcceptedAlerts([alertFingerprint(expected)]));
 		result = await validateRoadmapDirectory(dir);
 		expect(result.alerts).toEqual([]);
+	});
+
+	test("partes: una válida queda fuera de counts y una rota aparece en alerts", async () => {
+		const dir = await tempRoadmap();
+		await writeFile(
+			join(dir, "A.md"),
+			"---\nid: A\ntype: feat\nmaturity: ready\nstatus: pending\nduration: 1\n---\nTarea.\n"
+		);
+		await mkdir(join(dir, "A-plan"));
+		await writeFile(
+			join(dir, "A-plan", "DESIGN.md"),
+			"---\ntype: doc\npart_of: '[[A]]'\n---\nDiseño.\n"
+		);
+		await writeFile(
+			join(dir, "SUELTO.md"),
+			"---\ntype: doc\npart_of: '[[FANTASMA]]'\n---\nHuérfano.\n"
+		);
+
+		const result = await validateRoadmapDirectory(dir);
+		expect(result.alerts).toEqual([
+			{
+				code: "missing-part-of",
+				severity: "error",
+				params: { file: "SUELTO.md", ref: "FANTASMA" },
+			},
+		]);
+		expect(validationExitCode(result.alerts)).toBe(1);
+		expect(result.report.counts.backlog).toBe(1);
+		expect(result.model.docs.size).toBe(2);
+		expect(result.model.tasks.get("A")?.parts).toEqual(["A-plan/DESIGN.md"]);
 	});
 
 	test("valida el fixture demo con las dos warnings next-maturity esperadas", async () => {

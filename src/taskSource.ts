@@ -1,5 +1,5 @@
 import { RELATION_FIELDS, hasExplicitEmptyRelation, type RelationField } from "./relations";
-import type { Alert, RawTask } from "./types";
+import { DOC_TYPE, type Alert, type RawTask } from "./types";
 
 export interface TaskSource {
 	file: string;
@@ -71,6 +71,21 @@ export function parseTaskSource(source: TaskSource): ParsedTaskSource {
 		});
 	}
 
+	const partOf = relationSingle(source, "part_of");
+	// El vacío explícito ya disparó empty-relation-field arriba; solo el ausente
+	// (o irresoluble, ej. part_of: []) cae acá.
+	if (
+		frontmatter.type === DOC_TYPE &&
+		!partOf &&
+		!hasExplicitEmptyRelation(frontmatter.part_of)
+	) {
+		alerts.push({
+			code: "doc-without-task",
+			severity: "error",
+			params: { file: source.file },
+		});
+	}
+
 	return {
 		task: {
 			id,
@@ -87,6 +102,7 @@ export function parseTaskSource(source: TaskSource): ParsedTaskSource {
 			parent: relationSingle(source, "parent"),
 			absorbs: relationMany(source, "absorbs"),
 			depends_on: relationMany(source, "depends_on"),
+			part_of: partOf,
 			body: markdownBody(source.raw),
 			_file: source.file,
 		},

@@ -1,4 +1,4 @@
-export const RELATION_FIELDS = ["parent", "absorbs", "depends_on"] as const;
+export const RELATION_FIELDS = ["parent", "absorbs", "depends_on", "part_of"] as const;
 
 export type RelationField = (typeof RELATION_FIELDS)[number];
 

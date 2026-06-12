@@ -4,7 +4,9 @@ import { join } from "node:path";
 import * as yaml from "js-yaml";
 
 import { buildModel } from "../src/buildModel";
-import type { BuildModelInput, RawTask } from "../src/types";
+import { normalizeRelationValue } from "../src/relations";
+import { parseTaskSource, type ParsedTaskSource } from "../src/taskSource";
+import type { BuildModelInput, LanesInput, RawTask } from "../src/types";
 
 function baseData(): BuildModelInput {
 	return {
@@ -99,6 +101,35 @@ function loadDemo(): BuildModelInput {
 		hoursPerDay: 8,
 	};
 }
+
+function parseSource(file: string, raw: string): ParsedTaskSource {
+	const lines = raw.split(/\r?\n/);
+	const end = lines[0]?.trim() === "---" ? lines.indexOf("---", 1) : -1;
+	const hasFrontmatter = end !== -1;
+	const frontmatter = hasFrontmatter
+		? ((yaml.load(lines.slice(1, end).join("\n")) as Record<string, unknown> | undefined) ?? {})
+		: {};
+	return parseTaskSource({
+		file,
+		basename: normalizeWikilink(file),
+		raw,
+		frontmatter,
+		hasFrontmatter,
+		relationList: (_key, fallback) => normalizeRelationValue(fallback),
+	});
+}
+
+function modelFromFiles(files: Record<string, string>, lanes: LanesInput = {}) {
+	const parsed = Object.entries(files).map(([file, raw]) => parseSource(file, raw));
+	return buildModel({
+		tasks: parsed.map((item) => item.task),
+		sourceAlerts: parsed.flatMap((item) => item.alerts),
+		taxonomy: { areas: {} },
+		lanes,
+	});
+}
+
+const TASK_REQ = "---\nid: REQ\ntype: feat\nmaturity: ready\nstatus: pending\nduration: 8\n---\nCuerpo de la tarea.\n";
 
 describe("buildModel", () => {
 	test("una dependencia hecha no bloquea; una pendiente sí", () => {
@@ -384,6 +415,156 @@ describe("buildModel", () => {
 		expect(
 			m.alerts.some((a) => a.code === "combo-should-be-done" && a.params?.expected === "done")
 		).toBe(true);
+	});
+
+	test("parte válida: fuera del tablero, navegable desde su tarea", () => {
+		const m = modelFromFiles(
+			{
+				"REQ.md": TASK_REQ,
+				"REQ-plan/DESIGN.md":
+					'---\ntype: doc\npart_of: "[[REQ]]"\ntitle: Diseño técnico\n---\nContenido del diseño.\n',
+			},
+			{ A: { queue: ["REQ"] } }
+		);
+		expect(m.alerts).toEqual([]);
+		expect([...m.tasks.keys()]).toEqual(["REQ"]);
+		expect(m.lanes.A.queue).toEqual(["REQ"]);
+		expect(m.lanes.A.next).toBe("REQ");
+		expect(m.tasks.get("REQ")?.parts).toEqual(["REQ-plan/DESIGN.md"]);
+		expect(m.docs.get("REQ-plan/DESIGN.md")).toEqual({
+			path: "REQ-plan/DESIGN.md",
+			basename: "DESIGN",
+			title: "Diseño técnico",
+			partOf: "REQ",
+			body: "Contenido del diseño.",
+		});
+	});
+
+	test("dos partes con el mismo basename en subcarpetas distintas conviven", () => {
+		const m = modelFromFiles({
+			"A.md": "---\nid: A\ntype: feat\nstatus: pending\nduration: 1\n---\n",
+			"A-plan/DESIGN.md": '---\ntype: doc\npart_of: "[[A]]"\n---\nDiseño de A.\n',
+			"B.md": "---\nid: B\ntype: feat\nstatus: pending\nduration: 1\n---\n",
+			"B-plan/DESIGN.md": '---\ntype: doc\npart_of: "[[B]]"\n---\nDiseño de B.\n',
+		});
+		expect(m.alerts).toEqual([]);
+		expect(m.docs.size).toBe(2);
+		expect(m.tasks.get("A")?.parts).toEqual(["A-plan/DESIGN.md"]);
+		expect(m.tasks.get("B")?.parts).toEqual(["B-plan/DESIGN.md"]);
+	});
+
+	test("type doc sin part_of → doc-without-task", () => {
+		const m = modelFromFiles({
+			"SUELTO.md": "---\ntype: doc\n---\nDoc sin tarea.\n",
+		});
+		expect(m.alerts).toEqual([
+			{ code: "doc-without-task", severity: "error", params: { file: "SUELTO.md" } },
+		]);
+	});
+
+	test("part_of: [] (lista vacía) → doc-without-task, no queda silencioso", () => {
+		const m = modelFromFiles({
+			"SUELTO.md": "---\ntype: doc\npart_of: []\n---\n",
+		});
+		expect(m.alerts.some((a) => a.code === "empty-relation-field")).toBe(false);
+		expect(m.alerts).toContainEqual({
+			code: "doc-without-task",
+			severity: "error",
+			params: { file: "SUELTO.md" },
+		});
+	});
+
+	test("part_of: '' (vacío explícito) → solo empty-relation-field, sin doc-without-task", () => {
+		const m = modelFromFiles({
+			"SUELTO.md": '---\ntype: doc\npart_of: ""\n---\n',
+		});
+		expect(m.alerts.some((a) => a.code === "doc-without-task")).toBe(false);
+		expect(
+			m.alerts.filter((a) => a.code === "empty-relation-field" && a.params?.field === "part_of")
+		).toHaveLength(1);
+	});
+
+	test("part_of roto → missing-part-of", () => {
+		const m = modelFromFiles({
+			"REQ.md": TASK_REQ,
+			"DOC.md": '---\ntype: doc\npart_of: "[[FANTASMA]]"\n---\n',
+		});
+		expect(m.alerts).toEqual([
+			{
+				code: "missing-part-of",
+				severity: "error",
+				params: { file: "DOC.md", ref: "FANTASMA" },
+			},
+		]);
+	});
+
+	test("part_of hacia otra parte → part-of-to-doc (un solo nivel)", () => {
+		const m = modelFromFiles({
+			"REQ.md": TASK_REQ,
+			"REQ-plan/DESIGN.md": '---\ntype: doc\npart_of: "[[REQ]]"\n---\n',
+			"REQ-plan/ANEXO.md": '---\ntype: doc\npart_of: "[[DESIGN]]"\n---\n',
+		});
+		expect(m.alerts).toEqual([
+			{
+				code: "part-of-to-doc",
+				severity: "error",
+				params: { file: "REQ-plan/ANEXO.md", ref: "DESIGN" },
+			},
+		]);
+	});
+
+	test("part_of en una tarea → part-of-on-task warning; la tarea sigue normal", () => {
+		const m = modelFromFiles(
+			{
+				"REQ.md": TASK_REQ,
+				"OTRA.md":
+					'---\nid: OTRA\ntype: feat\nmaturity: ready\nstatus: pending\nduration: 2\npart_of: "[[REQ]]"\n---\n',
+			},
+			{ A: { queue: ["OTRA"] } }
+		);
+		expect(m.alerts).toEqual([
+			{
+				code: "part-of-on-task",
+				severity: "warning",
+				taskId: "OTRA",
+				params: { id: "OTRA", ref: "REQ" },
+			},
+		]);
+		expect(m.tasks.get("OTRA")).toBeDefined();
+		expect(m.lanes.A.next).toBe("OTRA");
+		expect(m.tasks.get("REQ")?.parts).toEqual([]);
+	});
+
+	test("parte con campos de tarea → doc-task-fields-ignored y cero efecto en derivaciones", () => {
+		const m = modelFromFiles(
+			{
+				"REQ.md": TASK_REQ,
+				"REQ-plan/DESIGN.md":
+					'---\ntype: doc\npart_of: "[[REQ]]"\nid: REQ\nstatus: done\nduration: 99\n---\n',
+			},
+			{ A: { queue: ["REQ"] } }
+		);
+		expect(m.alerts).toEqual([
+			{
+				code: "doc-task-fields-ignored",
+				severity: "warning",
+				params: { file: "REQ-plan/DESIGN.md", fields: "id, status, duration" },
+			},
+		]);
+		expect(m.alerts.some((a) => a.code === "duplicate-id")).toBe(false);
+		expect(m.tasks.get("REQ")?.status).toBe("pending");
+		expect(m.tasks.get("REQ")?.effectiveHours).toBe(8);
+		expect(m.lanes.A.next).toBe("REQ");
+	});
+
+	test("anti-regresión: .md sin frontmatter sigue dando missing-frontmatter", () => {
+		const m = modelFromFiles({ "NOFM.md": "Texto plano sin frontmatter.\n" });
+		expect(m.alerts).toContainEqual({
+			code: "missing-frontmatter",
+			severity: "error",
+			taskId: "NOFM",
+			params: { file: "NOFM.md" },
+		});
 	});
 
 	test("fixture demo-app: centrado en escala horaria y con alerts next esperadas", () => {

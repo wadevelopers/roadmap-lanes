@@ -1,5 +1,6 @@
 export const TYPES = ["feat", "maint", "infra", "combo"] as const;
 export const FILTERABLE_TYPES = ["feat", "maint", "infra"] as const;
+export const DOC_TYPE = "doc";
 export const MATURITIES = ["raw", "draft", "ready"] as const;
 export const STATUSES = ["pending", "done"] as const;
 
@@ -38,7 +39,12 @@ export type AlertCode =
 	| "combo-missing-maturity"
 	| "combo-should-be-done"
 	| "combo-falsely-done"
-	| "combo-missing-status";
+	| "combo-missing-status"
+	| "doc-without-task"
+	| "missing-part-of"
+	| "part-of-to-doc"
+	| "part-of-on-task"
+	| "doc-task-fields-ignored";
 
 export interface Alert {
 	code: AlertCode;
@@ -59,6 +65,7 @@ export interface RawTask {
 	parent?: string | null;
 	absorbs?: string[];
 	depends_on?: string[];
+	part_of?: string | null;
 	body?: string;
 	_file?: string;
 }
@@ -74,6 +81,8 @@ export interface Task extends RawTask {
 	parent: string | null;
 	absorbs: string[];
 	depends_on: string[];
+	part_of: string | null;
+	parts: string[];
 	children: string[];
 	unlocks: string[];
 	absorbedBy: string | null;
@@ -85,6 +94,14 @@ export interface Task extends RawTask {
 	waitingFor: string[];
 	lane: string | null;
 	position: number | null;
+}
+
+export interface DocModel {
+	path: string;
+	basename: string;
+	title: string;
+	partOf: string | null;
+	body: string;
 }
 
 export interface TaxonomyArea {
@@ -139,6 +156,7 @@ export interface BuildModelInput {
 export interface Model {
 	projectName?: string;
 	tasks: Map<string, Task>;
+	docs: Map<string, DocModel>;
 	lanes: Record<string, LaneModel>;
 	taxonomy: Taxonomy;
 	hoursPerDay: number;

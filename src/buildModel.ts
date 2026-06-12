@@ -1,10 +1,12 @@
 import {
+	DOC_TYPE,
 	MATURITIES,
 	STATUSES,
 	TYPES,
 	type Alert,
 	type AlertCode,
 	type BuildModelInput,
+	type DocModel,
 	type LanesInput,
 	type Model,
 	type RawTask,
@@ -15,6 +17,7 @@ import {
 	type TaskType,
 } from "./types";
 import { normalizeHoursPerDay } from "./time";
+import { basenameFromLink } from "./relations";
 
 function isType(value: unknown): value is TaskType {
 	return typeof value === "string" && TYPES.includes(value as TaskType);
@@ -71,6 +74,8 @@ function createTask(raw: RawTask): Task | null {
 		parent: normalizeParent(raw.parent),
 		absorbs: normalizeStringList(raw.absorbs),
 		depends_on: normalizeStringList(raw.depends_on),
+		part_of: normalizeParent(raw.part_of),
+		parts: [],
 		children: [],
 		unlocks: [],
 		absorbedBy: null,
@@ -82,6 +87,37 @@ function createTask(raw: RawTask): Task | null {
 		waitingFor: [],
 		lane: null,
 		position: null,
+	};
+}
+
+const TASK_ONLY_FIELDS = [
+	"id",
+	"status",
+	"maturity",
+	"duration",
+	"zones",
+	"areas",
+	"parent",
+	"absorbs",
+	"depends_on",
+] as const;
+
+function declaredTaskFields(raw: RawTask): string[] {
+	return TASK_ONLY_FIELDS.filter((field) => {
+		const value = raw[field];
+		if (Array.isArray(value)) return value.length > 0;
+		return value !== undefined && value !== null;
+	});
+}
+
+function createDoc(raw: RawTask, path: string): DocModel {
+	const basename = basenameFromLink(path);
+	return {
+		path,
+		basename,
+		title: raw.title ?? basename,
+		partOf: normalizeParent(raw.part_of),
+		body: raw.body ?? "",
 	};
 }
 
@@ -109,10 +145,20 @@ export function buildModel(input: BuildModelInput): Model {
 	};
 	const byId = new Map<string, Task>();
 	const rawById = new Map<string, RawTask>();
+	const docs = new Map<string, DocModel>();
 	const hoursPerDay = normalizeHoursPerDay(input.hoursPerDay);
 	const lanes = normalizeLanes(input.lanes);
 
 	for (const raw of input.tasks) {
+		if (raw.type === DOC_TYPE) {
+			const path = raw._file || "(doc without file)";
+			const fields = declaredTaskFields(raw);
+			if (fields.length > 0) {
+				alert("doc-task-fields-ignored", "warning", { file: path, fields: fields.join(", ") });
+			}
+			docs.set(path, createDoc(raw, path));
+			continue;
+		}
 		if (!raw.id) {
 			alert("missing-id", "error", { file: raw._file || "(task without file)" });
 			continue;
@@ -133,10 +179,28 @@ export function buildModel(input: BuildModelInput): Model {
 
 	const exists = (id: string): boolean => byId.has(id);
 
+	// part_of normalizado pierde la carpeta, así que el target se busca por id de
+	// tarea y, para detectar encadenamiento doc->doc, por basename de las partes.
+	const docBasenames = new Set([...docs.values()].map((doc) => doc.basename));
+	for (const doc of docs.values()) {
+		if (!doc.partOf) continue;
+		const target = byId.get(doc.partOf);
+		if (target) {
+			target.parts.push(doc.path);
+		} else if (docBasenames.has(doc.partOf)) {
+			alert("part-of-to-doc", "error", { file: doc.path, ref: doc.partOf });
+		} else {
+			alert("missing-part-of", "error", { file: doc.path, ref: doc.partOf });
+		}
+	}
+
 	for (const task of byId.values()) {
 		const raw = rawById.get(task.id);
 		if (raw?.type && !isType(raw.type)) {
 			alert("invalid-type", "error", { id: task.id, value: raw.type }, task.id);
+		}
+		if (task.part_of) {
+			alert("part-of-on-task", "warning", { id: task.id, ref: task.part_of }, task.id);
 		}
 		if (raw?.maturity && !isMaturity(raw.maturity)) {
 			alert("invalid-maturity", "error", { id: task.id, value: raw.maturity }, task.id);
@@ -521,6 +585,7 @@ export function buildModel(input: BuildModelInput): Model {
 	return {
 		projectName: input.projectName,
 		tasks: byId,
+		docs,
 		lanes: laneModels,
 		taxonomy: input.taxonomy,
 		hoursPerDay,

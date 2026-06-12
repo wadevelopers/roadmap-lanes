@@ -104,6 +104,11 @@ const STRINGS = {
 		"alert_combo-falsely-done":
 			"{id}: declares status '{declared}' but has unfinished children",
 		"alert_combo-missing-status": "{id}: combo should declare status '{expected}'",
+		"alert_doc-without-task": "{file}: type doc requires part_of pointing to its task",
+		"alert_missing-part-of": "{file}: part_of not found '{ref}'",
+		"alert_part-of-to-doc": "{file}: part_of points to another doc '{ref}'",
+		"alert_part-of-on-task": "{id}: part_of only applies to type doc (use parent for work hierarchy)",
+		"alert_doc-task-fields-ignored": "{file}: task fields ignored on doc: {fields}",
 	},
 	es: {
 		openCommand: "Abrir tablero de carriles",
@@ -210,6 +215,11 @@ const STRINGS = {
 		"alert_combo-falsely-done":
 			"{id}: declara status '{declared}' pero tiene hijos sin terminar",
 		"alert_combo-missing-status": "{id}: el combo debe declarar status '{expected}'",
+		"alert_doc-without-task": "{file}: type doc requiere part_of apuntando a su tarea",
+		"alert_missing-part-of": "{file}: part_of inexistente '{ref}'",
+		"alert_part-of-to-doc": "{file}: part_of apunta a otro doc '{ref}'",
+		"alert_part-of-on-task": "{id}: part_of solo aplica a type doc (usa parent para jerarquía de trabajo)",
+		"alert_doc-task-fields-ignored": "{file}: campos de tarea ignorados en el doc: {fields}",
 	},
 };
 
