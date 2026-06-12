@@ -1,6 +1,6 @@
 # NOTES
 
-Lista consultable de decisiones tomadas y pendientes/deuda detectada.
+Lista consultable de decisiones tomadas y pendientes.
 
 ## Decisiones tomadas
 
@@ -29,7 +29,7 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   `tasks/`.
 - **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
   backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
-  no reemplazan el tablero de RL. Ver `guias/VISUALIZACION_OBSIDIAN.md`.
+  no reemplazan el tablero de RL. Ver `../guides.es/VISUALIZACION.md`.
 - **Estado escrito `in-progress` para hojas — DESCARTADO, YAGNI** (jun 2026). Evaluado al mapear
   un caso real con 2 carriles paralelos ("¿qué está haciendo cada carril ahora?"). Se descarta:
   RL organiza **orden y prioridad**, no tracking de ejecución (VISION §10); el estado virtual
@@ -41,63 +41,34 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
   `duration` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
   según la jornada configurada.
 
-## Próximos pasos (retomar acá)
+## Pendientes
 
-> Punto de continuación del proyecto. **Objetivo: cerrar el loop agéntico** — RL lo opera una IA
-> que escribe los documentos y el humano mira el tablero, pero hoy las herramientas y el contrato
-> del agente no existen. Plan de ejecución, en orden: `06_ALERTA_MADUREZ_EN_TURNO` (ready) →
-> `07_VALIDADOR_CLI` (ready — 5 decisiones cerradas) → `08_GUIA_AGENTE` →
-> `09_INTEGRACION_GIT_POR_LANE` (opcional — automatiza un check que hoy es manual; promover solo
-> si el uso real lo pide). Primer consumidor real: wadev (migración completada 2026-06-11; los
-> hallazgos ya están inyectados en los planes).
+- **Plan 09 — integración git por lane (opcional).** Automatiza un check que hoy es manual;
+  promover solo si el uso real lo pide. Ver `planes/09_INTEGRACION_GIT_POR_LANE.md`.
 
-### Bug — auto-creación de `lanes.yaml`/`taxonomy.yaml` corría contra git — RESUELTO (jun 2026)
+### UI de configuración de carriles y taxonomía — "algún día"
 
-Caso real (migración wadev, vault dentro de un repo): al hacer `git checkout` a una rama sin la
-carpeta del roadmap, el render disparado por el watcher (`loadRoadmapData` →
-`ensureRoadmapStructure`) **recreaba al instante** los defaults; esos archivos untracked
-bloqueaban el `git merge` posterior, y borrarlos antes no alcanzaba — el watcher ganaba la
-carrera en milisegundos.
-
-**Fix aplicado**: `loadRoadmapData` (la ruta de lectura, que corre en cada render) es ahora
-**read-only**; la creación de estructura quedó solo en acciones deliberadas — carga del plugin
-(`onload`), cambio de settings (`saveSettings`) y apertura del tablero (`activateView`). Si los
-archivos desaparecen a mitad de sesión (cambio de rama), el tablero renderiza vacío con
-fallbacks y se repuebla solo cuando vuelven. Bonus: una fuente de datos read-only es la
-semántica que el validador CLI (plan 07) también necesita.
-
-### Algún día — UI de configuración de carriles y taxonomía (sin versión asignada)
-
-> Degradado de "próxima versión (v0.4.0)" a "algún día" el 2026-06-11: el usuario actual no lo
-> necesita (los archivos los escribe una IA; editar YAML no es fricción para ella). Cobra valor
-> recién con usuarios de la comunidad que operen RL a mano — re-priorizar si aparece esa demanda.
+> Degradado de "próxima versión" a "algún día" (2026-06-11): el usuario actual no lo necesita (los
+> archivos los escribe una IA; editar YAML no es fricción). Cobra valor recién con usuarios de la
+> comunidad que operen RL a mano — re-priorizar si aparece esa demanda.
 
 Flujo deseado para arrancar un proyecto nuevo, todo desde la app:
 
-1. **Backlog automático — YA IMPLEMENTADO.** RL escanea la carpeta del roadmap (`roadmap/` por
-   defecto) vía `metadataCache` y muestra en **backlog** toda tarea **hoja, `status: pending`, no
-   absorbida y sin carril asignado**. Es reactivo (se actualiza al editar notas). No hace falta botón.
-   (Ref: filtro de `backlog` en `render.ts` y el scan de la carpeta con `getMarkdownFiles` en
-   `dataSource.ts`.)
-2. **Crear carriles desde la app.** Formulario **modal de alta** para crear carriles **vacíos**
-   (escribe en `lanes.yaml`: `focus`, `worktree`, `queue: []`).
-3. **Asignar tareas con drag & drop.** Arrastrar tareas entre backlog ↔ carriles (y entre carriles).
-   Por debajo = **asignar la tarea a un carril** (agregar/quitar su `id` del `queue` en `lanes.yaml`).
-   Todo lo que no está en un carril queda en backlog por defecto.
-4. **Botón "limpiar hechas".** Depurar `lanes.yaml`: sacar de los `queue` las tareas con
+1. **Crear carriles desde la app.** Formulario modal de alta para carriles **vacíos** (escribe en
+   `lanes.yaml`: `focus`, `worktree`, `queue: []`).
+2. **Asignar tareas con drag & drop** entre backlog ↔ carriles (y entre carriles). Por debajo =
+   agregar/quitar el `id` de la tarea del `queue` en `lanes.yaml`.
+3. **Botón "limpiar hechas".** Depurar `lanes.yaml`: sacar de los `queue` las tareas con
    `status: done`.
-5. **Editar taxonomía desde la app.** UI para `taxonomy.yaml` (áreas/zonas), así no se edita a mano.
+4. **Editar taxonomía desde la app.** UI para `taxonomy.yaml` (áreas/zonas).
 
-Esto implica que el plugin **escriba** en `lanes.yaml` / `taxonomy.yaml` (hoy solo los **lee**;
-escritura viable con `vault.adapter.write` / `vault.modify`).
+Implica que el plugin **escriba** en `lanes.yaml` / `taxonomy.yaml` (hoy solo los **lee**; escritura
+viable con `vault.adapter.write` / `vault.modify`).
 
-### Publicar en la comunidad de Obsidian (cuándo: a decidir — ya no atado a v0.4.0)
+### Publicar en la comunidad de Obsidian
 
-Ya hecho: repo público + release.
-- Repo: https://github.com/wadevelopers/roadmap-lanes
-- Release `0.3.0` con `main.js` + `manifest.json` + `styles.css` adjuntos.
-
-Falta el **PR a `obsidianmd/obsidian-releases`**, agregando esta entrada al **final** del array en
+Repo público y release `0.3.0` ya publicados (https://github.com/wadevelopers/roadmap-lanes). Falta
+el **PR a `obsidianmd/obsidian-releases`**, agregando esta entrada al **final** del array en
 `community-plugins.json`:
 
 ```json
