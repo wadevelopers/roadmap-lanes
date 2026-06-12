@@ -5,7 +5,7 @@ Lista consultable de decisiones tomadas y pendientes.
 ## Decisiones tomadas
 
 - **Wikilinks `[[id]]` en las relaciones — ADOPTADO** (jun 2026). Las relaciones (`parent`,
-  `depends_on`, `absorbs`) se escriben como **wikilinks entrecomillados** en el frontmatter
+  `depends_on`, `absorbs`, `part_of`) se escriben como **wikilinks entrecomillados** en el frontmatter
   (p. ej. `parent: "[[FT-001]]"`, `depends_on: ["[[FT-002]]"]`). Verificado empíricamente en
   Obsidian 1.4+: funcionan **a la vez** para RL (vía `frontmatterLinks` del `metadataCache`, que
   entrega el destino ya resuelto), para el **grafo y los backlinks nativos**, y para **Dataview**
@@ -18,13 +18,14 @@ Lista consultable de decisiones tomadas y pendientes.
   - `areas`/`zones` quedan como **arrays planos** (no wikilinks): Dataview los consulta igual y no
     aportan al grafo de dependencias.
 - **Frontmatter canónico en inglés — ADOPTADO** (jun 2026). Las claves y valores que el usuario
-  escribe en los `.md` son el contrato interno del plugin: `type` (`feat`/`maint`/`infra`/`combo`),
+  escribe en los `.md` son el contrato interno del plugin: `type` (`feat`/`maint`/`infra`/`combo`/`doc`),
   `maturity` (`raw`/`draft`/`ready`), `status` (`pending`/`done`), `title`, `duration`, `zones`,
-  `parent`, `absorbs` y `depends_on`. No hay aliases legacy en español; una capa de alias
+  `parent`, `absorbs`, `depends_on` y `part_of`. No hay aliases legacy en español; una capa de alias
   multi-idioma puede agregarse más adelante sobre este contrato canónico si realmente hace falta.
 - **Carpeta raíz configurable — ADOPTADO** (jun 2026). RL usa una carpeta dentro del vault para
   todos sus archivos. Por defecto es `roadmap/`, configurable desde las settings nativas del plugin.
-  Dentro viven `lanes.yaml`, `taxonomy.yaml` y cualquier `.md` de tareas, incluyendo subcarpetas.
+  Dentro viven `lanes.yaml`, `taxonomy.yaml` y cualquier `.md` de tareas o partes (`type: doc`),
+  incluyendo subcarpetas.
   El plugin crea `roadmap/`, `lanes.yaml` y `taxonomy.yaml` si faltan, pero no crea una carpeta
   `tasks/`.
 - **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
@@ -40,6 +41,11 @@ Lista consultable de decisiones tomadas y pendientes.
   derivando los cálculos funcionales desde las hojas y alerta si esos campos se desincronizan.
   `duration` pasa a ser número de horas sin sufijo (`40`, no `5d`), con display convertido a días
   según la jornada configurada.
+- **Partes de tarea (`type: doc` + `part_of`) — ADOPTADO** (jun 2026). Un `.md` dentro de
+  `roadmap/` puede declararse documento acompañante de una tarea: queda fuera del tablero pero es
+  navegable desde el panel de detalle, con identidad por path (basenames duplicados entre
+  subcarpetas son válidos). Semántica completa en `VISION.es.md` §7.3; diseño y desvíos en
+  `planes/10_PARTES_DE_TAREA.md`.
 
 ## Pendientes
 

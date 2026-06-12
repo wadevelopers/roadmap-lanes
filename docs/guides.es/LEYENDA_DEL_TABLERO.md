@@ -29,6 +29,9 @@ La **altura** de la tarjeta representa el **tiempo**: más alta = más horas (mo
 | `INFRA` | `infra` | púrpura | **Infra**: plomería, build, docs — lo que el usuario final no ve. |
 | `COMBO` | `combo` | acento | **Agrupador**: una etapa con tareas hijas. |
 
+El quinto valor de `type`, `doc`, nunca aparece como tarjeta: marca una **parte** (documento
+acompañante de una tarea), visible solo en el panel de detalle de su tarea.
+
 ### Madurez (ícono) — cuán listo está el *plan*
 
 | Ícono | Valor (`maturity`) | Significado |

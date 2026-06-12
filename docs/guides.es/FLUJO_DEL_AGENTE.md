@@ -24,7 +24,8 @@ en particular. Cada proyecto la cablea a su propio tooling (ver
   2. **`feat`** — agrega una capacidad nueva.
   3. **`maint`** — arregla o mejora algo que ya existe (bug o deuda).
 
-  `combo` **no** entra en esta evaluación: se declara cuando la tarea tiene hijos. Cuidado con el
+  `combo` **no** entra en esta evaluación: se declara cuando la tarea tiene hijos. `doc` tampoco:
+  marca una **parte** (documento acompañante), no trabajo. Cuidado con el
   orden: el trabajo de build/docs/migración es `infra` aunque "suene" a feature — por eso `infra` va
   primero. **No** confundir `type` con la serie de ids del proyecto (más abajo): son ejes
   ortogonales — un `BUG-12` es `type: maint`, un `FEAT-3` es `type: feat`.

@@ -182,7 +182,7 @@ Since the relationships are **wikilinks in frontmatter** (`parent: "[[EPIC-100]]
 | **Native graph** | Hierarchy (`parent`) and dependencies (`depends_on`) as a graph, colorable by `type`/`status`/`maturity`. |
 | **Backlinks** | "What depends on this task?" appears on its own (it's `depends_on` inverted). |
 | **Bases** (native) | Tables and queries over the frontmatter (`type`, `status`, `areas`…), with no extra data setup. |
-| **Extended Graph** (plugin) | Colors/filters by **link type** (`parent`/`depends_on`/`absorbs`), shows several properties as arcs, saved views with a selector and **node size = `duration`**. |
+| **Extended Graph** (plugin) | Colors/filters by **link type** (`parent`/`depends_on`/`absorbs`/`part_of`), shows several properties as arcs, saved views with a selector and **node size = `duration`**. |
 
 > Verified (Jun 2026): since Obsidian 1.4, **quoted** wikilinks in frontmatter are parsed (`frontmatterLinks`), appear in the graph and backlinks and update on rename. That's why **fields aren't duplicated** and no sync script is needed: a single format serves everything. The plugin normalizes wikilink→id in **one single point** (when reading from the `metadataCache`, which already returns the resolved target).
 

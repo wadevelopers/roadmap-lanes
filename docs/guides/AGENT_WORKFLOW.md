@@ -23,7 +23,8 @@ project wires it to its own tooling (see [Template for consumer projects](#templ
   2. **`feat`** — adds a new capability.
   3. **`maint`** — fixes or improves something that already exists (bug or debt).
 
-  `combo` is **not** part of this evaluation: it is declared when the task has children. Mind the
+  `combo` is **not** part of this evaluation: it is declared when the task has children. Neither is
+  `doc`: it marks a **part** (companion document), not work. Mind the
   order: build/docs/migration work is `infra` even if it "sounds like" a feature — that is why
   `infra` goes first. Do **not** confuse `type` with the project's id series (below): they are
   orthogonal axes — a `BUG-12` is `type: maint`, a `FEAT-3` is `type: feat`.

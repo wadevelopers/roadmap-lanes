@@ -55,7 +55,8 @@ demo-app/
 
 RL reads:
 
-- every `.md` inside `roadmap/`, including subfolders, as units of work;
+- every `.md` inside `roadmap/`, including subfolders, as units of work (except **parts** —
+  `type: doc` companion documents of a task, see below);
 - `roadmap/lanes.yaml` to order tasks into lanes;
 - `roadmap/taxonomy.yaml` to validate areas and zones.
 

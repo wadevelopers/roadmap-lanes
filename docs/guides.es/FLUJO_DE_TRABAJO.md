@@ -55,7 +55,8 @@ demo-app/
 
 RL lee:
 
-- todos los `.md` dentro de `roadmap/`, incluyendo subcarpetas, como unidades de trabajo;
+- todos los `.md` dentro de `roadmap/`, incluyendo subcarpetas, como unidades de trabajo (salvo las
+  **partes** — documentos acompañantes de una tarea con `type: doc`, ver más abajo);
 - `roadmap/lanes.yaml` para ordenar tareas en carriles;
 - `roadmap/taxonomy.yaml` para validar áreas y zonas.
 

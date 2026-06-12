@@ -28,6 +28,9 @@ The card's **height** represents **time**: taller = more hours (Gantt mode).
 | `INFRA` | `infra` | purple | **Infra**: plumbing, build, docs — what the end user doesn't see. |
 | `COMBO` | `combo` | accent | **Group**: a stage with child tasks. |
 
+The fifth `type` value, `doc`, never appears as a card: it marks a **part** (a task's companion
+document), visible only in its task's detail panel.
+
 ### Maturity (icon) — how ready the *plan* is
 
 | Icon | Value (`maturity`) | Meaning |

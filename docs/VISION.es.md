@@ -204,7 +204,7 @@ Como las relaciones son **wikilinks en frontmatter** (`parent: "[[EPIC-100]]"`, 
 | **Grafo nativo** | Jerarquía (`parent`) y dependencias (`depends_on`) como grafo, coloreable por `type`/`status`/`maturity`. |
 | **Backlinks** | "¿Qué depende de esta tarea?" aparece solo (es `depends_on` invertido). |
 | **Bases** (nativo) | Tablas y consultas del frontmatter (`type`, `status`, `areas`…), sin configuración de datos extra. |
-| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`parent`/`depends_on`/`absorbs`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duration`**. |
+| **Extended Graph** (plugin) | Colorea/filtra por **tipo de link** (`parent`/`depends_on`/`absorbs`/`part_of`), muestra varias propiedades como arcos, vistas guardadas con selector y **tamaño de nodo = `duration`**. |
 
 > Verificado (jun 2026): desde Obsidian 1.4, los wikilinks **entrecomillados** en frontmatter se parsean (`frontmatterLinks`), aparecen en el grafo y los backlinks y se actualizan al renombrar. Por eso **no se duplican campos** ni hace falta un script de sincronización: un único formato sirve para todo. El plugin normaliza wikilink→id en **un solo punto** (al leer del `metadataCache`, que ya entrega el destino resuelto).
 
