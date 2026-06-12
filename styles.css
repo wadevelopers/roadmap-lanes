@@ -27,6 +27,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	--rl-type-maint: var(--color-orange);
 	--rl-type-infra: var(--color-purple);
 	--rl-type-combo: var(--interactive-accent);
+	--rl-type-doc: var(--text-muted);
 	--rl-overlap-0: var(--color-green);
 	--rl-overlap-1: var(--color-yellow);
 	--rl-overlap-2: var(--color-orange);
@@ -725,6 +726,10 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	background: var(--rl-type-combo);
 }
 
+.roadmap-lanes-view .rl-type-doc {
+	background: var(--rl-type-doc);
+}
+
 /* Tipos compactos: el chip del card pasa a un punto de color (el detalle no se toca). */
 .roadmap-lanes-view.rl-compact-types .rl-id-group .rl-type {
 	width: 9px;
@@ -1098,7 +1103,8 @@ body.rl-detail-resizing * {
 	text-decoration: underline;
 }
 
-.roadmap-lanes-view .rl-detail-overlap {
+.roadmap-lanes-view .rl-detail-overlap,
+.roadmap-lanes-view .rl-detail-parts {
 	margin: 12px 0;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -1106,15 +1112,26 @@ body.rl-detail-resizing * {
 	background: var(--background-secondary);
 }
 
-.roadmap-lanes-view .rl-detail-overlap h3 {
+.roadmap-lanes-view .rl-detail-overlap h3,
+.roadmap-lanes-view .rl-detail-parts h3 {
 	margin: 0 0 8px;
 	font-size: 12px;
 	text-transform: uppercase;
 	color: var(--text-muted);
 }
 
-.roadmap-lanes-view .rl-detail-overlap p {
+.roadmap-lanes-view .rl-detail-overlap p,
+.roadmap-lanes-view .rl-detail-parts p {
 	margin: 4px 0;
+	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-detail-parts .rl-detail-task-link {
+	font-family: inherit;
+}
+
+.roadmap-lanes-view .rl-detail-breadcrumb {
+	margin: 0 0 8px;
 	font-size: 12px;
 }
 

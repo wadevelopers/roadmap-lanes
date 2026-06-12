@@ -1,6 +1,15 @@
-import { MarkdownRenderer, type App, type Component } from "obsidian";
+import { MarkdownRenderer, TFile, type App, type Component } from "obsidian";
 
-import { FILTERABLE_TYPES, MATURITIES, type Alert, type Model, type Severity, type Task } from "./types";
+import {
+	DOC_TYPE,
+	FILTERABLE_TYPES,
+	MATURITIES,
+	type Alert,
+	type DocModel,
+	type Model,
+	type Severity,
+	type Task,
+} from "./types";
 import { formatAlert, type TranslationKey, type Translator } from "./messages";
 import {
 	DETAIL_PANEL_MAX_WIDTH,
@@ -19,6 +28,8 @@ import {
 	type CardLayoutSettings,
 } from "./time";
 
+type DetailTarget = { kind: "task"; id: string } | { kind: "doc"; path: string };
+
 interface RenderContext {
 	app: App;
 	component: Component;
@@ -29,7 +40,7 @@ interface RenderContext {
 	boardMode: BoardMode;
 	hoursPerLine: number;
 	cardLayout: CardLayoutSettings;
-	detailHistory: string[];
+	detailHistory: DetailTarget[];
 	setDetailPanelWidth?: (width: number) => void;
 	setBoardMode?: (mode: BoardMode) => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
@@ -101,7 +112,7 @@ const ORDER_CARD_HEIGHT_PX = 96;
 const columnResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
 type CardIcon = "raw" | "draft" | "ready" | "absorbs" | "overlap";
-type DetailIcon = "arrow-left" | "x";
+type DetailIcon = "arrow-left" | "x" | "external-link";
 
 interface CardIconShape {
 	path: string;
@@ -144,6 +155,14 @@ function appendDetailIcon(parent: HTMLElement, icon: DetailIcon): void {
 		const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
 		polyline.setAttribute("points", "12 19 5 12 12 5");
 		svg.appendChild(polyline);
+	} else if (icon === "external-link") {
+		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+		svg.appendChild(path);
+		const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+		polyline.setAttribute("points", "15 3 21 3 21 9");
+		svg.appendChild(polyline);
+		appendLine("10", "14", "21", "3");
 	} else {
 		appendLine("18", "6", "6", "18");
 		appendLine("6", "6", "18", "18");
@@ -519,7 +538,7 @@ function renderCard(ctx: RenderContext, parent: HTMLElement, task: Task, filters
 		attr: { "data-row-index": "4", "data-row-visible": presentation.visibleRows >= 4 ? "true" : "false" },
 	});
 	card.addEventListener("click", () => {
-		void openDetail(ctx, task);
+		void openDetail(ctx, taskTarget(task));
 	});
 	return card;
 }
@@ -545,7 +564,7 @@ function renderContainerBlock(
 	});
 	bar.createEl("span", { cls: "rl-container-bar-text", text: label });
 	bar.addEventListener("click", () => {
-		void openDetail(ctx, containerTask);
+		void openDetail(ctx, taskTarget(containerTask));
 	});
 	const children = block.createEl("div", { cls: "rl-container-children" });
 	renderTaskPaths(ctx, children, paths, depth + 1, filters);
@@ -1025,18 +1044,31 @@ function renderBoard(ctx: RenderContext, parent: HTMLElement, filters: Filters):
 	renderColumn(ctx, board, "done", ctx.t("done"), `${done.length}`, done, filters);
 }
 
-function openLinkedDetail(ctx: RenderContext, current: Task, id: string): void {
-	const target = ctx.model.tasks.get(id);
-	if (!target || target.id === current.id) return;
-	ctx.detailHistory.push(current.id);
-	void openDetail(ctx, target, { keepHistory: true });
+function taskTarget(task: Task): DetailTarget {
+	return { kind: "task", id: task.id };
+}
+
+function sameTarget(a: DetailTarget, b: DetailTarget): boolean {
+	if (a.kind === "task" && b.kind === "task") return a.id === b.id;
+	if (a.kind === "doc" && b.kind === "doc") return a.path === b.path;
+	return false;
+}
+
+function resolveTarget(ctx: RenderContext, target: DetailTarget): Task | DocModel | null {
+	if (target.kind === "task") return ctx.model.tasks.get(target.id) ?? null;
+	return ctx.model.docs.get(target.path) ?? null;
+}
+
+function openLinkedDetail(ctx: RenderContext, current: DetailTarget, next: DetailTarget): void {
+	if (sameTarget(current, next) || !resolveTarget(ctx, next)) return;
+	ctx.detailHistory.push(current);
+	void openDetail(ctx, next, { keepHistory: true });
 }
 
 function openPreviousDetail(ctx: RenderContext): void {
 	while (ctx.detailHistory.length > 0) {
-		const previousId = ctx.detailHistory.pop();
-		const previous = previousId ? ctx.model.tasks.get(previousId) : null;
-		if (previous) {
+		const previous = ctx.detailHistory.pop();
+		if (previous && resolveTarget(ctx, previous)) {
 			void openDetail(ctx, previous, { keepHistory: true });
 			return;
 		}
@@ -1055,7 +1087,7 @@ function renderTaskIdLink(ctx: RenderContext, parent: HTMLElement, current: Task
 	});
 	link.addEventListener("click", (event) => {
 		event.preventDefault();
-		openLinkedDetail(ctx, current, id);
+		openLinkedDetail(ctx, taskTarget(current), { kind: "task", id });
 	});
 }
 
@@ -1122,44 +1154,42 @@ function setupDetailPanelResize(ctx: RenderContext, panel: HTMLElement): void {
 	});
 }
 
-async function openDetail(
+function renderOpenNoteButton(
 	ctx: RenderContext,
-	task: Task,
-	options: { keepHistory?: boolean } = {}
-): Promise<void> {
-	if (!options.keepHistory) ctx.detailHistory = [];
-	const existing = ctx.root.querySelector<HTMLElement>(".rl-detail-layer");
-	existing?.remove();
-
-	const layer = ctx.root.createEl("div", { cls: "rl-detail-layer" });
-	const backdrop = layer.createEl("button", {
-		cls: "rl-detail-backdrop",
-		attr: { type: "button", "aria-label": ctx.t("close") },
-	});
-	const panel = layer.createEl("aside", { cls: "rl-detail-panel" });
-	setupDetailPanelResize(ctx, panel);
-	const head = panel.createEl("header", { cls: "rl-detail-head" });
-	const titleGroup = head.createEl("div", { cls: "rl-detail-title-group" });
-	const back = titleGroup.createEl("button", {
-		cls: "rl-detail-nav-button",
+	parent: HTMLElement,
+	path: string,
+	closeLayer: () => void
+): void {
+	const button = parent.createEl("button", {
+		cls: "rl-detail-nav-button rl-detail-open-note",
 		attr: {
 			type: "button",
-			"aria-label": ctx.t("detailBack"),
-			title: ctx.t("detailBack"),
+			"aria-label": ctx.t("openInObsidian"),
+			title: ctx.t("openInObsidian"),
 		},
 	});
-	appendDetailIcon(back, "arrow-left");
-	back.disabled = ctx.detailHistory.length === 0;
-	back.addEventListener("click", () => openPreviousDetail(ctx));
-	const titleWrap = titleGroup.createEl("div", { cls: "rl-detail-title-id" });
-	titleWrap.createEl("span", { cls: "rl-task-id", text: task.id });
-	if (task.type) titleWrap.createEl("span", { cls: `rl-type rl-type-${task.type}`, text: task.type });
-	const close = head.createEl("button", {
-		cls: "rl-detail-close",
-		attr: { type: "button", "aria-label": ctx.t("close") },
+	appendDetailIcon(button, "external-link");
+	button.addEventListener("click", () => {
+		const file = ctx.app.vault.getAbstractFileByPath(path);
+		if (!(file instanceof TFile)) {
+			console.error(`Roadmap Lanes: note not found in vault: ${path}`);
+			return;
+		}
+		closeLayer();
+		void ctx.app.workspace.getLeaf(true).openFile(file);
 	});
-	appendDetailIcon(close, "x");
+}
 
+async function renderMarkdownBody(ctx: RenderContext, panel: HTMLElement, markdown: string, sourcePath: string): Promise<void> {
+	const body = panel.createEl("section", { cls: "rl-detail-body markdown-rendered" });
+	if (markdown) {
+		await MarkdownRenderer.render(ctx.app, markdown, body, sourcePath, ctx.component);
+	} else {
+		body.createEl("p", { cls: "rl-muted", text: ctx.t("noBody") });
+	}
+}
+
+async function renderTaskDetail(ctx: RenderContext, panel: HTMLElement, task: Task): Promise<void> {
 	panel.createEl("h2", { text: task.title });
 	renderDetailStateLine(panel, task, ctx.t);
 
@@ -1188,6 +1218,25 @@ async function openDetail(
 		for (const relation of relations) renderRelation(ctx, rels, task, relation.label, relation.ids);
 	}
 
+	if (task.parts.length > 0) {
+		const box = panel.createEl("section", { cls: "rl-detail-parts" });
+		box.createEl("h3", { text: ctx.t("parts") });
+		for (const path of task.parts) {
+			const doc = ctx.model.docs.get(path);
+			if (!doc) continue;
+			const row = box.createEl("p");
+			const link = row.createEl("a", {
+				cls: "rl-detail-task-link",
+				text: doc.title,
+				attr: { href: "#" },
+			});
+			link.addEventListener("click", (event) => {
+				event.preventDefault();
+				openLinkedDetail(ctx, taskTarget(task), { kind: "doc", path });
+			});
+		}
+	}
+
 	const collisions = collisionsFor(ctx.model, task);
 	if (collisions.length > 0) {
 		const box = panel.createEl("section", { cls: "rl-detail-overlap" });
@@ -1202,14 +1251,85 @@ async function openDetail(
 		}
 	}
 
-	const body = panel.createEl("section", { cls: "rl-detail-body markdown-rendered" });
-	if (task.body) {
-		await MarkdownRenderer.render(ctx.app, task.body, body, task._file || "", ctx.component);
-	} else {
-		body.createEl("p", { cls: "rl-muted", text: ctx.t("noBody") });
+	await renderMarkdownBody(ctx, panel, task.body || "", task._file || "");
+}
+
+async function renderDocDetail(ctx: RenderContext, panel: HTMLElement, doc: DocModel): Promise<void> {
+	panel.createEl("h2", { text: doc.title });
+
+	if (doc.partOf && ctx.model.tasks.has(doc.partOf)) {
+		const taskId = doc.partOf;
+		const crumb = panel.createEl("p", { cls: "rl-detail-breadcrumb" });
+		const link = crumb.createEl("a", {
+			cls: "rl-detail-task-link",
+			text: `← ${taskId}`,
+			attr: { href: "#" },
+		});
+		link.addEventListener("click", (event) => {
+			event.preventDefault();
+			openLinkedDetail(ctx, { kind: "doc", path: doc.path }, { kind: "task", id: taskId });
+		});
 	}
 
+	await renderMarkdownBody(ctx, panel, doc.body, doc.path);
+}
+
+async function openDetail(
+	ctx: RenderContext,
+	target: DetailTarget,
+	options: { keepHistory?: boolean } = {}
+): Promise<void> {
+	const resolved = resolveTarget(ctx, target);
+	if (!resolved) return;
+	if (!options.keepHistory) ctx.detailHistory = [];
+	const existing = ctx.root.querySelector<HTMLElement>(".rl-detail-layer");
+	existing?.remove();
+
+	const layer = ctx.root.createEl("div", { cls: "rl-detail-layer" });
 	const closeLayer = () => layer.remove();
+	const backdrop = layer.createEl("button", {
+		cls: "rl-detail-backdrop",
+		attr: { type: "button", "aria-label": ctx.t("close") },
+	});
+	const panel = layer.createEl("aside", { cls: "rl-detail-panel" });
+	setupDetailPanelResize(ctx, panel);
+	const head = panel.createEl("header", { cls: "rl-detail-head" });
+	const titleGroup = head.createEl("div", { cls: "rl-detail-title-group" });
+	const back = titleGroup.createEl("button", {
+		cls: "rl-detail-nav-button",
+		attr: {
+			type: "button",
+			"aria-label": ctx.t("detailBack"),
+			title: ctx.t("detailBack"),
+		},
+	});
+	appendDetailIcon(back, "arrow-left");
+	back.disabled = ctx.detailHistory.length === 0;
+	back.addEventListener("click", () => openPreviousDetail(ctx));
+	const titleWrap = titleGroup.createEl("div", { cls: "rl-detail-title-id" });
+	if (target.kind === "task") {
+		const task = resolved as Task;
+		titleWrap.createEl("span", { cls: "rl-task-id", text: task.id });
+		if (task.type) titleWrap.createEl("span", { cls: `rl-type rl-type-${task.type}`, text: task.type });
+		if (task._file) renderOpenNoteButton(ctx, titleGroup, task._file, closeLayer);
+	} else {
+		const doc = resolved as DocModel;
+		titleWrap.createEl("span", { cls: "rl-task-id", text: doc.basename });
+		titleWrap.createEl("span", { cls: "rl-type rl-type-doc", text: DOC_TYPE });
+		renderOpenNoteButton(ctx, titleGroup, doc.path, closeLayer);
+	}
+	const close = head.createEl("button", {
+		cls: "rl-detail-close",
+		attr: { type: "button", "aria-label": ctx.t("close") },
+	});
+	appendDetailIcon(close, "x");
+
+	if (target.kind === "task") {
+		await renderTaskDetail(ctx, panel, resolved as Task);
+	} else {
+		await renderDocDetail(ctx, panel, resolved as DocModel);
+	}
+
 	backdrop.addEventListener("click", closeLayer);
 	close.addEventListener("click", closeLayer);
 }
