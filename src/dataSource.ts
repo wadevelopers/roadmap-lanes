@@ -154,8 +154,11 @@ export async function loadRoadmapData(
 	app: App,
 	options: RoadmapDataSourceOptions = {}
 ): Promise<BuildModelInput> {
+	// Read-only on purpose: this runs on every watcher-triggered render, and creating
+	// files here races against git operations that remove the roadmap folder (branch
+	// switches). Structure creation belongs to deliberate actions only (plugin load,
+	// settings change, board open).
 	const resolved = resolveOptions(options);
-	await ensureRoadmapStructure(app, resolved);
 	const folderPrefix = `${resolved.roadmapFolder}/`;
 	const files = app.vault
 		.getMarkdownFiles()

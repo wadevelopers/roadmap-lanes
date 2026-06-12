@@ -45,22 +45,26 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 
 > Punto de continuación del proyecto. **Objetivo: cerrar el loop agéntico** — RL lo opera una IA
 > que escribe los documentos y el humano mira el tablero, pero hoy las herramientas y el contrato
-> del agente no existen. Plan de ejecución, en orden: **fix del watcher** (bug de auto-create vs
-> git, abajo — chico, sin plan, va primero porque muerde a cualquier consumidor con git) →
-> `06_ALERTA_MADUREZ_EN_TURNO` (ready) → `07_VALIDADOR_CLI` (ready — 5 decisiones cerradas) →
-> `08_GUIA_AGENTE` → `09_INTEGRACION_GIT_POR_LANE`. Primer consumidor real: wadev (migración
-> completada 2026-06-11; los hallazgos ya están inyectados en los planes).
+> del agente no existen. Plan de ejecución, en orden: `06_ALERTA_MADUREZ_EN_TURNO` (ready) →
+> `07_VALIDADOR_CLI` (ready — 5 decisiones cerradas) → `08_GUIA_AGENTE` →
+> `09_INTEGRACION_GIT_POR_LANE` (opcional — automatiza un check que hoy es manual; promover solo
+> si el uso real lo pide). Primer consumidor real: wadev (migración completada 2026-06-11; los
+> hallazgos ya están inyectados en los planes).
 
-### Bug detectado — la auto-creación de `lanes.yaml`/`taxonomy.yaml` corre contra git (jun 2026)
+### Bug — auto-creación de `lanes.yaml`/`taxonomy.yaml` corría contra git — RESUELTO (jun 2026)
 
-Caso real (migración wadev, vault dentro de un repo): al hacer `git checkout` a una rama que no
-tiene la carpeta del roadmap, el watcher del plugin **recrea al instante** `lanes.yaml` y
-`taxonomy.yaml` con defaults; esos archivos untracked bloquean el `git merge` posterior
-(*"untracked working tree files would be overwritten"*), y borrarlos antes de mergear no
-alcanza — el watcher los recrea en milisegundos y gana la carrera. Workaround actual: cerrar
-Obsidian (o desactivar RL) durante la operación git. Fix candidato: crear los defaults solo al
-**cargar el plugin / abrir el tablero** (o por comando explícito), nunca reactivamente desde el
-watcher. Encaja con el plan 09 (vaults dentro de repos git son el caso de uso principal).
+Caso real (migración wadev, vault dentro de un repo): al hacer `git checkout` a una rama sin la
+carpeta del roadmap, el render disparado por el watcher (`loadRoadmapData` →
+`ensureRoadmapStructure`) **recreaba al instante** los defaults; esos archivos untracked
+bloqueaban el `git merge` posterior, y borrarlos antes no alcanzaba — el watcher ganaba la
+carrera en milisegundos.
+
+**Fix aplicado**: `loadRoadmapData` (la ruta de lectura, que corre en cada render) es ahora
+**read-only**; la creación de estructura quedó solo en acciones deliberadas — carga del plugin
+(`onload`), cambio de settings (`saveSettings`) y apertura del tablero (`activateView`). Si los
+archivos desaparecen a mitad de sesión (cambio de rama), el tablero renderiza vacío con
+fallbacks y se repuebla solo cuando vuelven. Bonus: una fuente de datos read-only es la
+semántica que el validador CLI (plan 07) también necesita.
 
 ### Algún día — UI de configuración de carriles y taxonomía (sin versión asignada)
 

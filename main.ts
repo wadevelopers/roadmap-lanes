@@ -255,6 +255,7 @@ export default class RoadmapLanesPlugin extends Plugin {
 	onunload(): void {}
 
 	async activateView(): Promise<void> {
+		await ensureRoadmapStructure(this.app, this.settings);
 		const { workspace } = this.app;
 		let leaf = workspace.getLeavesOfType(VIEW_TYPE_ROADMAP)[0];
 		if (!leaf) {
