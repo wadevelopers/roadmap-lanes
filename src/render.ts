@@ -1257,18 +1257,25 @@ async function renderTaskDetail(ctx: RenderContext, panel: HTMLElement, task: Ta
 async function renderDocDetail(ctx: RenderContext, panel: HTMLElement, doc: DocModel): Promise<void> {
 	panel.createEl("h2", { text: doc.title });
 
-	if (doc.partOf && ctx.model.tasks.has(doc.partOf)) {
+	if (doc.partOf) {
 		const taskId = doc.partOf;
-		const crumb = panel.createEl("p", { cls: "rl-detail-breadcrumb" });
-		const link = crumb.createEl("a", {
-			cls: "rl-detail-task-link",
-			text: `← ${taskId}`,
-			attr: { href: "#" },
-		});
-		link.addEventListener("click", (event) => {
-			event.preventDefault();
-			openLinkedDetail(ctx, { kind: "doc", path: doc.path }, { kind: "task", id: taskId });
-		});
+		const rels = panel.createEl("section", { cls: "rl-detail-relations" });
+		const row = rels.createEl("div", { cls: "rl-detail-rel" });
+		row.createEl("span", { text: ctx.t("partOf") });
+		const values = row.createEl("div");
+		if (ctx.model.tasks.has(taskId)) {
+			const link = values.createEl("a", {
+				cls: "rl-detail-task-link",
+				text: taskId,
+				attr: { href: "#" },
+			});
+			link.addEventListener("click", (event) => {
+				event.preventDefault();
+				openLinkedDetail(ctx, { kind: "doc", path: doc.path }, { kind: "task", id: taskId });
+			});
+		} else {
+			values.createEl("code", { text: taskId });
+		}
 	}
 
 	await renderMarkdownBody(ctx, panel, doc.body, doc.path);

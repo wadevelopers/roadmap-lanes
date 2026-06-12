@@ -728,6 +728,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-type-doc {
 	background: var(--rl-type-doc);
+	color: var(--background-primary);
 }
 
 /* Tipos compactos: el chip del card pasa a un punto de color (el detalle no se toca). */
@@ -1128,11 +1129,6 @@ body.rl-detail-resizing * {
 
 .roadmap-lanes-view .rl-detail-parts .rl-detail-task-link {
 	font-family: inherit;
-}
-
-.roadmap-lanes-view .rl-detail-breadcrumb {
-	margin: 0 0 8px;
-	font-size: 12px;
 }
 
 .roadmap-lanes-view .rl-detail-body {
