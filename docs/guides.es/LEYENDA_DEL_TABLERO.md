@@ -109,6 +109,9 @@ Inconsistencias en los datos del roadmap, agrupadas por **severidad**:
 | **Warning** | naranja | Inconsistencia **recuperable**, puede ser intencional (área/zona desconocida, COMBO desincronizado). Se puede **aceptar** o corregir. |
 | **Info** | azul | Recordatorio suave, no implica error. |
 
+También aparece una warning cuando la tarea **Próxima** de un carril no está en `maturity: ready` o
+no declara `maturity`: puede seguir en el carril, pero conviene promover su plan antes de ejecutarla.
+
 Las warnings/info traen un botón **Aceptar** para silenciar esa alerta puntual; reaparece si los valores
 cambian. (Ver [`planes/02_ALERTAS_SEVERIDAD.md`](../internal/planes/02_ALERTAS_SEVERIDAD.md).)
 

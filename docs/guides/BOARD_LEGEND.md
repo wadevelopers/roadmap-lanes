@@ -107,6 +107,9 @@ Inconsistencies in the roadmap data, grouped by **severity**:
 | **Warning** | orange | **Recoverable** inconsistency, may be intentional (unknown area/zone, out-of-sync COMBO). Can be **accepted** or fixed. |
 | **Info** | blue | A soft reminder, not an error. |
 
+A warning also appears when the **Next** task in a lane is not `maturity: ready` or does not declare
+`maturity`: the task can stay in the lane, but its plan should be promoted before execution.
+
 Warnings/info come with an **Accept** button to silence that specific alert; it reappears if the values
 change.
 

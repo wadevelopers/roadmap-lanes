@@ -78,6 +78,9 @@ const STRINGS = {
 		"alert_invalid-maturity": "{id}: invalid maturity '{value}'",
 		"alert_invalid-status": "{id}: invalid status '{value}' (only pending | done)",
 		"alert_invalid-duration": "{id}: invalid duration '{value}' (use hours as a number)",
+		"alert_maturity-not-ready-on-next":
+			"{id}: next task in lane {lane} has maturity '{maturity}', not 'ready'",
+		"alert_maturity-missing-on-next": "{id}: next task in lane {lane} has no maturity",
 		"alert_missing-parent": "{id}: parent not found '{ref}'",
 		"alert_missing-dependency": "{id}: depends_on not found '{ref}'",
 		"alert_missing-absorbed": "{id}: absorbs not found '{ref}'",
@@ -179,6 +182,9 @@ const STRINGS = {
 		"alert_invalid-maturity": "{id}: madurez inválida '{value}'",
 		"alert_invalid-status": "{id}: estado inválido '{value}' (solo pending | done)",
 		"alert_invalid-duration": "{id}: duración inválida '{value}' (usa horas como número)",
+		"alert_maturity-not-ready-on-next":
+			"{id}: la próxima tarea del carril {lane} tiene maturity '{maturity}', no 'ready'",
+		"alert_maturity-missing-on-next": "{id}: la próxima tarea del carril {lane} no declara maturity",
 		"alert_missing-parent": "{id}: parent inexistente '{ref}'",
 		"alert_missing-dependency": "{id}: depends_on inexistente '{ref}'",
 		"alert_missing-absorbed": "{id}: absorbs inexistente '{ref}'",

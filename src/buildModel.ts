@@ -408,6 +408,23 @@ export function buildModel(input: BuildModelInput): Model {
 		};
 	}
 
+	for (const [laneId, lane] of Object.entries(laneModels)) {
+		if (!lane.next) continue;
+		const task = byId.get(lane.next);
+		const raw = rawById.get(lane.next);
+		if (!task || (raw?.maturity && !isMaturity(raw.maturity))) continue;
+		if (!task.maturity) {
+			alert("maturity-missing-on-next", "warning", { lane: laneId, id: lane.next }, lane.next);
+		} else if (task.maturity !== "ready") {
+			alert(
+				"maturity-not-ready-on-next",
+				"warning",
+				{ lane: laneId, id: task.id, maturity: task.maturity },
+				task.id
+			);
+		}
+	}
+
 	const nextByLane = new Set<string>();
 	for (const lane of Object.values(laneModels)) {
 		if (lane.next) nextByLane.add(lane.next);

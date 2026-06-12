@@ -19,7 +19,7 @@ function baseData(): BuildModelInput {
 				areas: ["back"],
 				zones: ["Z1"],
 			},
-			{ id: "T2", type: "feat", status: "pending", duration: 24, depends_on: ["T1"] },
+			{ id: "T2", type: "feat", status: "pending", maturity: "ready", duration: 24, depends_on: ["T1"] },
 			{ id: "T3", type: "maint", status: "pending", duration: 4, depends_on: ["T2"] },
 			{ id: "E", type: "combo", status: "pending", maturity: "ready", duration: 16 },
 			{
@@ -116,6 +116,87 @@ describe("buildModel", () => {
 	test("proximo del carril = primera tarea libre", () => {
 		const m = buildModel(baseData());
 		expect(m.lanes.A.next).toBe("T2");
+	});
+
+	test("alerta si la próxima tarea del carril no está ready", () => {
+		for (const maturity of ["raw", "draft"] as const) {
+			const datos = baseData();
+			const next = datos.tasks.find((tarea) => tarea.id === "T2");
+			if (next) next.maturity = maturity;
+
+			const m = buildModel(datos);
+			expect(m.alerts).toContainEqual({
+				code: "maturity-not-ready-on-next",
+				severity: "warning",
+				taskId: "T2",
+				params: { lane: "A", id: "T2", maturity },
+			});
+		}
+	});
+
+	test("alerta si la próxima tarea del carril no declara maturity", () => {
+		const datos = baseData();
+		const next = datos.tasks.find((tarea) => tarea.id === "T2");
+		if (next) delete next.maturity;
+
+		const m = buildModel(datos);
+		expect(m.alerts).toContainEqual({
+			code: "maturity-missing-on-next",
+			severity: "warning",
+			taskId: "T2",
+			params: { lane: "A", id: "T2" },
+		});
+
+		if (next) next.maturity = "";
+		const empty = buildModel(datos);
+		expect(empty.alerts).toContainEqual({
+			code: "maturity-missing-on-next",
+			severity: "warning",
+			taskId: "T2",
+			params: { lane: "A", id: "T2" },
+		});
+	});
+
+	test("no duplica invalid-maturity en la próxima tarea", () => {
+		const datos = baseData();
+		const next = datos.tasks.find((tarea) => tarea.id === "T2");
+		if (next) next.maturity = "nope";
+
+		const m = buildModel(datos);
+		expect(m.alerts.filter((a) => a.code === "invalid-maturity")).toHaveLength(1);
+		expect(m.alerts.some((a) => a.code === "maturity-not-ready-on-next")).toBe(false);
+		expect(m.alerts.some((a) => a.code === "maturity-missing-on-next")).toBe(false);
+	});
+
+	test("no alerta por maturity en tareas que no son la próxima del carril ni están en backlog", () => {
+		const datos = baseData();
+		datos.lanes.A.queue = ["T1", "T2", "T3"];
+		const nonNext = datos.tasks.find((tarea) => tarea.id === "T3");
+		if (nonNext) nonNext.maturity = "raw";
+		datos.tasks.push({ id: "B1", type: "feat", status: "pending", maturity: "draft", duration: 8 });
+
+		const m = buildModel(datos);
+		expect(m.lanes.A.next).toBe("T2");
+		expect(m.alerts.some((a) => a.code === "maturity-not-ready-on-next")).toBe(false);
+		expect(m.alerts.some((a) => a.code === "maturity-missing-on-next")).toBe(false);
+	});
+
+	test("en una queue con combo evalúa la maturity de la hoja next", () => {
+		const datos = baseData();
+		datos.lanes.A.queue = ["E"];
+		const combo = datos.tasks.find((tarea) => tarea.id === "E");
+		const leaf = datos.tasks.find((tarea) => tarea.id === "H1");
+		if (combo) combo.maturity = "ready";
+		if (leaf) leaf.maturity = "draft";
+
+		const m = buildModel(datos);
+		expect(m.lanes.A.next).toBe("H1");
+		expect(m.alerts).toContainEqual({
+			code: "maturity-not-ready-on-next",
+			severity: "warning",
+			taskId: "H1",
+			params: { lane: "A", id: "H1", maturity: "draft" },
+		});
 	});
 
 	test("contenedor: children, isContainer y horas derivadas de children", () => {
@@ -305,9 +386,22 @@ describe("buildModel", () => {
 		).toBe(true);
 	});
 
-	test("fixture demo-app: válido y centrado en escala horaria", () => {
+	test("fixture demo-app: centrado en escala horaria y con alerts next esperadas", () => {
 		const m = buildModel(loadDemo());
-		expect(m.alerts).toEqual([]);
+		expect(m.alerts).toEqual([
+			{
+				code: "maturity-not-ready-on-next",
+				severity: "warning",
+				taskId: "TIME-01",
+				params: { lane: "B", id: "TIME-01", maturity: "raw" },
+			},
+			{
+				code: "maturity-not-ready-on-next",
+				severity: "warning",
+				taskId: "TIME-06",
+				params: { lane: "C", id: "TIME-06", maturity: "draft" },
+			},
+		]);
 		const leaves = [...m.tasks.values()].filter((task) => !task.isContainer);
 		const combos = [...m.tasks.values()].filter((task) => task.isContainer);
 		expect(leaves).toHaveLength(16);

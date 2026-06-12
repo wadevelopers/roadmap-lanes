@@ -17,6 +17,8 @@ export type AlertCode =
 	| "invalid-maturity"
 	| "invalid-status"
 	| "invalid-duration"
+	| "maturity-not-ready-on-next"
+	| "maturity-missing-on-next"
 	| "missing-parent"
 	| "missing-dependency"
 	| "missing-absorbed"
