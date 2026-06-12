@@ -30,6 +30,11 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 - **Visualización con herramientas de Obsidian — DOCUMENTADO** (jun 2026). El grafo nativo,
   backlinks y Breadcrumbs son vistas complementarias sobre los mismos wikilinks/frontmatter, pero
   no reemplazan el tablero de RL. Ver `guias/VISUALIZACION_OBSIDIAN.md`.
+- **Estado escrito `in-progress` para hojas — DESCARTADO, YAGNI** (jun 2026). Evaluado al mapear
+  un caso real con 2 carriles paralelos ("¿qué está haciendo cada carril ahora?"). Se descarta:
+  RL organiza **orden y prioridad**, no tracking de ejecución (VISION §10); el estado virtual
+  `next` + la asignación a lane ya responden lo accionable; y un `in-progress` escrito sería
+  estado mantenido a mano que alguien debe recordar poner/sacar — el anti-patrón que RL elimina.
 - **COMBO + duración en horas — ADOPTADO** (jun 2026). Una tarea con hijos se modela como
   `type: combo` y declara `duration`, `maturity` y `status` para Obsidian/Bases/grafo; RL sigue
   derivando los cálculos funcionales desde las hojas y alerta si esos campos se desincronizan.
@@ -38,11 +43,30 @@ Lista consultable de decisiones tomadas y pendientes/deuda detectada.
 
 ## Próximos pasos (retomar acá)
 
-> Punto de continuación del proyecto. **Objetivo de la próxima versión: poder trabajar 100% desde la
-> aplicación**, sin editar `lanes.yaml` / `taxonomy.yaml` a mano. La publicación en la comunidad de
-> Obsidian se hace recién con la **v0.4.0**.
+> Punto de continuación del proyecto. **Objetivo: cerrar el loop agéntico** — RL lo opera una IA
+> que escribe los documentos y el humano mira el tablero, pero hoy las herramientas y el contrato
+> del agente no existen. Plan de ejecución, en orden: **fix del watcher** (bug de auto-create vs
+> git, abajo — chico, sin plan, va primero porque muerde a cualquier consumidor con git) →
+> `06_ALERTA_MADUREZ_EN_TURNO` (ready) → `07_VALIDADOR_CLI` (ready — 5 decisiones cerradas) →
+> `08_GUIA_AGENTE` → `09_INTEGRACION_GIT_POR_LANE`. Primer consumidor real: wadev (migración
+> completada 2026-06-11; los hallazgos ya están inyectados en los planes).
 
-### v0.4.0 — UI de configuración de carriles y taxonomía
+### Bug detectado — la auto-creación de `lanes.yaml`/`taxonomy.yaml` corre contra git (jun 2026)
+
+Caso real (migración wadev, vault dentro de un repo): al hacer `git checkout` a una rama que no
+tiene la carpeta del roadmap, el watcher del plugin **recrea al instante** `lanes.yaml` y
+`taxonomy.yaml` con defaults; esos archivos untracked bloquean el `git merge` posterior
+(*"untracked working tree files would be overwritten"*), y borrarlos antes de mergear no
+alcanza — el watcher los recrea en milisegundos y gana la carrera. Workaround actual: cerrar
+Obsidian (o desactivar RL) durante la operación git. Fix candidato: crear los defaults solo al
+**cargar el plugin / abrir el tablero** (o por comando explícito), nunca reactivamente desde el
+watcher. Encaja con el plan 09 (vaults dentro de repos git son el caso de uso principal).
+
+### Algún día — UI de configuración de carriles y taxonomía (sin versión asignada)
+
+> Degradado de "próxima versión (v0.4.0)" a "algún día" el 2026-06-11: el usuario actual no lo
+> necesita (los archivos los escribe una IA; editar YAML no es fricción para ella). Cobra valor
+> recién con usuarios de la comunidad que operen RL a mano — re-priorizar si aparece esa demanda.
 
 Flujo deseado para arrancar un proyecto nuevo, todo desde la app:
 
@@ -63,7 +87,7 @@ Flujo deseado para arrancar un proyecto nuevo, todo desde la app:
 Esto implica que el plugin **escriba** en `lanes.yaml` / `taxonomy.yaml` (hoy solo los **lee**;
 escritura viable con `vault.adapter.write` / `vault.modify`).
 
-### Publicar en la comunidad de Obsidian (hacer al salir v0.4.0)
+### Publicar en la comunidad de Obsidian (cuándo: a decidir — ya no atado a v0.4.0)
 
 Ya hecho: repo público + release.
 - Repo: https://github.com/wadevelopers/roadmap-lanes
@@ -82,7 +106,7 @@ Falta el **PR a `obsidianmd/obsidian-releases`**, agregando esta entrada al **fi
 }
 ```
 
-Recordar para el release de v0.4.0:
+Recordar para el release que acompañe la publicación:
 - Subir versión en `manifest.json`, `package.json` y `versions.json` (mapea versión → `minAppVersion`).
 - Crear un GitHub Release con **tag sin `v`** que coincida exacto con `manifest.json` (ej. `0.4.0`),
   adjuntando `main.js` + `manifest.json` + `styles.css` como **assets sueltos** (no zip).
