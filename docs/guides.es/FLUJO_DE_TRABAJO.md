@@ -152,6 +152,60 @@ No todo descubrimiento merece un `.md`. Si se arregla en el momento (cambio chic
 diseño), se arregla y se commitea — no entra al tablero. El archivo es para lo que **queda
 pendiente**, hay que **priorizar** contra otras tareas, o hay que **madurar**.
 
+## Patrones de uso real
+
+Situaciones que el flujo básico no cubre pero que aparecen apenas un backlog tiene dependencias
+parciales. Aplican a ambos actores (humano y [agente](FLUJO_DEL_AGENTE.md)).
+
+### Absorción parcial → partir la tarea
+
+`absorbs` es todo-o-nada. Cuando una tarea registrada se resuelve **por partes en lugares distintos**
+(una mitad dentro de un bloque grande, la otra mitad de forma independiente), no intentar absorberla
+a medias: **partir la tarea en dos archivos** con ids derivados (`X-A` / `X-B`) y que cada parte siga
+su propio camino.
+
+### Plan compartido entre N tareas
+
+Cuando un solo documento de plan cubre varias tareas (subetapas de una tarea grande, fases de un
+combo con secciones comunes), partirlo duplicaría contexto. El modelado correcto: cada tarea lleva
+frontmatter + un resumen + un puntero a su sección, y el **documento compartido vive fuera de la
+carpeta del roadmap** (todo `.md` adentro es una tarea). Es la excepción legítima a "el cuerpo es el
+plan completo".
+
+### Gate contra una fase → la fase se vuelve tarea hija
+
+Si una dependencia cross-lane apunta a una *parte* de otra tarea ("necesito las fases 0–3 de X"),
+modelar esas fases como **hijas del combo X** y que el `depends_on` apunte a la fase exacta. Así el
+gate es computable en vez de prosa.
+
+### Migrar desde un índice manual existente
+
+*(Solo para consumidores que ya traían un índice/roadmap manual — un proyecto greenfield lo saltea.)*
+Playbook validado:
+
+1. **Carriles activos primero** — el trabajo en ejecución pasa a tareas/lanes y el humano valida el
+   tablero antes de seguir.
+2. **Backlog** — cada entrada del índice viejo pasa a tarea `raw` / `draft` con su texto como body.
+3. **Congelar el índice viejo** como archivo histórico (un header que apunta al tablero; las entradas
+   cerradas no se reescriben).
+4. **Reescribir las reglas del proyecto** que mandaban a escribir en el índice.
+
+Numeración durante la transición: el siguiente correlativo es el **máximo entre el tablero y el
+índice congelado** — nunca reusar números. (Un proyecto que arranca en RL no tiene índice congelado:
+su numeración mira solo el tablero.)
+
+### Fin de vida de las tareas `done` (convención de borrado)
+
+Dos fases **separadas**:
+
+- **Cerrar** una tarea es solo `status: done` (nunca incluye borrar).
+- **Borrar** tareas `done` viejas es una fase posterior e independiente, que ocurre únicamente con
+  autorización explícita del humano o como tarea de limpieza dedicada (ej. al cortar un release, o
+  cuando la columna done estorba — criterio del humano, nunca iniciativa del agente).
+
+Git preserva el historial; el relato curado vive en el `CHANGELOG` del proyecto consumidor. El
+tablero muestra el **estado actual**, no el historial (ver [Qué RL NO reemplaza](#qué-rl-no-reemplaza)).
+
 ## Qué reemplaza cada pieza del índice manual
 
 | Índice maestro (a mano) | Roadmap Lanes (derivado / visual) |

@@ -152,6 +152,60 @@ Not every discovery deserves a `.md`. If it's fixed on the spot (small change, n
 it and commit — it doesn't enter the board. The file is for what **stays pending**, must be
 **prioritized** against other tasks, or must be **matured**.
 
+## Patterns from real use
+
+Situations the basic flow doesn't cover but that show up the moment a backlog has partial
+dependencies. They apply to both actors (human and [agent](AGENT_WORKFLOW.md)).
+
+### Partial absorption → split the task
+
+`absorbs` is all-or-nothing. When a registered task is resolved **in parts in different places** (one
+half inside a large block, the other half independently), don't try to half-absorb it: **split the
+task into two files** with derived ids (`X-A` / `X-B`) and let each part follow its own path.
+
+### A plan shared across N tasks
+
+When a single plan document covers several tasks (sub-stages of a large task, phases of a combo with
+common sections), splitting it would duplicate context. The correct modeling: each task carries
+frontmatter + a summary + a pointer to its section, and the **shared document lives outside the
+roadmap folder** (every `.md` inside it is a task). This is the legitimate exception to "the body is
+the complete plan".
+
+### A gate against a phase → the phase becomes a child task
+
+If a cross-lane dependency points at a *part* of another task ("I need phases 0–3 of X"), model those
+phases as **children of combo X** and make the `depends_on` point at the exact phase. That way the
+gate is computable instead of prose.
+
+### Migrating from an existing manual index
+
+*(Only for consumers that already carried a manual index/roadmap — a greenfield project skips this.)*
+Validated playbook:
+
+1. **Active lanes first** — in-progress work becomes tasks/lanes and the human validates the board
+   before going on.
+2. **Backlog** — each entry of the old index becomes a `raw` / `draft` task with its text as the
+   body.
+3. **Freeze the old index** as a historical file (a header pointing at the board; closed entries are
+   not rewritten).
+4. **Rewrite the project rules** that used to mandate writing in the index.
+
+Numbering during the transition: the next sequential number is the **maximum across the board and the
+frozen index** — never reuse numbers. (A project starting in RL has no frozen index: its numbering
+looks only at the board.)
+
+### End-of-life of `done` tasks (deletion convention)
+
+Two **separate** phases:
+
+- **Closing** a task is only `status: done` (it never includes deleting).
+- **Deleting** old `done` tasks is a later, independent phase, done only with explicit human
+  authorization or as a dedicated cleanup task (e.g. cutting a release, or when the done column gets
+  in the way — the human's call, never the agent's initiative).
+
+Git preserves the history; the curated narrative lives in the consumer project's `CHANGELOG`. The
+board shows the **current state**, not the history (see [What RL does NOT replace](#what-rl-does-not-replace)).
+
 ## What each piece of the manual index becomes
 
 | Master index (by hand) | Roadmap Lanes (derived / visual) |

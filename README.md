@@ -68,6 +68,7 @@ Full process in the [workflow guide](docs/guides/WORKFLOW.md).
 ## Guides
 
 - [Workflow](docs/guides/WORKFLOW.md) — how to discover, document and run work with RL.
+- [Agent workflow](docs/guides/AGENT_WORKFLOW.md) — the contract for an AI agent driving the board.
 - [Board legend](docs/guides/BOARD_LEGEND.md) — what every color, icon and signal means.
 - [Visualization](docs/guides/VISUALIZATION.md) — the native graph and Bases over the same data.
 

@@ -1,8 +1,9 @@
 # PLAN — Guía del agente IA + huecos de WORKFLOW detectados en uso real
 
-> Estado: **draft** — el contenido está identificado; falta redactarlo. Conviene ejecutarlo junto
-> con (o inmediatamente después de) el plan 07, porque la guía documenta el validador como
-> herramienta central del agente. Revisión externa del 2026-06-12 aplicada (6 ajustes: --report
+> Estado: **ejecutado** (2026-06-12) — guías `AGENT_WORKFLOW.md` / `FLUJO_DEL_AGENTE.md` creadas
+> (EN+ES), los 5 patrones de §3 aplicados a `WORKFLOW.md` / `FLUJO_DE_TRABAJO.md` y enlaces en
+> ambos README. Sin sección git (se difiere al plan 09). Revisión externa del 2026-06-12 aplicada
+> previo a la redacción (6 ajustes: --report
 > ya decidido, fórmula de next corregida contra código, fases cierre/borrado separadas, snapshot
 > del template wadev en §5, conteo de parches, paridad EN/ES explícita en los parches de §3).
 > **Desacople de wadev (2026-06-12)**: la guía es para un proyecto que arranca de cero — el

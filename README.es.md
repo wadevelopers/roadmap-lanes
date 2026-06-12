@@ -69,6 +69,7 @@ El proceso completo está en la [guía de flujo de trabajo](docs/guides.es/FLUJO
 ## Guías
 
 - [Flujo de trabajo](docs/guides.es/FLUJO_DE_TRABAJO.md) — cómo descubrir, documentar y ejecutar el trabajo.
+- [Flujo del agente](docs/guides.es/FLUJO_DEL_AGENTE.md) — el contrato para un agente IA que opera el tablero.
 - [Leyenda del tablero](docs/guides.es/LEYENDA_DEL_TABLERO.md) — qué significa cada color, ícono y señal.
 - [Visualización](docs/guides.es/VISUALIZACION.md) — el grafo nativo y Bases sobre los mismos datos.
 
