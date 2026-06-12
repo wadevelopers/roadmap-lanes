@@ -17,6 +17,8 @@ export type AlertCode =
 	| "invalid-maturity"
 	| "invalid-status"
 	| "invalid-duration"
+	| "missing-frontmatter"
+	| "empty-relation-field"
 	| "maturity-not-ready-on-next"
 	| "maturity-missing-on-next"
 	| "missing-parent"
@@ -131,6 +133,7 @@ export interface BuildModelInput {
 	lanes: LanesInput;
 	hoursPerDay?: number;
 	projectName?: string;
+	sourceAlerts?: Alert[];
 }
 
 export interface Model {

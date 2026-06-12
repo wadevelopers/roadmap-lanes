@@ -19,8 +19,9 @@ dist/
 .env
 .env.local
 
-# Salida de build del plugin (main.js lo genera esbuild desde main.ts)
+# Salida de build (la genera esbuild desde *.ts)
 main.js
+validate.js
 *.js.map
 
 # Datos locales del plugin en el vault

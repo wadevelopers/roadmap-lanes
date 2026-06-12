@@ -3,11 +3,18 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
+	normalizePath,
 	type App,
 	type TAbstractFile,
 	type WorkspaceLeaf,
 } from "obsidian";
 
+import {
+	ACCEPTED_ALERTS_FILENAME,
+	normalizeAcceptedAlertFingerprints,
+	parseAcceptedAlertsYaml,
+	serializeAcceptedAlerts,
+} from "./src/acceptedAlerts";
 import { alertFingerprint } from "./src/alerts";
 import { buildModel } from "./src/buildModel";
 import { ensureRoadmapStructure, isRoadmapSourcePath, loadRoadmapData } from "./src/dataSource";
@@ -35,11 +42,6 @@ const VIEW_TYPE_ROADMAP = "roadmap-lanes-view";
 
 interface RoadmapLanesPluginData extends RoadmapLanesSettings {
 	acceptedAlertFingerprints?: string[];
-}
-
-function normalizeAcceptedAlertFingerprints(value: unknown): Set<string> {
-	if (!Array.isArray(value)) return new Set();
-	return new Set(value.filter((item): item is string => typeof item === "string" && item.length > 0));
 }
 
 class RoadmapLanesView extends ItemView {
@@ -228,11 +230,13 @@ export default class RoadmapLanesPlugin extends Plugin {
 	translate: Translator = createTranslator();
 	settings: RoadmapLanesSettings = { ...DEFAULT_SETTINGS };
 	private acceptedAlertFingerprints = new Set<string>();
+	private legacyAcceptedAlertFingerprints = new Set<string>();
 
 	async onload(): Promise<void> {
 		this.translate = createTranslator();
 		await this.loadSettings();
 		await ensureRoadmapStructure(this.app, this.settings);
+		await this.loadRoadmapAcceptedAlerts();
 		this.registerView(
 			VIEW_TYPE_ROADMAP,
 			(leaf) => new RoadmapLanesView(leaf, this)
@@ -268,7 +272,7 @@ export default class RoadmapLanesPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		const data = (await this.loadData()) as RoadmapLanesPluginData | null;
 		this.settings = normalizeSettings(data);
-		this.acceptedAlertFingerprints = normalizeAcceptedAlertFingerprints(
+		this.legacyAcceptedAlertFingerprints = normalizeAcceptedAlertFingerprints(
 			data?.acceptedAlertFingerprints
 		);
 	}
@@ -277,6 +281,7 @@ export default class RoadmapLanesPlugin extends Plugin {
 		this.settings = normalizeSettings(this.settings);
 		await this.savePluginData();
 		await ensureRoadmapStructure(this.app, this.settings);
+		await this.loadRoadmapAcceptedAlerts();
 	}
 
 	async setDetailPanelWidth(width: number): Promise<void> {
@@ -303,16 +308,54 @@ export default class RoadmapLanesPlugin extends Plugin {
 		const fingerprint = alertFingerprint(alert);
 		if (this.acceptedAlertFingerprints.has(fingerprint)) return;
 		this.acceptedAlertFingerprints.add(fingerprint);
-		await this.savePluginData();
+		await this.saveRoadmapAcceptedAlerts();
 		this.refreshOpenViews();
 	}
 
 	private async savePluginData(): Promise<void> {
 		this.settings = normalizeSettings(this.settings);
-		await this.saveData({
-			...this.settings,
-			acceptedAlertFingerprints: [...this.acceptedAlertFingerprints].sort(),
-		} satisfies RoadmapLanesPluginData);
+		await this.saveData({ ...this.settings } satisfies RoadmapLanesPluginData);
+	}
+
+	private acceptedAlertsPath(): string {
+		return normalizePath(`${this.settings.roadmapFolder}/${ACCEPTED_ALERTS_FILENAME}`);
+	}
+
+	private async loadRoadmapAcceptedAlerts(): Promise<void> {
+		const path = this.acceptedAlertsPath();
+		const exists = await this.app.vault.adapter.exists(path);
+		if (!exists) {
+			this.acceptedAlertFingerprints = new Set(this.legacyAcceptedAlertFingerprints);
+			if (this.legacyAcceptedAlertFingerprints.size > 0) {
+				await this.saveRoadmapAcceptedAlerts();
+				this.legacyAcceptedAlertFingerprints = new Set();
+				await this.savePluginData();
+			}
+			return;
+		}
+
+		try {
+			const raw = await this.app.vault.adapter.read(path);
+			const result = parseAcceptedAlertsYaml(raw, path);
+			if (result.warning) console.warn(`Roadmap Lanes: ${result.warning}`);
+			this.acceptedAlertFingerprints = result.fingerprints;
+		} catch (error) {
+			console.warn(`Roadmap Lanes: could not read ${path}; treating accepted alerts as empty`, error);
+			this.acceptedAlertFingerprints = new Set();
+		}
+
+		if (this.legacyAcceptedAlertFingerprints.size > 0) {
+			this.legacyAcceptedAlertFingerprints = new Set();
+			await this.savePluginData();
+		}
+	}
+
+	private async saveRoadmapAcceptedAlerts(): Promise<void> {
+		await ensureRoadmapStructure(this.app, this.settings);
+		await this.app.vault.adapter.write(
+			this.acceptedAlertsPath(),
+			serializeAcceptedAlerts(this.acceptedAlertFingerprints)
+		);
 	}
 
 	private registerRoadmapEvents(): void {

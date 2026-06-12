@@ -1,7 +1,7 @@
 import { MarkdownRenderer, type App, type Component } from "obsidian";
 
 import { FILTERABLE_TYPES, MATURITIES, type Alert, type Model, type Severity, type Task } from "./types";
-import type { TranslationKey, Translator } from "./i18n";
+import { formatAlert, type TranslationKey, type Translator } from "./messages";
 import {
 	DETAIL_PANEL_MAX_WIDTH,
 	DETAIL_PANEL_MIN_WIDTH,
@@ -959,14 +959,6 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filters: Filters
 	);
 
 	bar.createEl("span", { cls: "rl-filter-count" });
-}
-
-function formatAlert(alert: Alert, t: Translator): string {
-	const template = t(`alert_${alert.code}` as TranslationKey);
-	return template.replace(/\{(\w+)\}/g, (_, key) => {
-		const value = alert.params?.[key];
-		return value === undefined ? `{${key}}` : String(value);
-	});
 }
 
 function countBySeverity(alerts: Alert[]): Record<Severity, number> {

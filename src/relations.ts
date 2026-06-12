@@ -1,0 +1,26 @@
+export const RELATION_FIELDS = ["parent", "absorbs", "depends_on"] as const;
+
+export type RelationField = (typeof RELATION_FIELDS)[number];
+
+export function basenameFromLink(link: string): string {
+	const clean = link.split("#")[0].replace(/\.md$/i, "");
+	const parts = clean.split("/");
+	return parts[parts.length - 1] || clean;
+}
+
+export function normalizeRelationValue(value: unknown): string[] {
+	const values = Array.isArray(value) ? value : value ? [value] : [];
+	return values
+		.filter((item): item is string => typeof item === "string")
+		.map((item) => {
+			const match = item.match(/^\[\[([^|\]#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]$/);
+			return basenameFromLink(match ? match[1] : item);
+		})
+		.filter((item) => item.length > 0);
+}
+
+export function hasExplicitEmptyRelation(value: unknown): boolean {
+	if (typeof value === "string") return value === "";
+	if (!Array.isArray(value)) return false;
+	return value.some((item) => item === "");
+}

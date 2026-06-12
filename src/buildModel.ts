@@ -98,7 +98,7 @@ function normalizeLanes(lanes: LanesInput): LanesInput {
 }
 
 export function buildModel(input: BuildModelInput): Model {
-	const alerts: Alert[] = [];
+	const alerts: Alert[] = [...(input.sourceAlerts || [])];
 	const alert = (
 		code: AlertCode,
 		severity: Severity,

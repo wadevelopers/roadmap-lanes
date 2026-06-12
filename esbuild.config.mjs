@@ -9,10 +9,20 @@ main.js es GENERADO por esbuild desde main.ts. No editar a mano.
 
 const prod = process.argv[2] === "production";
 
-const context = await esbuild.context({
+const common = {
+	bundle: true,
+	format: "cjs",
+	target: "es2018",
+	logLevel: "info",
+	sourcemap: prod ? false : "inline",
+	treeShaking: true,
+	minify: prod,
+};
+
+const pluginContext = await esbuild.context({
+	...common,
 	banner: { js: banner },
 	entryPoints: ["main.ts"],
-	bundle: true,
 	external: [
 		"obsidian",
 		"electron",
@@ -29,18 +39,21 @@ const context = await esbuild.context({
 		"@lezer/lr",
 		...builtins,
 	],
-	format: "cjs",
-	target: "es2018",
-	logLevel: "info",
-	sourcemap: prod ? false : "inline",
-	treeShaking: true,
 	outfile: "main.js",
-	minify: prod,
+});
+
+const validateContext = await esbuild.context({
+	...common,
+	entryPoints: ["validate.ts"],
+	platform: "node",
+	external: builtins,
+	outfile: "validate.js",
 });
 
 if (prod) {
-	await context.rebuild();
+	await Promise.all([pluginContext.rebuild(), validateContext.rebuild()]);
+	await Promise.all([pluginContext.dispose(), validateContext.dispose()]);
 	process.exit(0);
 } else {
-	await context.watch();
+	await Promise.all([pluginContext.watch(), validateContext.watch()]);
 }

@@ -110,6 +110,9 @@ Inconsistencies in the roadmap data, grouped by **severity**:
 A warning also appears when the **Next** task in a lane is not `maturity: ready` or does not declare
 `maturity`: the task can stay in the lane, but its plan should be promoted before execution.
 
+RL also reports source hygiene issues here: task notes without frontmatter, and relation fields like
+`parent`, `depends_on` or `absorbs` declared as an explicit empty string.
+
 Warnings/info come with an **Accept** button to silence that specific alert; it reappears if the values
 change.
 

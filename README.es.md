@@ -52,6 +52,7 @@ El proceso completo está en la [guía de flujo de trabajo](docs/guides.es/FLUJO
   iguales para leer solo el orden.
 - **Solape entre carriles** y **dependencias cruzadas**, coloreados por severidad.
 - **Alertas del modelo** (referencias rotas, ids duplicados, valores inválidos…), que se pueden aceptar.
+- **Validador CLI** para agentes y hooks: corre las mismas alertas del modelo fuera de Obsidian.
 - **Panel de detalle**, **filtros** (texto / tipo / madurez / columnas) y secciones de coordinación
   **colapsables**.
 - Convive con el **grafo** nativo y con **Bases** sobre el mismo frontmatter.
@@ -80,8 +81,16 @@ para contribuidores.
 
 ```sh
 npm install
-npm run dev     # compila main.ts -> main.js en modo watch
+npm run dev     # compila main.ts -> main.js y validate.ts -> validate.js en modo watch
 npm run build   # build de producción
 ```
 
 Enlazá el repo (symlink) en `<vault>/.obsidian/plugins/roadmap-lanes/` para probarlo en vivo en un vault.
+
+Después de `npm run build`, validá una carpeta roadmap desde la terminal:
+
+```sh
+node validate.js <vault>/roadmap --report --strict
+```
+
+Usá `--json` para tooling y `--lang es` para mensajes en castellano.

@@ -4,6 +4,8 @@ import * as yaml from "js-yaml";
 import type { BuildModelInput, LanesInput, RawTask, Taxonomy } from "./types";
 import { DEFAULT_SETTINGS, normalizeRoadmapFolder } from "./settings";
 import { DEFAULT_HOURS_PER_DAY, normalizeHoursPerDay, type HoursPerDay } from "./time";
+import { basenameFromLink, normalizeRelationValue, type RelationField } from "./relations";
+import { hasFrontmatterBlock, parseTaskSource, type ParsedTaskSource } from "./taskSource";
 
 export interface RoadmapDataSourceOptions {
 	roadmapFolder?: string;
@@ -71,73 +73,29 @@ export async function ensureRoadmapStructure(
 	await ensureFile(app, roadmapPath(resolved, TAXONOMY_FILENAME), DEFAULT_TAXONOMY);
 }
 
-function basenameFromLink(link: string): string {
-	const clean = link.split("#")[0].replace(/\.md$/i, "");
-	const parts = clean.split("/");
-	return parts[parts.length - 1] || clean;
-}
-
-function normalizeRelationValue(value: unknown): string[] {
-	const values = Array.isArray(value) ? value : value ? [value] : [];
-	return values
-		.filter((item): item is string => typeof item === "string")
-		.map((item) => {
-			const match = item.match(/^\[\[([^|\]#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]$/);
-			return basenameFromLink(match ? match[1] : item);
-		})
-		.filter((item) => item.length > 0);
-}
-
-function linksForKey(cache: CachedMetadata | null, key: string): FrontmatterLinkCache[] {
+function linksForKey(cache: CachedMetadata | null, key: RelationField): FrontmatterLinkCache[] {
 	return (cache?.frontmatterLinks || []).filter(
 		(link) => link.key === key || link.key.startsWith(`${key}.`)
 	);
 }
 
-function relationList(cache: CachedMetadata | null, key: string, fallback: unknown): string[] {
+function relationList(cache: CachedMetadata | null, key: RelationField, fallback: unknown): string[] {
 	const links = linksForKey(cache, key);
 	if (links.length > 0) return links.map((link) => basenameFromLink(link.link));
 	return normalizeRelationValue(fallback);
 }
 
-function relationSingle(cache: CachedMetadata | null, key: string, fallback: unknown): string | null {
-	return relationList(cache, key, fallback)[0] || null;
-}
-
-function stringList(value: unknown): string[] {
-	if (!Array.isArray(value)) return [];
-	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
-}
-
-function markdownBody(raw: string): string {
-	const lines = raw.split(/\r?\n/);
-	if (lines[0]?.trim() !== "---") return raw.trim();
-	const end = lines.indexOf("---", 1);
-	if (end === -1) return "";
-	return lines.slice(end + 1).join("\n").trim();
-}
-
-async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): Promise<RawTask> {
+async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): Promise<ParsedTaskSource> {
 	const frontmatter = cache?.frontmatter || {};
 	const raw = await app.vault.cachedRead(file);
-	return {
-		id: typeof frontmatter.id === "string" ? frontmatter.id : file.basename,
-		title: typeof frontmatter.title === "string" ? frontmatter.title : file.basename,
-		type: typeof frontmatter.type === "string" ? frontmatter.type : undefined,
-		maturity: typeof frontmatter.maturity === "string" ? frontmatter.maturity : undefined,
-		status: typeof frontmatter.status === "string" ? frontmatter.status : undefined,
-		duration:
-			typeof frontmatter.duration === "number" || typeof frontmatter.duration === "string"
-				? frontmatter.duration
-				: undefined,
-		areas: stringList(frontmatter.areas),
-		zones: stringList(frontmatter.zones),
-		parent: relationSingle(cache, "parent", frontmatter.parent),
-		absorbs: relationList(cache, "absorbs", frontmatter.absorbs),
-		depends_on: relationList(cache, "depends_on", frontmatter.depends_on),
-		body: markdownBody(raw),
-		_file: file.path,
-	};
+	return parseTaskSource({
+		file: file.path,
+		basename: file.basename,
+		raw,
+		frontmatter,
+		hasFrontmatter: hasFrontmatterBlock(raw),
+		relationList: (key, fallback) => relationList(cache, key, fallback),
+	});
 }
 
 async function loadYaml<T>(app: App, path: string, fallback: T): Promise<T> {
@@ -165,9 +123,11 @@ export async function loadRoadmapData(
 		.filter((file) => file.path.startsWith(folderPrefix))
 		.sort((a, b) => a.path.localeCompare(b.path));
 
-	const tasks = await Promise.all(
+	const parsedTasks = await Promise.all(
 		files.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
 	);
+	const tasks: RawTask[] = parsedTasks.map((parsed) => parsed.task);
+	const sourceAlerts = parsedTasks.flatMap((parsed) => parsed.alerts);
 	const taxonomy = await loadYaml<Taxonomy>(app, roadmapPath(resolved, TAXONOMY_FILENAME), {
 		areas: {},
 	});
@@ -185,6 +145,7 @@ export async function loadRoadmapData(
 		taxonomy,
 		lanes: lanesYaml.lanes || {},
 		hoursPerDay: resolved.hoursPerDay,
+		sourceAlerts,
 	};
 }
 

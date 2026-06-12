@@ -51,6 +51,7 @@ Full process in the [workflow guide](docs/guides/WORKFLOW.md).
   the order.
 - **Lane overlap** and **cross-lane gates**, colored by severity.
 - **Model alerts** (broken refs, duplicate ids, invalid values…), dismissable.
+- **CLI validator** for agents and hooks: run the same model alerts outside Obsidian.
 - **Detail panel**, **filters** (text / type / maturity / columns) and **collapsible** coordination
   sections.
 - Works alongside the native **graph** and **Bases** over the same frontmatter.
@@ -79,8 +80,16 @@ and for contributors.
 
 ```sh
 npm install
-npm run dev     # build main.ts -> main.js in watch mode
+npm run dev     # build main.ts -> main.js and validate.ts -> validate.js in watch mode
 npm run build   # production build
 ```
 
 Symlink the repo into `<vault>/.obsidian/plugins/roadmap-lanes/` to test live in a vault.
+
+After `npm run build`, validate a roadmap folder from the command line:
+
+```sh
+node validate.js <vault>/roadmap --report --strict
+```
+
+Use `--json` for tooling output and `--lang es` for Spanish messages.
