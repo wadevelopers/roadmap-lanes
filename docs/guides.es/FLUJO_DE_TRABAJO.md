@@ -67,7 +67,9 @@ Si se quiere trabajar con otro proyecto, se crea o abre otro vault de Obsidian. 
 proyectos dentro del mismo vault no forma parte del flujo soportado por ahora.
 
 La carpeta `roadmap/` debe reservarse para documentos de RL. Cualquier `.md` que esté dentro de esa
-carpeta se interpreta como una unidad de trabajo.
+carpeta se interpreta como una unidad de trabajo, salvo que se declare **parte** de una tarea
+(`type: doc` + `part_of` — ver
+[Plan compuesto por varios documentos](#plan-compuesto-por-varios-documentos--partes-type-doc--part_of)).
 
 ## Una unidad de trabajo = un archivo que madura
 
@@ -164,13 +166,16 @@ parciales. Aplican a ambos actores (humano y [agente](FLUJO_DEL_AGENTE.md)).
 a medias: **partir la tarea en dos archivos** con ids derivados (`X-A` / `X-B`) y que cada parte siga
 su propio camino.
 
-### Plan compartido entre N tareas
+### Plan compuesto por varios documentos → partes (`type: doc` + `part_of`)
 
-Cuando un solo documento de plan cubre varias tareas (subetapas de una tarea grande, fases de un
-combo con secciones comunes), partirlo duplicaría contexto. El modelado correcto: cada tarea lleva
-frontmatter + un resumen + un puntero a su sección, y el **documento compartido vive fuera de la
-carpeta del roadmap** (todo `.md` adentro es una tarea). Es la excepción legítima a "el cuerpo es el
-plan completo".
+Cuando el plan de una tarea se compone de **varios documentos** (diseño + auditoría + apéndices), no
+hace falta sacarlos de la carpeta del roadmap: cada documento acompañante declara `type: doc` +
+`part_of: "[[TAREA]]"` y se vuelve una **parte** de la tarea — excluida del tablero, navegable desde
+el panel de detalle de su tarea. Convención sugerida: una subcarpeta por tarea multi-documento (el
+`.md` de la tarea junto con sus partes).
+
+Una parte pertenece a **una** tarea. Si N tareas distintas comparten genuinamente un documento, vive
+como parte de la tarea principal y las demás lo referencian por wikilink en su body.
 
 ### Gate contra una fase → la fase se vuelve tarea hija
 

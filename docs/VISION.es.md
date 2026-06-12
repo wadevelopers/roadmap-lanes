@@ -62,7 +62,7 @@ La web standalone funcionaba, pero tenía dos límites que el plugin elimina y u
 
 ## 6. Qué lee RL
 
-1. Las **tareas** — cualquier `.md` dentro de la carpeta de roadmap, con *frontmatter* (§7.2).
+1. Las **tareas** — cualquier `.md` dentro de la carpeta de roadmap, con *frontmatter* (§7.2). La excepción: un `.md` que declara `type: doc` no es una tarea sino un **documento acompañante** de una (§7.3).
 2. El **archivo de carriles** — `lanes.yaml`: qué carril y en qué orden (§7.7).
 3. El **doc de taxonomía** — `taxonomy.yaml`: áreas y zonas válidas (§7.6).
 
@@ -92,7 +92,7 @@ Una tarea tiene **dimensiones independientes**. El error a evitar es meter varia
 ---
 id: FT-002
 title: Pasarela de pago en el checkout
-type: feat                        # feat | maint | infra | combo     (§7.3)
+type: feat                        # feat | maint | infra | combo | doc     (§7.3)
 maturity: ready             # raw | draft | ready  (§7.4)
 status: pending               # pending | done          (§7.4; el resto se deriva)
 duration: 40                    # horas, sin sufijo           (§7.9)
@@ -108,10 +108,20 @@ depends_on: ["[[FT-001]]"]      # wikilinks → dependencias   (§7.8, §8)
 
 **Las relaciones (`parent`, `depends_on`, `absorbs`) son wikilinks entrecomillados.** Es la decisión central de formato del plugin (§8): sirven igual para RL y para el grafo y los backlinks nativos. Los identificadores son ids estables (`FT-002`); el resto de los campos son valores planos.
 
-### 7.3 `type` — lista cerrada (4)
+### 7.3 `type` — lista cerrada (5)
 
 `combo` es un valor estructural especial: una tarea que tiene hijos. No es una tarjeta ejecutable ni
 participa del filtro de tipo del tablero.
+
+`doc` es el otro valor estructural: una **parte** — documento acompañante de una tarea cuyo plan se
+compone de varios archivos (diseño, auditoría, apéndices). Una parte declara `part_of: "[[TAREA]]"`
+(wikilink single, obligatorio) y opcionalmente `title`; **no es trabajo**: queda excluida del tablero
+(queues, backlog, solape, gates, conteos) pero es navegable desde el panel de detalle de su tarea.
+Una parte pertenece a exactamente **una** tarea que no sea a su vez parte (no hay cadenas doc-de-doc —
+la jerarquía de trabajo es `parent`/combo, no `part_of`), no declara campos de tarea (`id`, `status`,
+`duration`, … se ignoran con warning) y su identidad es su **path**, así que dos tareas pueden tener
+cada una su propio `DESIGN.md`. Convención sugerida: una subcarpeta por tarea multi-documento — las
+carpetas siguen sin tener semántica para el modelo.
 
 Para tareas **hoja**, se evalúa de arriba hacia abajo; gana el primero que da "sí":
 

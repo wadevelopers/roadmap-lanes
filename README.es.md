@@ -13,7 +13,8 @@ que el tablero se actualiza a medida que editás.
 ## Qué hace
 
 - Una tarea = una nota `.md` con un frontmatter chico (`type`, `maturity`, `status`, `duration`,
-  `zones`, `depends_on`, …).
+  `zones`, `depends_on`, …). Un plan multi-documento mantiene sus notas acompañantes junto a la tarea
+  como **partes** (`type: doc` + `part_of`): fuera del tablero, navegables desde el panel de detalle.
 - El tablero **deriva** todo: orden de carriles, tiempo-como-altura, **solape entre carriles** (tareas
   de carriles distintos que tocan la misma zona), **dependencias cruzadas** (gates entre carriles) y
   **alertas del modelo** (inconsistencias de datos).

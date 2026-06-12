@@ -7,8 +7,8 @@ exploring the **relationships** between tasks (hierarchy and dependencies) and f
 by its different axes.
 
 There's no need to duplicate data: RL writes relationships as **wikilinks in the frontmatter**
-(`parent`, `depends_on`, `absorbs`) and classification as **properties** (`type`, `status`, `maturity`,
-`areas`, `zones`). The native graph and plugins read exactly those fields.
+(`parent`, `depends_on`, `absorbs`, `part_of`) and classification as **properties** (`type`, `status`,
+`maturity`, `areas`, `zones`). The native graph and plugins read exactly those fields.
 
 ---
 
@@ -22,6 +22,7 @@ It shows notes as nodes and wikilinks as edges. Under `Graph settings → Groups
 [type:maint]         # …maintenance / tech debt…
 [type:infra]         # …infrastructure
 [type:combo]         # …groups/stages with children
+[type:doc]           # …parts (companion documents of a task)
 [status:done]        # or focus by status
 [maturity:raw]       # or by plan maturity
 ```
@@ -52,8 +53,8 @@ plugin gallery) lifts the two limits above and adds things that are very useful 
 
 ### a) Colored, filterable link types
 
-The **property name is the link type**: `parent`, `depends_on` and `absorbs` automatically become
-distinct types. With that you can:
+The **property name is the link type**: `parent`, `depends_on`, `absorbs` and `part_of` automatically
+become distinct types. With that you can:
 
 - **color each type** (e.g. `parent` blue, `depends_on` red, `absorbs` gray) and show its label on the
   edge;

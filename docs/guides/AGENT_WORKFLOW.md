@@ -30,6 +30,9 @@ project wires it to its own tooling (see [Template for consumer projects](#templ
 - **Mature the body and raise `maturity`** (`raw` → `draft` → `ready`) as the plan is documented and
   closed.
 - **Register `absorbs` / `depends_on`** when an execution decision establishes them.
+- **Create parts** (`type: doc` + `part_of: "[[TASK]]"`) when maturing a plan that spans several
+  documents (design, audit, appendices), keeping them in the task's subfolder
+  ([WORKFLOW](WORKFLOW.md#a-plan-spanning-several-documents--parts-type-doc--part_of)).
 
 **May not:**
 
@@ -43,6 +46,8 @@ project wires it to its own tooling (see [Template for consumer projects](#templ
 - **Do not invent `areas` / `zones` values** — it is a closed taxonomy. If a zone is missing,
   propose it to the human or add it to `taxonomy.yaml` as an explicit, declared change, never
   smuggled in.
+- **Do not use `part_of` for work hierarchy** — stages or subtasks with their own status and
+  duration are `parent`/combo; `part_of` is only for companion documents with no work of their own.
 
 ## Id assignment
 

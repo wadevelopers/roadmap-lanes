@@ -12,7 +12,8 @@ frontmatter through Obsidian's native index, so the board updates as you edit.
 ## What it does
 
 - A task = one `.md` note with a small frontmatter (`type`, `maturity`, `status`, `duration`, `zones`,
-  `depends_on`, …).
+  `depends_on`, …). A multi-document plan keeps its companion notes next to the task as **parts**
+  (`type: doc` + `part_of`): off the board, navigable from the task's detail panel.
 - The board **derives** everything: lane order, time-as-height, **lane overlap** (tasks of different
   lanes touching the same zone), **cross-lane gates** (dependencies between lanes) and **model alerts**
   (data inconsistencies).

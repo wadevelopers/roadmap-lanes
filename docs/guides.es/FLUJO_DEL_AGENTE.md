@@ -31,6 +31,9 @@ en particular. Cada proyecto la cablea a su propio tooling (ver
 - **Madurar el cuerpo y subir `maturity`** (`raw` → `draft` → `ready`) a medida que el plan se
   documenta y se cierra.
 - **Registrar `absorbs` / `depends_on`** cuando una decisión de ejecución los establece.
+- **Crear partes** (`type: doc` + `part_of: "[[TAREA]]"`) al madurar un plan que se compone de
+  varios documentos (diseño, auditoría, apéndices), manteniéndolas en la subcarpeta de la tarea
+  ([FLUJO_DE_TRABAJO](FLUJO_DE_TRABAJO.md#plan-compuesto-por-varios-documentos--partes-type-doc--part_of)).
 
 **No puede:**
 
@@ -44,6 +47,8 @@ en particular. Cada proyecto la cablea a su propio tooling (ver
 - **No inventar valores de `areas` / `zones`** — es una taxonomía cerrada. Si falta una zona,
   proponerla al humano o agregarla a `taxonomy.yaml` como cambio explícito y declarado, nunca de
   contrabando.
+- **No usar `part_of` para jerarquía de trabajo** — etapas o subtareas con status y duration propios
+  son `parent`/combo; `part_of` es solo para documentos acompañantes sin trabajo propio.
 
 ## Asignación de ids
 

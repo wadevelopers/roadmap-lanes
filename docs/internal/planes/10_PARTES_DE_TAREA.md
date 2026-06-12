@@ -1,9 +1,11 @@
 # PLAN — Partes de tarea (`type: doc` + `part_of`) y botón "Abrir nota en Obsidian"
 
-> Estado: **draft** — diseño completo tras dos rondas de revisión externa (identidad por path,
+> Estado: **implementado** — diseño completo tras dos rondas de revisión externa (identidad por path,
 > precedencia de alertas, `DetailTarget`, comportamiento del botón; luego: `part_of` a través del
 > parser, emisión de `doc-without-task` en el parser, índice de basenames para `part-of-to-doc`).
-> Puntos abiertos en §9.
+> Decisiones de §9 cerradas al implementar. Desvío aprobado sobre §3: `doc` no se sumó al union
+> `TYPES` — los docs se desvían antes de crear la Task, así que `TaskType` sigue siendo unión de
+> tipos de tarea y `doc` vive como constante propia (`DOC_TYPE`); `invalid-type` igual no dispara.
 >
 > **Justificación (modelo del plugin)**: hoy *todo* `.md` dentro de `roadmap/` se interpreta como
 > tarea (`parseTaskSource` — sin frontmatter → `missing-frontmatter`). Una unidad de trabajo cuyo
@@ -202,13 +204,11 @@ cualquier alerta (las warnings aceptables vía accepted-alerts; los errors nunca
 - **`validator.test.ts`**: un caso con parte válida + una alerta de la matriz, verificando salida
   `--json`.
 
-## 9. Decisiones abiertas (cerrar antes de promover a ready)
+## 9. Decisiones abiertas (cerradas al implementar)
 
-1. **Nombres de los códigos de alerta** (§3): propuestos con el patrón vigente; ajustables en
-   revisión.
-2. **Posición/forma del botón "Abrir en Obsidian"**: zona del título del panel; el detalle exacto
-   (icono, esquina, tooltip) se decide al implementar — delegado explícitamente por el autor. El
-   **comportamiento** ya está cerrado (§5.4: leaf/tab nuevo sin reemplazar el tablero).
+1. **Nombres de los códigos de alerta** (§3): se mantuvieron los propuestos.
+2. **Posición/forma del botón "Abrir en Obsidian"**: ícono external-link en la zona del título,
+   junto al chip de id/tipo, con tooltip; abre en tab nuevo y cierra el panel de detalle.
 
 ## 10. Fuera de alcance
 

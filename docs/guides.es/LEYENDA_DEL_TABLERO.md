@@ -115,6 +115,11 @@ no declara `maturity`: puede seguir en el carril, pero conviene promover su plan
 RL también reporta problemas de higiene de origen: notas de tarea sin frontmatter, y campos de
 relación como `parent`, `depends_on` o `absorbs` declarados como string vacío explícito.
 
+**Alertas de partes** (`type: doc` + `part_of`): un doc sin `part_of` resoluble (`doc-without-task`),
+un `part_of` que apunta a una tarea inexistente (`missing-part-of`) o a otro doc (`part-of-to-doc`)
+son **errores**; `part_of` declarado en una tarea (`part-of-on-task`) y campos de tarea declarados en
+un doc (`doc-task-fields-ignored`) son **warnings**.
+
 Las warnings/info traen un botón **Aceptar** para silenciar esa alerta puntual; reaparece si los valores
 cambian. (Ver [`planes/02_ALERTAS_SEVERIDAD.md`](../internal/planes/02_ALERTAS_SEVERIDAD.md).)
 

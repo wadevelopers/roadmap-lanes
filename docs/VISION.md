@@ -62,7 +62,7 @@ The standalone web worked, but had two limits the plugin removes and one benefit
 
 ## 6. What RL reads
 
-1. The **tasks** — any `.md` inside the roadmap folder, with *frontmatter* (§7.2).
+1. The **tasks** — any `.md` inside the roadmap folder, with *frontmatter* (§7.2). The exception: a `.md` that declares `type: doc` is not a task but a **companion document** of one (§7.3).
 2. The **lanes file** — `lanes.yaml`: which lane and in what order (§7.7).
 3. The **taxonomy doc** — `taxonomy.yaml`: valid areas and zones (§7.6).
 
@@ -92,7 +92,7 @@ A task has **independent dimensions**. The mistake to avoid is cramming several 
 ---
 id: FT-002
 title: Payment gateway at checkout
-type: feat                      # feat | maint | infra | combo     (§7.3)
+type: feat                      # feat | maint | infra | combo | doc     (§7.3)
 maturity: ready                 # raw | draft | ready  (§7.4)
 status: pending                 # pending | done       (§7.4; the rest is derived)
 duration: 40                    # hours, no suffix     (§7.9)
@@ -108,9 +108,11 @@ depends_on: ["[[FT-001]]"]      # wikilinks → dependencies  (§7.8, §8)
 
 **The relationships (`parent`, `depends_on`, `absorbs`) are quoted wikilinks.** It's the plugin's central format decision (§8): they serve equally for RL and for the native graph and backlinks. The identifiers are stable ids (`FT-002`); the rest of the fields are plain values.
 
-### 7.3 `type` — closed list (4)
+### 7.3 `type` — closed list (5)
 
 `combo` is a special structural value: a task that has children. It's not an executable card and doesn't take part in the board's type filter.
+
+`doc` is the other structural value: a **part** — a companion document of a task whose plan spans several files (design, audit, appendices). A part declares `part_of: "[[TASK]]"` (single wikilink, mandatory) and optionally `title`; it is **not work**: it's excluded from the board (queues, backlog, overlap, gates, counts) but navigable from its task's detail panel. A part belongs to exactly **one** task that is not itself a part (no doc-of-doc chains — work hierarchy is `parent`/combo, not `part_of`), declares no task fields (`id`, `status`, `duration`, … are ignored with a warning) and its identity is its **path**, so two tasks can each have their own `DESIGN.md`. Suggested convention: one subfolder per multi-document task — folders still carry no semantics for the model.
 
 For **leaf** tasks, evaluate top to bottom; the first "yes" wins:
 

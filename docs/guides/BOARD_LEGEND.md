@@ -113,6 +113,11 @@ A warning also appears when the **Next** task in a lane is not `maturity: ready`
 RL also reports source hygiene issues here: task notes without frontmatter, and relation fields like
 `parent`, `depends_on` or `absorbs` declared as an explicit empty string.
 
+**Part alerts** (`type: doc` + `part_of`): a doc without a resolvable `part_of` (`doc-without-task`),
+a `part_of` pointing at a nonexistent task (`missing-part-of`) or at another doc (`part-of-to-doc`)
+are **errors**; `part_of` declared on a task (`part-of-on-task`) and task fields declared on a doc
+(`doc-task-fields-ignored`) are **warnings**.
+
 Warnings/info come with an **Accept** button to silence that specific alert; it reappears if the values
 change.
 

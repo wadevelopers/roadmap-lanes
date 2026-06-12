@@ -67,7 +67,8 @@ To work on another project, create or open another Obsidian vault. Running sever
 same vault is not part of the supported flow for now.
 
 The `roadmap/` folder should be reserved for RL documents. Any `.md` inside it is interpreted as a unit
-of work.
+of work, unless it declares itself a **part** of a task (`type: doc` + `part_of` — see
+[A plan spanning several documents](#a-plan-spanning-several-documents--parts-type-doc--part_of)).
 
 ## One unit of work = one file that matures
 
@@ -163,13 +164,16 @@ dependencies. They apply to both actors (human and [agent](AGENT_WORKFLOW.md)).
 half inside a large block, the other half independently), don't try to half-absorb it: **split the
 task into two files** with derived ids (`X-A` / `X-B`) and let each part follow its own path.
 
-### A plan shared across N tasks
+### A plan spanning several documents → parts (`type: doc` + `part_of`)
 
-When a single plan document covers several tasks (sub-stages of a large task, phases of a combo with
-common sections), splitting it would duplicate context. The correct modeling: each task carries
-frontmatter + a summary + a pointer to its section, and the **shared document lives outside the
-roadmap folder** (every `.md` inside it is a task). This is the legitimate exception to "the body is
-the complete plan".
+When a task's plan spans **several documents** (design + audit + appendices), they don't have to
+live outside the roadmap folder: each companion document declares `type: doc` +
+`part_of: "[[TASK]]"` and becomes a **part** of the task — excluded from the board, navigable from
+the task's detail panel. Suggested convention: one subfolder per multi-document task (the task `.md`
+together with its parts).
+
+A part belongs to **one** task. If N distinct tasks genuinely share a document, it lives as a part
+of the main task and the others reference it with a wikilink in their body.
 
 ### A gate against a phase → the phase becomes a child task
 
