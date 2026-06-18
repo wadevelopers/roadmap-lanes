@@ -141,6 +141,11 @@ RL keeps deriving blocks, overlap, gates and visual state from the leaves, but v
 COMBO's declared fields stay in sync. The COMBO's duration can be greater than the sum of its children
 if it documents coordination or extra work of its own.
 
+The COMBO's children are the tasks that point to it with `parent`. The COMBO does not declare a
+manual child list: when it appears in a lane queue, RL expands it to its leaves. If sibling children
+depend on each other, their local order comes from `depends_on`; independent siblings keep the
+fallback file/path order. Use `depends_on` only for real hard prerequisites, not for cosmetic sorting.
+
 ### 5. Execution (assign to a lane)
 
 When you decide to execute it, you add it to a lane's queue in `roadmap/lanes.yaml`, at the chosen

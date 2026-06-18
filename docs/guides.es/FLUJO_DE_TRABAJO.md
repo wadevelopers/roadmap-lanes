@@ -142,6 +142,12 @@ RL sigue derivando bloqueos, solape, gates y estado visual desde las hojas, pero
 campos declarados del COMBO estén sincronizados. La duración del COMBO puede ser mayor que la suma de
 sus hijos si documenta coordinación o trabajo extra propio del documento.
 
+Los hijos del COMBO son las tareas que lo apuntan con `parent`. El COMBO no declara una lista manual
+de hijos: cuando aparece en la queue de un carril, RL lo expande a sus hojas. Si los hijos hermanos
+dependen entre sí, el orden local sale de `depends_on`; los hermanos independientes conservan el
+fallback por archivo/path. Usar `depends_on` solo para prerequisitos duros reales, no para ordenar
+visualmente.
+
 ### 5. Ejecución (asignar a un carril)
 
 Cuando se decide ejecutarla, se agrega a la cola de un carril en `roadmap/lanes.yaml`, en la posición
