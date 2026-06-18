@@ -10,11 +10,19 @@ import { hasFrontmatterBlock, parseTaskSource, type ParsedTaskSource } from "./t
 export interface RoadmapDataSourceOptions {
 	roadmapFolder?: string;
 	hoursPerDay?: HoursPerDay;
+	freshRead?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<RoadmapDataSourceOptions> = {
+interface ResolvedRoadmapDataSourceOptions {
+	roadmapFolder: string;
+	hoursPerDay: HoursPerDay;
+	freshRead: boolean;
+}
+
+const DEFAULT_OPTIONS = {
 	roadmapFolder: DEFAULT_SETTINGS.roadmapFolder,
 	hoursPerDay: DEFAULT_HOURS_PER_DAY,
+	freshRead: false,
 };
 
 const LANES_FILENAME = "lanes.yaml";
@@ -40,14 +48,15 @@ const DEFAULT_TAXONOMY = `# Roadmap Lanes taxonomy.
 areas: {}
 `;
 
-function resolveOptions(options: RoadmapDataSourceOptions = {}): Required<RoadmapDataSourceOptions> {
+function resolveOptions(options: RoadmapDataSourceOptions = {}): ResolvedRoadmapDataSourceOptions {
 	return {
 		roadmapFolder: normalizeRoadmapFolder(options.roadmapFolder ?? DEFAULT_OPTIONS.roadmapFolder),
 		hoursPerDay: normalizeHoursPerDay(options.hoursPerDay ?? DEFAULT_OPTIONS.hoursPerDay),
+		freshRead: options.freshRead ?? DEFAULT_OPTIONS.freshRead,
 	};
 }
 
-function roadmapPath(options: Required<RoadmapDataSourceOptions>, file: string): string {
+function roadmapPath(options: ResolvedRoadmapDataSourceOptions, file: string): string {
 	return normalizePath(`${options.roadmapFolder}/${file}`);
 }
 
@@ -98,6 +107,66 @@ async function parseTask(app: App, file: TFile, cache: CachedMetadata | null): P
 	});
 }
 
+function basenameFromPath(path: string): string {
+	const file = path.split("/").pop() || path;
+	return file.replace(/\.md$/i, "");
+}
+
+function parseFrontmatter(
+	raw: string,
+	path: string
+): { frontmatter: Record<string, unknown>; hasFrontmatter: boolean } {
+	const lines = raw.split(/\r?\n/);
+	if (lines[0]?.trim() !== "---") return { frontmatter: {}, hasFrontmatter: false };
+	const end = lines.indexOf("---", 1);
+	if (end === -1) return { frontmatter: {}, hasFrontmatter: false };
+
+	try {
+		const parsed = yaml.load(lines.slice(1, end).join("\n"));
+		const frontmatter =
+			parsed && typeof parsed === "object" && !Array.isArray(parsed)
+				? (parsed as Record<string, unknown>)
+				: {};
+		return { frontmatter, hasFrontmatter: true };
+	} catch (error) {
+		console.warn(`Roadmap Lanes: could not parse frontmatter in ${path}; treating it as empty`, error);
+		return { frontmatter: {}, hasFrontmatter: true };
+	}
+}
+
+async function parseTaskFresh(app: App, path: string): Promise<ParsedTaskSource> {
+	const raw = await app.vault.adapter.read(path);
+	const { frontmatter, hasFrontmatter } = parseFrontmatter(raw, path);
+	return parseTaskSource({
+		file: path,
+		basename: basenameFromPath(path),
+		raw,
+		frontmatter,
+		hasFrontmatter,
+		relationList: (_key, fallback) => normalizeRelationValue(fallback),
+	});
+}
+
+async function listMarkdownFilesFresh(app: App, folder: string): Promise<string[]> {
+	const files: string[] = [];
+
+	async function visit(path: string): Promise<void> {
+		let listed;
+		try {
+			listed = await app.vault.adapter.list(path);
+		} catch (error) {
+			console.error(`Roadmap Lanes: could not list ${path}`, error);
+			return;
+		}
+
+		files.push(...listed.files.filter((file) => file.endsWith(".md")));
+		await Promise.all(listed.folders.map((child) => visit(child)));
+	}
+
+	await visit(folder);
+	return files.sort((a, b) => a.localeCompare(b));
+}
+
 async function loadYaml<T>(app: App, path: string, fallback: T): Promise<T> {
 	try {
 		const raw = await app.vault.adapter.read(path);
@@ -118,14 +187,19 @@ export async function loadRoadmapData(
 	// settings change, board open).
 	const resolved = resolveOptions(options);
 	const folderPrefix = `${resolved.roadmapFolder}/`;
-	const files = app.vault
-		.getMarkdownFiles()
-		.filter((file) => file.path.startsWith(folderPrefix))
-		.sort((a, b) => a.path.localeCompare(b.path));
-
-	const parsedTasks = await Promise.all(
-		files.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
-	);
+	const parsedTasks = resolved.freshRead
+		? await Promise.all(
+				(await listMarkdownFilesFresh(app, resolved.roadmapFolder)).map((file) =>
+					parseTaskFresh(app, file)
+				)
+			)
+		: await Promise.all(
+				app.vault
+					.getMarkdownFiles()
+					.filter((file) => file.path.startsWith(folderPrefix))
+					.sort((a, b) => a.path.localeCompare(b.path))
+					.map((file) => parseTask(app, file, app.metadataCache.getFileCache(file)))
+			);
 	const tasks: RawTask[] = parsedTasks.map((parsed) => parsed.task);
 	const sourceAlerts = parsedTasks.flatMap((parsed) => parsed.alerts);
 	const taxonomy = await loadYaml<Taxonomy>(app, roadmapPath(resolved, TAXONOMY_FILENAME), {

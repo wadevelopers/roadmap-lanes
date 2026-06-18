@@ -47,6 +47,7 @@ interface RoadmapLanesPluginData extends RoadmapLanesSettings {
 class RoadmapLanesView extends ItemView {
 	private readonly plugin: RoadmapLanesPlugin;
 	private renderRequest: number | null = null;
+	private renderRequestFreshRead = false;
 	private readonly filterState: FilterState = createDefaultFilterState();
 
 	constructor(leaf: WorkspaceLeaf, plugin: RoadmapLanesPlugin) {
@@ -79,18 +80,24 @@ class RoadmapLanesView extends ItemView {
 		}
 	}
 
-	queueRender(): void {
+	queueRender(options: { freshRead?: boolean } = {}): void {
+		if (options.freshRead) this.renderRequestFreshRead = true;
 		if (this.renderRequest !== null) window.clearTimeout(this.renderRequest);
 		this.renderRequest = window.setTimeout(() => {
 			this.renderRequest = null;
-			void this.renderRoadmap();
+			const freshRead = this.renderRequestFreshRead;
+			this.renderRequestFreshRead = false;
+			void this.renderRoadmap({ freshRead });
 		}, 100);
 	}
 
-	private async renderRoadmap(): Promise<void> {
+	private async renderRoadmap(options: { freshRead?: boolean } = {}): Promise<void> {
 		const root = this.contentEl;
 		renderLoading(root, this.plugin.translate);
-		const data = await loadRoadmapData(this.app, this.plugin.settings);
+		const data = await loadRoadmapData(this.app, {
+			...this.plugin.settings,
+			freshRead: options.freshRead,
+		});
 		const model = buildModel(data);
 		renderModel(root, model, this.plugin.translate, this.app, this, {
 			detailPanelWidth: this.plugin.settings.detailPanelWidth,
@@ -106,7 +113,7 @@ class RoadmapLanesView extends ItemView {
 				void this.plugin.setBoardMode(mode);
 			},
 			onReload: () => {
-				this.queueRender();
+				void this.plugin.reloadRoadmapFromDisk();
 			},
 			isAlertAccepted: (alert) => this.plugin.isAlertAccepted(alert),
 			acceptAlert: (alert) => {
@@ -315,6 +322,11 @@ export default class RoadmapLanesPlugin extends Plugin {
 		this.refreshOpenViews();
 	}
 
+	async reloadRoadmapFromDisk(): Promise<void> {
+		await this.loadRoadmapAcceptedAlerts();
+		this.refreshOpenViews({ freshRead: true });
+	}
+
 	private async savePluginData(): Promise<void> {
 		this.settings = normalizeSettings(this.settings);
 		await this.saveData({ ...this.settings } satisfies RoadmapLanesPluginData);
@@ -376,10 +388,10 @@ export default class RoadmapLanesPlugin extends Plugin {
 		);
 	}
 
-	refreshOpenViews(): void {
+	refreshOpenViews(options: { freshRead?: boolean } = {}): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_ROADMAP)) {
 			const view = leaf.view;
-			if (view instanceof RoadmapLanesView) view.queueRender();
+			if (view instanceof RoadmapLanesView) view.queueRender(options);
 		}
 	}
 }

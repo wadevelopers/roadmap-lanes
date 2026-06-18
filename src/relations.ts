@@ -8,9 +8,13 @@ export function basenameFromLink(link: string): string {
 	return parts[parts.length - 1] || clean;
 }
 
+function relationValues(value: unknown): unknown[] {
+	if (Array.isArray(value)) return value.flatMap((item) => relationValues(item));
+	return value ? [value] : [];
+}
+
 export function normalizeRelationValue(value: unknown): string[] {
-	const values = Array.isArray(value) ? value : value ? [value] : [];
-	return values
+	return relationValues(value)
 		.filter((item): item is string => typeof item === "string")
 		.map((item) => {
 			const match = item.match(/^\[\[([^|\]#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]$/);
@@ -22,5 +26,5 @@ export function normalizeRelationValue(value: unknown): string[] {
 export function hasExplicitEmptyRelation(value: unknown): boolean {
 	if (typeof value === "string") return value === "";
 	if (!Array.isArray(value)) return false;
-	return value.some((item) => item === "");
+	return value.some((item) => hasExplicitEmptyRelation(item));
 }

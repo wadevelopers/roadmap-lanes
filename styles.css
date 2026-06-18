@@ -84,16 +84,19 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 }
 
 .roadmap-lanes-view .rl-icon-button {
+	appearance: none;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
 	width: 32px;
 	height: 32px;
+	min-height: 0;
 	padding: 0;
-	border: 1px solid transparent;
+	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
-	background: transparent;
+	background: var(--background-secondary);
+	box-shadow: none;
 	color: var(--text-muted);
 	cursor: pointer;
 }
@@ -106,7 +109,7 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 
 .roadmap-lanes-view .rl-icon-button:hover:not(:disabled),
 .roadmap-lanes-view .rl-icon-button:focus-visible:not(:disabled) {
-	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
 	color: var(--text-normal);
 }
 
