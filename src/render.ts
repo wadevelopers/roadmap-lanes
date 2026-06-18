@@ -412,27 +412,14 @@ function leavesByHierarchy(model: Model, a: Task, b: Task): number {
 	return hierarchyKey(model, a).localeCompare(hierarchyKey(model, b));
 }
 
-function collectLeaves(model: Model, task: Task, visited = new Set<string>()): Task[] {
-	if (visited.has(task.id)) return [];
-	visited.add(task.id);
-	if (!task.isContainer) return [task];
-	return task.children.flatMap((id) => {
-		const child = model.tasks.get(id);
-		return child ? collectLeaves(model, child, visited) : [];
-	});
-}
-
 function expandLaneItems(model: Model, queue: string[]): Task[] {
 	const out: Task[] = [];
 	const seen = new Set<string>();
 	for (const taskId of queue) {
 		const task = model.tasks.get(taskId);
-		if (!task) continue;
-		for (const leaf of collectLeaves(model, task)) {
-			if (leaf.absorbedBy || leaf.status === "done" || seen.has(leaf.id)) continue;
-			seen.add(leaf.id);
-			out.push(leaf);
-		}
+		if (!task || task.isContainer || task.absorbedBy || task.status === "done" || seen.has(task.id)) continue;
+		seen.add(task.id);
+		out.push(task);
 	}
 	return out;
 }

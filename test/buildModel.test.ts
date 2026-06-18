@@ -249,6 +249,138 @@ describe("buildModel", () => {
 		expect(m.tasks.get("H1")?.lane).toBe("A");
 	});
 
+	test("ordena hijos hermanos de un contenedor por depends_on local", () => {
+		const datos: BuildModelInput = {
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["CC-4"] } },
+			tasks: [
+				{ id: "CC-4", type: "combo", status: "pending", maturity: "ready", duration: 24 },
+				{
+					id: "ETAPA-2B",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					parent: "CC-4",
+					depends_on: ["ETAPA-3B"],
+				},
+				{
+					id: "ETAPA-3",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					parent: "CC-4",
+				},
+				{
+					id: "ETAPA-3B",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					parent: "CC-4",
+				},
+			],
+		};
+
+		const m = buildModel(datos);
+		expect(m.tasks.get("CC-4")?.children).toEqual(["ETAPA-3B", "ETAPA-2B", "ETAPA-3"]);
+		expect(m.lanes.A.queue).toEqual(["ETAPA-3B", "ETAPA-2B", "ETAPA-3"]);
+		expect(m.lanes.A.next).toBe("ETAPA-3B");
+	});
+
+	test("hijos hermanos independientes conservan el orden de carga", () => {
+		const datos: BuildModelInput = {
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["CC-4"] } },
+			tasks: [
+				{ id: "CC-4", type: "combo", status: "pending", maturity: "ready", duration: 24 },
+				{ id: "ETAPA-2B", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "CC-4" },
+				{ id: "ETAPA-3", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "CC-4" },
+				{ id: "ETAPA-3B", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "CC-4" },
+			],
+		};
+
+		const m = buildModel(datos);
+		expect(m.tasks.get("CC-4")?.children).toEqual(["ETAPA-2B", "ETAPA-3", "ETAPA-3B"]);
+		expect(m.lanes.A.queue).toEqual(["ETAPA-2B", "ETAPA-3", "ETAPA-3B"]);
+	});
+
+	test("una dependencia externa no reordena hermanos del contenedor", () => {
+		const datos: BuildModelInput = {
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["CC-4"] } },
+			tasks: [
+				{ id: "EXT", type: "feat", status: "done", maturity: "ready", duration: 1 },
+				{ id: "CC-4", type: "combo", status: "pending", maturity: "ready", duration: 16 },
+				{
+					id: "ETAPA-2B",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					parent: "CC-4",
+					depends_on: ["EXT"],
+				},
+				{ id: "ETAPA-3B", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "CC-4" },
+			],
+		};
+
+		const m = buildModel(datos);
+		expect(m.tasks.get("CC-4")?.children).toEqual(["ETAPA-2B", "ETAPA-3B"]);
+		expect(m.lanes.A.queue).toEqual(["ETAPA-2B", "ETAPA-3B"]);
+	});
+
+	test("no reordena la queue explícita de primer nivel por depends_on", () => {
+		const datos: BuildModelInput = {
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["B", "A"] } },
+			tasks: [
+				{
+					id: "B",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					depends_on: ["A"],
+				},
+				{ id: "A", type: "feat", status: "pending", maturity: "ready", duration: 8 },
+			],
+		};
+
+		const m = buildModel(datos);
+		expect(m.lanes.A.queue).toEqual(["B", "A"]);
+		expect(m.tasks.get("B")?.blocked).toBe(true);
+		expect(m.lanes.A.next).toBe("A");
+	});
+
+	test("ordena un sibling contenedor antes si se depende de uno de sus descendientes", () => {
+		const datos: BuildModelInput = {
+			taxonomy: { areas: {} },
+			lanes: { A: { queue: ["ROOT"] } },
+			tasks: [
+				{ id: "ROOT", type: "combo", status: "pending", maturity: "ready", duration: 16 },
+				{
+					id: "USE",
+					type: "feat",
+					status: "pending",
+					maturity: "ready",
+					duration: 8,
+					parent: "ROOT",
+					depends_on: ["STEP"],
+				},
+				{ id: "PHASE", type: "combo", status: "pending", maturity: "ready", duration: 8, parent: "ROOT" },
+				{ id: "STEP", type: "feat", status: "pending", maturity: "ready", duration: 8, parent: "PHASE" },
+			],
+		};
+
+		const m = buildModel(datos);
+		expect(m.tasks.get("ROOT")?.children).toEqual(["PHASE", "USE"]);
+		expect(m.tasks.get("PHASE")?.children).toEqual(["STEP"]);
+		expect(m.lanes.A.queue).toEqual(["STEP", "USE"]);
+		expect(m.lanes.A.next).toBe("STEP");
+	});
+
 	test("detecta type inválido y referencia inexistente", () => {
 		const datos = baseData();
 		datos.tasks.push({ id: "X", type: "NOPE", depends_on: ["FANTASMA"] });

@@ -1136,3 +1136,20 @@ body.rl-detail-resizing * {
 	font-size: 13px;
 	line-height: 1.5;
 }
+
+.roadmap-lanes-view .rl-detail-panel,
+.roadmap-lanes-view .rl-detail-body,
+.roadmap-lanes-view .rl-detail-body * {
+	user-select: text;
+}
+
+.roadmap-lanes-view .rl-detail-nav-button,
+.roadmap-lanes-view .rl-detail-close,
+.roadmap-lanes-view .rl-detail-resizer {
+	user-select: none;
+}
+
+body.rl-detail-resizing .roadmap-lanes-view .rl-detail-panel,
+body.rl-detail-resizing .roadmap-lanes-view .rl-detail-panel * {
+	user-select: none;
+}

@@ -133,6 +133,60 @@ function normalizeLanes(lanes: LanesInput): LanesInput {
 	return result;
 }
 
+function collectSubtreeTasks(byId: Map<string, Task>, task: Task, seen = new Set<string>()): Task[] {
+	if (seen.has(task.id)) return [];
+	seen.add(task.id);
+	const out = [task];
+	for (const childId of task.children) {
+		const child = byId.get(childId);
+		if (child) out.push(...collectSubtreeTasks(byId, child, seen));
+	}
+	return out;
+}
+
+function orderSiblingChildrenByDependencies(byId: Map<string, Task>, childIds: string[]): string[] {
+	const siblingByTaskId = new Map<string, string>();
+	const subtreeBySibling = new Map<string, Task[]>();
+	const childSet = new Set(childIds);
+
+	for (const childId of childIds) {
+		const child = byId.get(childId);
+		if (!child) continue;
+		const subtree = collectSubtreeTasks(byId, child);
+		subtreeBySibling.set(childId, subtree);
+		for (const task of subtree) siblingByTaskId.set(task.id, childId);
+	}
+
+	const ordered: string[] = [];
+	const state = new Map<string, "visiting" | "visited">();
+	let hasCycle = false;
+
+	const visit = (childId: string): void => {
+		if (!childSet.has(childId)) return;
+		const current = state.get(childId);
+		if (current === "visited") return;
+		if (current === "visiting") {
+			hasCycle = true;
+			return;
+		}
+
+		state.set(childId, "visiting");
+		const dependencies = new Set<string>();
+		for (const task of subtreeBySibling.get(childId) ?? []) {
+			for (const dependency of task.depends_on) {
+				const dependencySibling = siblingByTaskId.get(dependency);
+				if (dependencySibling && dependencySibling !== childId) dependencies.add(dependencySibling);
+			}
+		}
+		for (const dependency of dependencies) visit(dependency);
+		state.set(childId, "visited");
+		ordered.push(childId);
+	};
+
+	for (const childId of childIds) visit(childId);
+	return hasCycle ? childIds : ordered;
+}
+
 export function buildModel(input: BuildModelInput): Model {
 	const alerts: Alert[] = [...(input.sourceAlerts || [])];
 	const alert = (
@@ -255,6 +309,10 @@ export function buildModel(input: BuildModelInput): Model {
 		if (raw?.status && !isStatus(raw.status)) {
 			alert("invalid-status", "error", { id: task.id, value: raw.status }, task.id);
 		}
+	}
+
+	for (const task of byId.values()) {
+		if (task.children.length > 1) task.children = orderSiblingChildrenByDependencies(byId, task.children);
 	}
 
 	const effectiveHours = (id: string, seen = new Set<string>()): number => {
