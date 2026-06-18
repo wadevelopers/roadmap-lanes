@@ -105,6 +105,9 @@ class RoadmapLanesView extends ItemView {
 			setBoardMode: (mode) => {
 				void this.plugin.setBoardMode(mode);
 			},
+			onReload: () => {
+				this.queueRender();
+			},
 			isAlertAccepted: (alert) => this.plugin.isAlertAccepted(alert),
 			acceptAlert: (alert) => {
 				void this.plugin.acceptAlert(alert);

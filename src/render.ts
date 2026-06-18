@@ -1,4 +1,4 @@
-import { MarkdownRenderer, TFile, type App, type Component } from "obsidian";
+import { MarkdownRenderer, TFile, setIcon, type App, type Component } from "obsidian";
 
 import {
 	DOC_TYPE,
@@ -43,6 +43,7 @@ interface RenderContext {
 	detailHistory: DetailTarget[];
 	setDetailPanelWidth?: (width: number) => void;
 	setBoardMode?: (mode: BoardMode) => void;
+	onReload?: () => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
 	acceptAlert?: (alert: Alert) => void | Promise<void>;
 }
@@ -56,6 +57,7 @@ export interface RenderModelOptions {
 	filterState?: FilterState;
 	setDetailPanelWidth?: (width: number) => void;
 	setBoardMode?: (mode: BoardMode) => void;
+	onReload?: () => void;
 	isAlertAccepted?: (alert: Alert) => boolean;
 	acceptAlert?: (alert: Alert) => void | Promise<void>;
 }
@@ -910,17 +912,39 @@ function renderFilters(ctx: RenderContext, parent: HTMLElement, filters: Filters
 		});
 	}
 
-	const search = bar.createEl("input", {
+	const searchWrap = bar.createEl("div", { cls: "rl-search-wrap" });
+	const search = searchWrap.createEl("input", {
 		cls: "rl-search",
 		attr: {
 			type: "search",
 			placeholder: ctx.t("searchPlaceholder"),
 		},
 	});
+	const clearSearch = searchWrap.createEl("button", {
+		cls: "rl-search-clear",
+		text: ctx.t("clearSearchButton"),
+		attr: {
+			type: "button",
+			"aria-label": ctx.t("clearSearch"),
+			"aria-label-position": "top",
+		},
+	});
+	const updateClearSearch = () => {
+		clearSearch.hidden = search.value.trim().length === 0;
+	};
 	search.value = filters.text;
+	updateClearSearch();
 	search.addEventListener("input", () => {
 		filters.text = search.value.toLowerCase().trim();
+		updateClearSearch();
 		applyFilters(ctx.root, filters);
+	});
+	clearSearch.addEventListener("click", () => {
+		search.value = "";
+		filters.text = "";
+		updateClearSearch();
+		applyFilters(ctx.root, filters);
+		search.focus();
 	});
 
 	renderBoardModeToggle(ctx, bar);
@@ -1367,6 +1391,7 @@ export function renderModel(
 		detailHistory: [],
 		setDetailPanelWidth: options.setDetailPanelWidth,
 		setBoardMode: options.setBoardMode,
+		onReload: options.onReload,
 		isAlertAccepted: options.isAlertAccepted,
 		acceptAlert: options.acceptAlert,
 	};
@@ -1392,6 +1417,21 @@ export function renderModel(
 		cls: "rl-muted",
 		text: `${t("project")} ${projectName} · ${totalTasks} ${t("taskCount")} + ${totalContainers} ${t("containers")}`,
 	});
+	if (ctx.onReload) {
+		const reload = header.createEl("button", {
+			cls: "rl-icon-button rl-topbar-reload",
+			attr: {
+				type: "button",
+				"aria-label": t("reloadBoard"),
+				"aria-label-position": "top",
+			},
+		});
+		setIcon(reload, "refresh-cw");
+		reload.addEventListener("click", () => {
+			reload.disabled = true;
+			ctx.onReload?.();
+		});
+	}
 
 	renderFilters(ctx, root, filters);
 	renderCoordination(ctx, root, filterState.coordCollapsed);

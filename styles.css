@@ -68,6 +68,10 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	background: var(--background-primary);
 }
 
+.roadmap-lanes-view .rl-topbar > div {
+	min-width: 0;
+}
+
 .roadmap-lanes-view .rl-topbar h2 {
 	margin: 0;
 	font-size: 18px;
@@ -77,6 +81,38 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 .roadmap-lanes-view .rl-topbar p {
 	margin: 2px 0 0;
 	font-size: 12px;
+}
+
+.roadmap-lanes-view .rl-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-icon-button svg {
+	display: block;
+	width: 16px;
+	height: 16px;
+}
+
+.roadmap-lanes-view .rl-icon-button:hover:not(:disabled),
+.roadmap-lanes-view .rl-icon-button:focus-visible:not(:disabled) {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.roadmap-lanes-view .rl-icon-button:disabled {
+	opacity: 0.55;
+	cursor: default;
 }
 
 .roadmap-lanes-view .rl-filters {
@@ -92,10 +128,46 @@ El tablero usa variables del tema activo de Obsidian para integrarse con claro/o
 	z-index: 6;
 }
 
-.roadmap-lanes-view .rl-search {
+.roadmap-lanes-view .rl-search-wrap {
+	position: relative;
 	min-width: min(280px, 100%);
 	flex: 1 1 240px;
+}
+
+.roadmap-lanes-view .rl-search {
+	width: 100%;
 	height: 32px;
+	padding-right: 76px;
+}
+
+.roadmap-lanes-view .rl-search-clear {
+	position: absolute;
+	top: 50%;
+	right: 6px;
+	transform: translateY(-50%);
+	height: 22px;
+	min-height: 0;
+	margin: 0;
+	padding: 0 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 999px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 20px;
+	cursor: pointer;
+}
+
+.roadmap-lanes-view .rl-search-clear[hidden] {
+	display: none;
+}
+
+.roadmap-lanes-view .rl-search-clear:hover,
+.roadmap-lanes-view .rl-search-clear:focus-visible {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
 }
 
 .roadmap-lanes-view .rl-filter-group {
