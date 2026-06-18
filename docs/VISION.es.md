@@ -174,7 +174,16 @@ lanes:
 # Toda tarea que NO esté en ninguna lista `queue` = backlog. N carriles; la UI arranca con 2.
 ```
 
-**Regla de orden (la lista manda; las dependencias sólo alertan):** RL **nunca reordena solo**. Si la lista pone una tarea antes que algo de lo que depende (sin cerrar), la marca **"fuera de turno"** y explica por qué. *"Lo próximo agarrable"* = la primera de la cola que esté **libre**.
+**Regla de orden (manda la queue explícita):** RL **nunca reordena por sí solo los ítems de primer
+nivel de un `queue`**. Si la lista pone una tarea antes que algo de lo que depende (sin cerrar), la
+deja ahí, la marca **"fuera de turno"** y explica por qué. *"Lo próximo agarrable"* = la primera
+tarea de la cola que esté **libre**.
+
+**Orden implícito dentro de COMBOs:** cuando un ítem del `queue` es un COMBO, sus hijos no tienen
+una lista propia en `lanes.yaml`. RL deriva ese orden local entre hermanos desde `depends_on`
+cuando la dependencia está entre hermanos (o entre sus descendientes), y usa el orden actual por
+archivo/path solo como fallback para hermanos independientes. Esto reemplaza el orden accidental por
+nombre de archivo dentro de un contenedor; no pisa la queue explícita del carril.
 
 ### 7.8 Relaciones derivadas — gates y `unlocks` no son campos
 

@@ -61,6 +61,10 @@ document), visible only in its task's detail panel.
 ## 2. Lanes, backlog and done
 
 - Each **column** is a **lane** (defined in `lanes.yaml`), with its ordered work queue.
+- Top-level queue order is explicit: RL does not silently move those items. If an item is blocked by
+  an unfinished dependency, it stays in place and shows as waiting for that dependency.
+- Inside a COMBO, child cards follow local `depends_on` order when siblings depend on each other;
+  independent siblings keep the fallback file/path order.
 - **Backlog**: tasks with `zones`/data but **no lane** assigned (not yet decided to execute).
 - **Done**: a separate column for finished work (a record, out of the active coordination).
 

@@ -62,6 +62,11 @@ acompañante de una tarea), visible solo en el panel de detalle de su tarea.
 ## 2. Carriles, backlog y hechas
 
 - Cada **columna** es un **carril** (definido en `lanes.yaml`), con su cola ordenada de trabajo.
+- El orden de primer nivel del queue es explícito: RL no mueve esos ítems en silencio. Si un ítem
+  está bloqueado por una dependencia sin terminar, queda en su lugar y aparece esperando esa
+  dependencia.
+- Dentro de un COMBO, las tarjetas hijas siguen el orden local de `depends_on` cuando hay
+  dependencias entre hermanas; las hermanas independientes conservan el fallback por archivo/path.
 - **Backlog**: tareas con `zonas`/datos pero **sin carril** asignado (todavía no se decidió ejecutarlas).
 - **Hechas**: columna aparte con lo terminado (registro, fuera de la coordinación activa).
 

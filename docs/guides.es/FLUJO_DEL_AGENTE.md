@@ -43,8 +43,10 @@ en particular. Cada proyecto la cablea a su propio tooling (ver
   viejas es una fase posterior y separada
   ([convención de borrado](FLUJO_DE_TRABAJO.md#fin-de-vida-de-las-tareas-done-convención-de-borrado)),
   siempre autorizada explícitamente por el humano o ejecutada como tarea de limpieza dedicada.
-- **No reordenar el `queue` de `lanes.yaml` por iniciativa propia** — el orden es decisión del humano
-  (VISION §4: *el sistema asiste, no impone* — vale también para el agente).
+- **No reordenar el `queue` de `lanes.yaml` por iniciativa propia** — el orden de primer nivel del
+  carril es decisión del humano (VISION §4: *el sistema asiste, no impone* — vale también para el
+  agente). Si la secuencia interna de un COMBO está mal, registrar el prerequisito duro con
+  `depends_on`; RL deriva ese orden local de hijos en vez de depender de nombres de archivo.
 - **No inventar valores de `areas` / `zones`** — es una taxonomía cerrada. Si falta una zona,
   proponerla al humano o agregarla a `taxonomy.yaml` como cambio explícito y declarado, nunca de
   contrabando.
@@ -155,8 +157,9 @@ detalles:
 >   resumen + puntero, y el documento compartido vive fuera de la carpeta del roadmap.
 > - `taxonomy.yaml` es lista cerrada: ampliar = editar el yaml a propósito, nunca inventar valores en
 >   la tarea.
-> - Orden y carril viven en `lanes.yaml`, no en la tarea. El agente NO reordena queues por iniciativa
->   propia; las dependencias duras van en `depends_on`.
+> - Orden y carril viven en `lanes.yaml`, no en la tarea. El agente NO reordena queues de primer
+>   nivel por iniciativa propia; las dependencias duras van en `depends_on`, que RL usa para derivar
+>   el orden local de hijos dentro de COMBOs.
 > - Todo plan vivo del proyecto existe como tarea en el tablero: si hay un plan sin tarea que lo
 >   apunte, es un olvido — crear la tarea.
 >

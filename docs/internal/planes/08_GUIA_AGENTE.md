@@ -47,8 +47,10 @@ Dos entregables de documentación:
   de `done` viejas es una fase posterior y separada (§3.5), siempre autorizada explícitamente por
   el humano o ejecutada como tarea de limpieza dedicada.
 - Registrar `absorbs`/`depends_on` cuando una decisión de ejecución lo establece.
-- **NO reordenar `queue` de `lanes.yaml` por iniciativa propia**: el orden es decisión del humano
-  (principio VISION §4.6 — el sistema asiste, no impone; vale también para el agente).
+- **NO reordenar `queue` de `lanes.yaml` por iniciativa propia**: el orden de primer nivel es
+  decisión del humano (principio VISION §4.6 — el sistema asiste, no impone; vale también para el
+  agente). Si la secuencia interna de un COMBO está mal, registrar la dependencia dura con
+  `depends_on`; RL deriva ese orden local en vez de depender de nombres de archivo.
 - **NO inventar valores de `areas`/`zones`**: taxonomía cerrada. Si falta una zona, proponerla al
   humano o agregarla a `taxonomy.yaml` como cambio explícito y declarado, nunca de contrabando.
 - Asignación de **ids**: el plugin **no manda ningún prefijo** — cada proyecto elige su serie (el
@@ -143,8 +145,9 @@ greenfield). Leerlo por la *forma* de las reglas, no por esos detalles:
 >   resumen + puntero, y el documento compartido vive fuera de la carpeta del roadmap.
 > - `taxonomy.yaml` es lista cerrada: ampliar = editar el yaml a propósito, nunca inventar
 >   valores en la tarea.
-> - Orden y carril viven en `lanes.yaml`, no en la tarea. El agente NO reordena queues por
->   iniciativa propia; las dependencias duras van en `depends_on`.
+> - Orden y carril viven en `lanes.yaml`, no en la tarea. El agente NO reordena queues de primer
+>   nivel por iniciativa propia; las dependencias duras van en `depends_on`, que RL usa para derivar
+>   el orden local de hijos dentro de COMBOs.
 > - Todo plan vivo del proyecto existe como tarea en el tablero: si hay un plan sin tarea que lo
 >   apunte, es un olvido — crear la tarea.
 >

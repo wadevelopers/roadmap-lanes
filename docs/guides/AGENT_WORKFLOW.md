@@ -42,8 +42,10 @@ project wires it to its own tooling (see [Template for consumer projects](#templ
   old `done` tasks is a separate, later phase
   ([end-of-life convention](WORKFLOW.md#end-of-life-of-done-tasks-deletion-convention)), always
   authorized explicitly by the human or run as a dedicated cleanup task.
-- **Do not reorder a `lanes.yaml` `queue` on your own initiative** — order is the human's decision
-  (VISION §4: *the system assists, it doesn't impose* — this applies to the agent too).
+- **Do not reorder a `lanes.yaml` `queue` on your own initiative** — top-level lane order is the
+  human's decision (VISION §4: *the system assists, it doesn't impose* — this applies to the agent
+  too). If a COMBO's internal sequence is wrong, encode the hard prerequisite with `depends_on`;
+  RL derives that local child order instead of relying on filenames.
 - **Do not invent `areas` / `zones` values** — it is a closed taxonomy. If a zone is missing,
   propose it to the human or add it to `taxonomy.yaml` as an explicit, declared change, never
   smuggled in.
@@ -150,8 +152,9 @@ not those details:
 >   summary + pointer, and the shared document lives outside the roadmap folder.
 > - `taxonomy.yaml` is a closed list: to extend it, edit the yaml on purpose, never invent values in
 >   the task.
-> - Order and lane live in `lanes.yaml`, not in the task. The agent does NOT reorder queues on its
->   own; hard dependencies go in `depends_on`.
+> - Order and lane live in `lanes.yaml`, not in the task. The agent does NOT reorder top-level
+>   queues on its own; hard dependencies go in `depends_on`, which RL uses to derive local child
+>   order inside COMBOs.
 > - Every live plan in the project exists as a task on the board: a plan with no task pointing to it
 >   is an oversight — create the task.
 >

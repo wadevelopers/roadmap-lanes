@@ -158,7 +158,16 @@ lanes:
 # Every task NOT in any `queue` list = backlog. N lanes; the UI starts with 2.
 ```
 
-**Order rule (the list rules; dependencies only alert):** RL **never reorders on its own**. If the list puts a task before something it depends on (unfinished), it marks it **"out of turn"** and explains why. *"The next pickable"* = the first in the queue that is **free**.
+**Order rule (the explicit queue rules):** RL **never reorders top-level `queue` items on its own**.
+If the list puts a task before something it depends on (unfinished), it stays there, marked
+**"out of turn"**, and RL explains why. *"The next pickable"* = the first task in the queue that is
+**free**.
+
+**Implicit order inside COMBOs:** when a `queue` item is a COMBO, its children do not have their own
+list in `lanes.yaml`. RL derives that local sibling order from `depends_on` between siblings (or
+between their descendants), and falls back to the current file/path order only for independent
+siblings. This replaces accidental filename ordering inside a container; it does **not** override the
+explicit lane queue.
 
 ### 7.8 Derived relationships — gates and `unlocks` are not fields
 
