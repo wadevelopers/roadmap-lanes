@@ -274,6 +274,9 @@ function searchText(task: Task): string {
 		task.visualState,
 		...task.areas,
 		...task.zones,
+		...task.absorbs,
+		...task.depends_on,
+		task.parent,
 	].join(" ").toLowerCase();
 }
 
